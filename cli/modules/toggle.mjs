@@ -1,0 +1,63 @@
+#!/usr/bin/env node
+
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { parseEnv } from "../core/env.mjs";
+import { loadModuleRegistry } from "./registry.mjs";
+
+function csv(value) {
+    return new Set(String(value || "").split(",").map((item) => item.trim()).filter(Boolean));
+}
+
+function setEnvValue(text, name, value) {
+    const line = `${name}=${value}`;
+    const pattern = new RegExp(`^${name}=.*$`, "m");
+    return pattern.test(text) ? text.replace(pattern, line) : `${text.trimEnd()}\n${line}\n`;
+}
+
+export function setModuleEnabled({ root, envFile, moduleId, enabled, builtinFile }) {
+    if (moduleId === "core" && !enabled) throw new Error("Shadow core cannot be removed.");
+    let text = fs.readFileSync(envFile, "utf8");
+    const values = parseEnv(text);
+    const registry = loadModuleRegistry({ builtinFile, root, enabledModules: moduleId });
+    if (!registry.modules.some((module) => module.id === moduleId)) {
+        throw new Error(`Module '${moduleId}' is not installed under modules/${moduleId}/.`);
+    }
+    const enabledModules = csv(values.SHADOW_ENABLED_MODULES);
+    const disabledModules = csv(values.SHADOW_DISABLED_MODULES);
+    if (enabled) {
+        disabledModules.delete(moduleId);
+        enabledModules.add(moduleId);
+    } else {
+        enabledModules.delete(moduleId);
+        disabledModules.add(moduleId);
+    }
+    text = setEnvValue(text, "SHADOW_ENABLED_MODULES", [...enabledModules].sort().join(","));
+    text = setEnvValue(text, "SHADOW_DISABLED_MODULES", [...disabledModules].sort().join(","));
+    fs.writeFileSync(envFile, text, "utf8");
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    try {
+        const [action, moduleId] = process.argv.slice(2);
+        if (!["install", "remove"].includes(action) || !moduleId) {
+            throw new Error("Usage: toggle <install|remove> <module>");
+        }
+        const here = path.dirname(fileURLToPath(import.meta.url));
+        const root = path.resolve(process.env.SHADOW_ROOT || process.cwd());
+        const envFile = path.resolve(process.env.SHADOW_ENV_FILE || path.join(root, ".env"));
+        setModuleEnabled({
+            root,
+            envFile,
+            moduleId,
+            enabled: action === "install",
+            builtinFile: path.join(here, "builtin.json"),
+        });
+        process.stdout.write(`Module '${moduleId}' ${action === "install" ? "installed" : "removed from the active roster"}.\n`);
+    } catch (error) {
+        process.stderr.write(`${error.message}\n`);
+        process.exitCode = 1;
+    }
+}

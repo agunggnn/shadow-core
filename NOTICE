@@ -1,0 +1,11 @@
+Shadow Core
+Copyright 2026 Agung GNN
+
+This product orchestrates third-party software that is not part of the Shadow
+Core source distribution:
+
+- 9Router, copyright decolua and contributors, distributed under the MIT License.
+- Cognee, copyright its contributors, distributed under the Apache License 2.0.
+
+Their container images and bundled dependencies retain their respective notices
+and license terms. Shadow Core does not relicense those artifacts.

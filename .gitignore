@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+.mcp.json
+node_modules/
+data/
+backups/
+logs/
+*.log
+*.tgz
+*.zip
+*.enc
+*.dump
+.DS_Store
+Thumbs.db

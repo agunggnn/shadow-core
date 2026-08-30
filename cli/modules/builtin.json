@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "modules": [
+    {
+      "id": "core",
+      "label": "Shadow Core",
+      "version": "1",
+      "profile": "core",
+      "lifecycle": "compose",
+      "surface": "headless",
+      "defaultEnabled": true,
+      "requires": [],
+      "composeFiles": ["docker-compose.yml"],
+      "services": [
+        {
+          "id": "9router",
+          "label": "9Router",
+          "icon": "9R",
+          "role": "Gerbang Akal",
+          "lore": "Memilih jalur model dan menjaga arus kecerdasan tetap hemat serta tersedia.",
+          "realm": "core",
+          "map": { "x": 49, "y": 17 },
+          "profile": "core",
+          "composeService": "nine-router",
+          "surface": "iframe",
+          "urlEnv": "NINE_ROUTER_BASE_URL",
+          "portEnv": "NINE_ROUTER_PORT",
+          "healthPath": "/api/health"
+        }
+      ]
+    }
+  ]
+}

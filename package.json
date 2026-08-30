@@ -1,0 +1,50 @@
+{
+  "name": "@agunggnn/shadow-core",
+  "version": "0.2.0",
+  "description": "Local-first AI command plane with a cross-platform CLI, terminal UI, encrypted credentials, MCP, and optional Cognee memory.",
+  "bin": {
+    "shadow": "cli/bin/shadow.js"
+  },
+  "files": [
+    "cli/bin",
+    "cli/core",
+    "cli/mcp",
+    "cli/modules",
+    "cli/templates",
+    "cli/vault",
+    "docs",
+    "modules/cognee",
+    ".env.example",
+    "docker-compose.yml",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "keywords": [
+    "ai",
+    "cognee",
+    "docker-compose",
+    "local-first",
+    "mcp",
+    "rag",
+    "tui"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agunggnn/shadow-core.git"
+  },
+  "homepage": "https://github.com/agunggnn/shadow-core#readme",
+  "bugs": {
+    "url": "https://github.com/agunggnn/shadow-core/issues"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "test": "node scripts/check.mjs"
+  },
+  "preferGlobal": true
+}

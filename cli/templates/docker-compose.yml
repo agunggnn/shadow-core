@@ -1,0 +1,43 @@
+name: ${SHADOW_PROJECT_NAME:-shadow}
+
+services:
+  nine-router:
+    image: ${NINE_ROUTER_IMAGE:-ghcr.io/decolua/9router@sha256:f00fe389ef41a1999dd0d0275ad0c2955d13d176f7c4c5cb844b2f88c293c471}
+    profiles: [core]
+    restart: unless-stopped
+    ports:
+      - "${SHADOW_BIND_ADDRESS:-127.0.0.1}:${NINE_ROUTER_PORT:-20140}:${NINE_ROUTER_PORT:-20140}"
+    environment:
+      PORT: ${NINE_ROUTER_PORT:-20140}
+      HOSTNAME: 0.0.0.0
+      BASE_URL: ${NINE_ROUTER_BASE_URL:-http://127.0.0.1:20140}
+      NEXT_PUBLIC_BASE_URL: ${NINE_ROUTER_BASE_URL:-http://127.0.0.1:20140}
+      DATA_DIR: /app/data
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      JWT_SECRET: ${NINE_ROUTER_JWT_SECRET:?Set NINE_ROUTER_JWT_SECRET in .env}
+      INITIAL_PASSWORD: ${NINE_ROUTER_INITIAL_PASSWORD:?Set NINE_ROUTER_INITIAL_PASSWORD in .env}
+      API_KEY_SECRET: ${NINE_ROUTER_API_KEY_SECRET:?Set NINE_ROUTER_API_KEY_SECRET in .env}
+      MACHINE_ID_SALT: ${NINE_ROUTER_MACHINE_ID_SALT:?Set NINE_ROUTER_MACHINE_ID_SALT in .env}
+      REQUIRE_API_KEY: ${NINE_ROUTER_REQUIRE_API_KEY:-false}
+      AUTH_COOKIE_SECURE: ${NINE_ROUTER_AUTH_COOKIE_SECURE:-false}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - nine_router_data:/app/data
+      - nine_router_home:/app/data-home
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:$${PORT}/api/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: ${NINE_ROUTER_MEMORY_LIMIT:-250m}
+    cpus: ${NINE_ROUTER_CPU_LIMIT:-1.0}
+
+volumes:
+  nine_router_data:
+  nine_router_home:
