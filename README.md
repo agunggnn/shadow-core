@@ -1,6 +1,10 @@
 # Shadow Core
 
 <p align="center">
+  <img src="assets/hetzer-banner.jpg" alt="Hetzer Zero-Plaintext Armor" width="100%" />
+</p>
+
+<p align="center">
   <strong>The Local-First Autonomous AI Command Plane</strong><br>
   <em>Zero npm dependencies. Zero-plaintext security. Intelligent AI model routing, tri-layer persistent memory, and universal MCP orchestration in ~1.4 GiB RAM.</em>
 </p>

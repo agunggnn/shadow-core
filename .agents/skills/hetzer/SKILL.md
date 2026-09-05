@@ -1,8 +1,8 @@
 ---
-description: Zero-Plaintext Credential Protection via Hetzer Vault
-globs: *
-alwaysApply: true
+name: hetzer
+description: Zero-Plaintext Credential Protection, Sub-2ms Secret Sniffer, and Grimoire Vault integration for autonomous agents.
 ---
+
 # Hetzer: Zero-Plaintext Security & Credential Protection
 
 You are operating under the protection of the **Hetzer Grimoire Vault**.

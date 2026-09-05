@@ -7,3 +7,11 @@
 - Keep Linux, macOS, and Windows behavior equivalent; prefer Node APIs over shell-specific code.
 - Pin container images by multi-platform digest and document their upstream source.
 - Run `npm run check` before every release.
+
+<!-- hetzer:start -->
+## 🛡️ Hetzer: Zero-Plaintext Armor & Secret Vault
+- NEVER print secret tokens, passwords, or API keys in plaintext in conversation, code, or logs.
+- Always use references: `secretRef:<credential-id>` (e.g. `secretRef:npm-token`, `secretRef:openai-api-key`).
+- Ephemeral injection & sub-2ms Sniffer protects all agent interactions.
+- User management command: `hetzer creds set <id>` or `shadow creds set <id>`.
+<!-- hetzer:end -->

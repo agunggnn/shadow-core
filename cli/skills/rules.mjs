@@ -1,8 +1,12 @@
-export const SHADOW_VAULT_RULE_NAME = "shadow-vault";
+export const SHADOW_VAULT_RULE_NAME = "hetzer";
+export const HETZER_SKILL_NAME = "hetzer";
 
-export const AGENT_SYSTEM_RULE = `# Shadow Vault: Zero-Plaintext Security & Credential Protection
+export const POINTER_START = "<!-- hetzer:start -->";
+export const POINTER_END = "<!-- hetzer:end -->";
 
-You are operating under the protection of the **Shadow Core Grimoire Vault**.
+export const AGENT_SYSTEM_RULE = `# Hetzer: Zero-Plaintext Security & Credential Protection
+
+You are operating under the protection of the **Hetzer Grimoire Vault**.
 Your environment enforces strict **Zero-Plaintext** credential handling:
 
 ## 1. Strict Zero-Plaintext Policy
@@ -16,25 +20,35 @@ Your environment enforces strict **Zero-Plaintext** credential handling:
   NODE_AUTH_TOKEN=secretRef:npm-token
   OPENAI_API_KEY=secretRef:openai-api-key
   \`\`\`
-- Plaintext secrets in \`.env\` are automatically intercepted and vaulted by Shadow Core on boot.
+- Plaintext secrets in \`.env\` are automatically intercepted and vaulted on boot.
 
 ## 3. Execution with Secrets
 - To run commands requiring credentials, use out-of-band ephemeral injection:
   \`\`\`bash
-  shadow exec -- <command> [args]
+  hetzer exec -- <command> [args]
   \`\`\`
-- Or call the local **shadow_vault** MCP tools if configured.
+- Or call the local vault MCP tools (\`shadow_vault_has\`, \`shadow_vault_list\`) if configured.
 
 ## 4. User Credential Management
 - If a required credential is not configured, instruct the user to run:
   \`\`\`bash
-  shadow creds set <credential-id>
+  hetzer creds set <credential-id>
   \`\`\`
   *(The user will be prompted with a hidden, masked prompt and the value will be encrypted with AES-256-GCM).*
 `;
 
+export const ENTRY_POINTER_BLOCK = [
+    POINTER_START,
+    "## 🛡️ Hetzer: Zero-Plaintext Armor & Secret Vault",
+    "- NEVER print secret tokens, passwords, or API keys in plaintext in conversation, code, or logs.",
+    "- Always use references: `secretRef:<credential-id>` (e.g. `secretRef:npm-token`, `secretRef:openai-api-key`).",
+    "- Ephemeral injection & sub-2ms Sniffer protects all agent interactions.",
+    "- User management command: `hetzer creds set <id>` or `shadow creds set <id>`.",
+    POINTER_END,
+].join("\n");
+
 export const CURSOR_MDC_CONTENT = `---
-description: Zero-Plaintext Credential Protection via Shadow Vault
+description: Zero-Plaintext Credential Protection via Hetzer Vault
 globs: *
 alwaysApply: true
 ---
@@ -46,9 +60,11 @@ export const CLAUDE_RULE_CONTENT = AGENT_SYSTEM_RULE;
 export const CLINE_RULE_CONTENT = AGENT_SYSTEM_RULE;
 
 export const ANTIGRAVITY_SKILL_CONTENT = `---
-name: shadow-vault
-description: Zero-Plaintext Credential Protection and Grimoire Vault integration for autonomous agents.
+name: hetzer
+description: Zero-Plaintext Credential Protection, Sub-2ms Secret Sniffer, and Grimoire Vault integration for autonomous agents.
 ---
 
 ${AGENT_SYSTEM_RULE}
 `;
+
+export const HETZER_SKILL_CONTENT = ANTIGRAVITY_SKILL_CONTENT;

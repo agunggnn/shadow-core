@@ -17,6 +17,7 @@ import { formatValidationReport, validateAllModules, validateModuleRecipe } from
 import { KNOWN_CREDENTIALS, listCredentials, promptSecret, revealCredential, setCredential } from "../vault/creds.mjs";
 import { autoIngestPlaintextEnv, migrateEnvCredentials } from "../vault/migrate-env.mjs";
 import { redactAndVault, scanText, restoreSecrets } from "../vault/sniffer.mjs";
+import { printHetzerBanner } from "./banner.mjs";
 import { runDoctor } from "./doctor.mjs";
 import { parseEnv } from "./env.mjs";
 import {
@@ -584,6 +585,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         return;
     }
     if (command === "up") {
+        printHetzerBanner();
         const hasVerify = args.includes("--verify") || args.includes("--wait");
         const filteredArgs = args.filter((a) => a !== "--verify" && a !== "--wait");
         const target = filteredArgs[0] === "all" ? "*" : (filteredArgs[0] || "*");

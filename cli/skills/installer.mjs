@@ -11,11 +11,47 @@ import {
     CLAUDE_RULE_CONTENT,
     CLINE_RULE_CONTENT,
     CURSOR_MDC_CONTENT,
+    ENTRY_POINTER_BLOCK,
+    HETZER_SKILL_CONTENT,
+    POINTER_END,
+    POINTER_START,
 } from "./rules.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const cliRoot = path.resolve(here, "..");
 const shadowBin = path.join(cliRoot, "bin", "shadow.js");
+
+export const SUPPORTED_AGENTS = [
+    { id: "antigravity", label: "Antigravity (AGY)", skillDir: ".agents/skills/hetzer", entryFile: "AGENTS.md" },
+    { id: "hermes", label: "Hermes Agent", skillDir: ".hermes/skills/hetzer", entryFile: "AGENTS.md", globalOnly: true },
+    { id: "opencode", label: "OpenCode", skillDir: ".opencode/skills/hetzer", entryFile: "AGENTS.md" },
+    { id: "commandcode", label: "CommandCode", skillDir: ".commandcode/skills/hetzer", entryFile: "AGENTS.md" },
+    { id: "cursor", label: "Cursor IDE", skillDir: ".cursor/skills/hetzer", entryFile: "AGENTS.md" },
+    { id: "claude", label: "Claude Desktop / Code", skillDir: ".claude/skills/hetzer", entryFile: "CLAUDE.md" },
+    { id: "cline", label: "Cline / Roo Code", skillDir: null, entryFile: ".clinerules" },
+    { id: "codex", label: "Codex", skillDir: ".codex/skills/hetzer", entryFile: "AGENTS.md" },
+    { id: "gemini", label: "Gemini CLI", skillDir: ".gemini/skills/hetzer", entryFile: "GEMINI.md" },
+];
+
+export function writePointerBlock(filePath, block = ENTRY_POINTER_BLOCK) {
+    const existing = fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf8") : "";
+    const lines = existing.split(/\r?\n/);
+    const start = lines.findIndex((l) => l.trim() === POINTER_START);
+    const end = lines.findIndex((l) => l.trim() === POINTER_END);
+    const replacing = start !== -1 && end !== -1 && start < end;
+    const head = replacing ? lines.slice(0, start) : lines;
+    const tail = replacing ? lines.slice(end + 1) : [];
+
+    const body = [...head, "", block, "", ...tail]
+        .join("\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .replace(/^\n+/, "")
+        .trimEnd();
+
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, body + "\n", "utf8");
+    return filePath;
+}
 
 export function getClaudeDesktopConfigPath() {
     if (process.platform === "win32") {
@@ -44,62 +80,164 @@ export function getClineSettingsPaths() {
 }
 
 export function detectPlatforms(root = process.cwd()) {
+    const home = os.homedir();
     const platforms = [];
 
     // Cursor
-    const hasCursorDir = fs.existsSync(path.join(root, ".cursor"));
-    const hasCursorRules = fs.existsSync(path.join(root, ".cursorrules"));
-    if (hasCursorDir || hasCursorRules || process.env.CURSOR_AGENT) {
-        platforms.push({ id: "cursor", name: "Cursor IDE", detected: true });
-    } else {
-        platforms.push({ id: "cursor", name: "Cursor IDE", detected: false });
-    }
+    const hasCursor = fs.existsSync(path.join(root, ".cursor")) || fs.existsSync(path.join(root, ".cursorrules"));
+    platforms.push({ id: "cursor", name: "Cursor IDE", detected: Boolean(hasCursor || process.env.CURSOR_AGENT) });
 
-    // Claude Desktop
+    // Claude Desktop & Code
     const claudeConfig = getClaudeDesktopConfigPath();
-    platforms.push({
-        id: "claude",
-        name: "Claude Desktop",
-        detected: fs.existsSync(path.dirname(claudeConfig)),
-        configPath: claudeConfig,
-    });
+    const hasClaude = fs.existsSync(path.dirname(claudeConfig)) || fs.existsSync(path.join(root, ".claude")) || fs.existsSync(path.join(root, "CLAUDE.md"));
+    platforms.push({ id: "claude", name: "Claude Desktop / Code", detected: Boolean(hasClaude), configPath: claudeConfig });
 
     // Cline / Roo Code
     const clineSettings = getClineSettingsPaths();
-    const hasCline = clineSettings.some((s) => fs.existsSync(path.dirname(s.path)));
-    platforms.push({
-        id: "cline",
-        name: "Cline / Roo Code",
-        detected: hasCline || fs.existsSync(path.join(root, ".clinerules")),
-    });
+    const hasCline = clineSettings.some((s) => fs.existsSync(path.dirname(s.path))) || fs.existsSync(path.join(root, ".clinerules"));
+    platforms.push({ id: "cline", name: "Cline / Roo Code", detected: Boolean(hasCline) });
 
-    // Antigravity / Gemini CLI
-    const geminiDir = path.join(os.homedir(), ".gemini", "skills");
-    platforms.push({
-        id: "antigravity",
-        name: "Google Antigravity CLI",
-        detected: fs.existsSync(geminiDir),
-    });
+    // Antigravity (AGY)
+    const hasAgy = fs.existsSync(path.join(root, ".agents")) || fs.existsSync(path.join(home, ".gemini", "config")) || fs.existsSync(path.join(home, ".gemini", "antigravity-cli"));
+    platforms.push({ id: "antigravity", name: "Antigravity (AGY)", detected: Boolean(hasAgy) });
+
+    // Hermes Agent
+    const hasHermes = fs.existsSync(path.join(home, ".hermes"));
+    platforms.push({ id: "hermes", name: "Hermes Agent", detected: Boolean(hasHermes) });
+
+    // OpenCode
+    const hasOpenCode = fs.existsSync(path.join(root, ".opencode")) || fs.existsSync(path.join(home, ".config", "opencode"));
+    platforms.push({ id: "opencode", name: "OpenCode", detected: Boolean(hasOpenCode) });
+
+    // CommandCode
+    const hasCommandCode = fs.existsSync(path.join(root, ".commandcode")) || fs.existsSync(path.join(home, ".commandcode"));
+    platforms.push({ id: "commandcode", name: "CommandCode", detected: Boolean(hasCommandCode) });
+
+    // Codex
+    const hasCodex = fs.existsSync(path.join(root, ".codex"));
+    platforms.push({ id: "codex", name: "Codex", detected: Boolean(hasCodex) });
+
+    // Gemini CLI
+    const hasGemini = fs.existsSync(path.join(root, ".gemini")) || fs.existsSync(path.join(home, ".gemini"));
+    platforms.push({ id: "gemini", name: "Gemini CLI", detected: Boolean(hasGemini) });
 
     return platforms;
+}
+
+export function installToAntigravity(root = process.cwd()) {
+    const created = [];
+    const home = os.homedir();
+
+    // 1. Workspace skill (.agents/skills/hetzer/SKILL.md)
+    const wsSkillDir = path.join(root, ".agents", "skills", "hetzer");
+    fs.mkdirSync(wsSkillDir, { recursive: true });
+    const wsSkill = path.join(wsSkillDir, "SKILL.md");
+    fs.writeFileSync(wsSkill, ANTIGRAVITY_SKILL_CONTENT, "utf8");
+    created.push(wsSkill);
+
+    // 2. Global skill (~/.gemini/config/skills/hetzer/SKILL.md)
+    const globalSkillDir = path.join(home, ".gemini", "config", "skills", "hetzer");
+    fs.mkdirSync(globalSkillDir, { recursive: true });
+    const globalSkill = path.join(globalSkillDir, "SKILL.md");
+    fs.writeFileSync(globalSkill, ANTIGRAVITY_SKILL_CONTENT, "utf8");
+    created.push(globalSkill);
+
+    // 3. Workspace AGENTS.md entry pointer
+    const agentsMd = path.join(root, "AGENTS.md");
+    writePointerBlock(agentsMd);
+    created.push(agentsMd);
+
+    return created;
+}
+
+export function installToHermes() {
+    const created = [];
+    const home = os.homedir();
+
+    // Hermes reads skills exclusively from ~/.hermes/skills/
+    const skillDir = path.join(home, ".hermes", "skills", "hetzer");
+    fs.mkdirSync(skillDir, { recursive: true });
+    const skillFile = path.join(skillDir, "SKILL.md");
+    fs.writeFileSync(skillFile, HETZER_SKILL_CONTENT, "utf8");
+    created.push(skillFile);
+
+    // Optional MCP configuration in ~/.hermes/config.yaml if file exists
+    const hermesConfig = path.join(home, ".hermes", "config.yaml");
+    if (fs.existsSync(hermesConfig)) {
+        try {
+            let content = fs.readFileSync(hermesConfig, "utf8");
+            if (!content.includes("shadow-vault") && !content.includes("hetzer")) {
+                const snippet = `\nmcp_servers:\n  hetzer:\n    command: "node"\n    args: ["${shadowBin.replace(/\\/g, "/")}", "mcp", "serve"]\n`;
+                fs.appendFileSync(hermesConfig, snippet, "utf8");
+                created.push(hermesConfig);
+            }
+        } catch { /* ignore */ }
+    }
+
+    return created;
+}
+
+export function installToOpenCode(root = process.cwd()) {
+    const created = [];
+    const wsSkillDir = path.join(root, ".opencode", "skills", "hetzer");
+    fs.mkdirSync(wsSkillDir, { recursive: true });
+    const wsSkill = path.join(wsSkillDir, "SKILL.md");
+    fs.writeFileSync(wsSkill, HETZER_SKILL_CONTENT, "utf8");
+    created.push(wsSkill);
+
+    const agentsMd = path.join(root, "AGENTS.md");
+    writePointerBlock(agentsMd);
+    created.push(agentsMd);
+    return created;
+}
+
+export function installToCommandCode(root = process.cwd()) {
+    const created = [];
+    const wsSkillDir = path.join(root, ".commandcode", "skills", "hetzer");
+    fs.mkdirSync(wsSkillDir, { recursive: true });
+    const wsSkill = path.join(wsSkillDir, "SKILL.md");
+    fs.writeFileSync(wsSkill, HETZER_SKILL_CONTENT, "utf8");
+    created.push(wsSkill);
+
+    const agentsMd = path.join(root, "AGENTS.md");
+    writePointerBlock(agentsMd);
+    created.push(agentsMd);
+    return created;
 }
 
 export function installToCursor(root = process.cwd()) {
     const created = [];
 
-    // 1. Modern .cursor/rules/shadow-vault.mdc
+    // 1. Modern .cursor/rules/hetzer.mdc & shadow-vault.mdc
     const rulesDir = path.join(root, ".cursor", "rules");
     fs.mkdirSync(rulesDir, { recursive: true });
-    const mdcPath = path.join(rulesDir, "shadow-vault.mdc");
+    const mdcPath = path.join(rulesDir, "hetzer.mdc");
     fs.writeFileSync(mdcPath, CURSOR_MDC_CONTENT, "utf8");
     created.push(mdcPath);
 
-    // 2. Legacy .cursorrules (for backward compatibility)
+    // Keep legacy alias for seamless compatibility
+    const legacyMdc = path.join(rulesDir, "shadow-vault.mdc");
+    fs.writeFileSync(legacyMdc, CURSOR_MDC_CONTENT, "utf8");
+    created.push(legacyMdc);
+
+    // 2. Cursor skills folder
+    const skillDir = path.join(root, ".cursor", "skills", "hetzer");
+    fs.mkdirSync(skillDir, { recursive: true });
+    const skillFile = path.join(skillDir, "SKILL.md");
+    fs.writeFileSync(skillFile, HETZER_SKILL_CONTENT, "utf8");
+    created.push(skillFile);
+
+    // 3. Legacy .cursorrules
     const cursorRulesPath = path.join(root, ".cursorrules");
     if (!fs.existsSync(cursorRulesPath)) {
         fs.writeFileSync(cursorRulesPath, AGENT_SYSTEM_RULE, "utf8");
         created.push(cursorRulesPath);
     }
+
+    // 4. AGENTS.md entry pointer
+    const agentsMd = path.join(root, "AGENTS.md");
+    writePointerBlock(agentsMd);
+    created.push(agentsMd);
 
     return created;
 }
@@ -119,20 +257,26 @@ export function installToClaudeDesktop(root = process.cwd()) {
         }
     }
 
-    config.mcpServers["shadow-vault"] = {
+    config.mcpServers["hetzer-vault"] = {
         command: "node",
         args: [shadowBin, "mcp", "serve"],
     };
+    config.mcpServers["shadow-vault"] = config.mcpServers["hetzer-vault"];
 
     fs.writeFileSync(configFile, JSON.stringify(config, null, 2), "utf8");
     created.push(configFile);
 
-    // Also write CLAUDE.md in workspace root
+    // Skill directory for Claude Code CLI (.claude/skills/hetzer/SKILL.md)
+    const claudeSkillDir = path.join(root, ".claude", "skills", "hetzer");
+    fs.mkdirSync(claudeSkillDir, { recursive: true });
+    const claudeSkill = path.join(claudeSkillDir, "SKILL.md");
+    fs.writeFileSync(claudeSkill, HETZER_SKILL_CONTENT, "utf8");
+    created.push(claudeSkill);
+
+    // CLAUDE.md in workspace root with pointer block
     const claudeMd = path.join(root, "CLAUDE.md");
-    if (!fs.existsSync(claudeMd)) {
-        fs.writeFileSync(claudeMd, CLAUDE_RULE_CONTENT, "utf8");
-        created.push(claudeMd);
-    }
+    writePointerBlock(claudeMd);
+    created.push(claudeMd);
 
     return created;
 }
@@ -157,12 +301,13 @@ export function installToCline(root = process.cwd()) {
                     settings = { mcpServers: {} };
                 }
             }
-            settings.mcpServers["shadow-vault"] = {
+            settings.mcpServers["hetzer-vault"] = {
                 command: "node",
                 args: [shadowBin, "mcp", "serve"],
                 disabled: false,
                 autoApprove: ["shadow_vault_list", "shadow_vault_has", "shadow_sniffer_scan"],
             };
+            settings.mcpServers["shadow-vault"] = settings.mcpServers["hetzer-vault"];
             fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), "utf8");
             created.push(settingsPath);
         }
@@ -171,13 +316,31 @@ export function installToCline(root = process.cwd()) {
     return created;
 }
 
-export function installToAntigravity(root = process.cwd()) {
+export function installToCodex(root = process.cwd()) {
     const created = [];
-    const skillDir = path.join(os.homedir(), ".gemini", "skills", "shadow-vault");
+    const skillDir = path.join(root, ".codex", "skills", "hetzer");
     fs.mkdirSync(skillDir, { recursive: true });
     const skillFile = path.join(skillDir, "SKILL.md");
-    fs.writeFileSync(skillFile, ANTIGRAVITY_SKILL_CONTENT, "utf8");
+    fs.writeFileSync(skillFile, HETZER_SKILL_CONTENT, "utf8");
     created.push(skillFile);
+
+    const agentsMd = path.join(root, "AGENTS.md");
+    writePointerBlock(agentsMd);
+    created.push(agentsMd);
+    return created;
+}
+
+export function installToGeminiCli(root = process.cwd()) {
+    const created = [];
+    const skillDir = path.join(root, ".gemini", "skills", "hetzer");
+    fs.mkdirSync(skillDir, { recursive: true });
+    const skillFile = path.join(skillDir, "SKILL.md");
+    fs.writeFileSync(skillFile, HETZER_SKILL_CONTENT, "utf8");
+    created.push(skillFile);
+
+    const geminiMd = path.join(root, "GEMINI.md");
+    writePointerBlock(geminiMd);
+    created.push(geminiMd);
     return created;
 }
 
@@ -194,11 +357,26 @@ export function installSkill({ root = process.cwd(), target = "all" } = {}) {
     if (["all", "cline", "roo"].includes(normalized)) {
         installed.push(...installToCline(root));
     }
-    if (["all", "antigravity", "gemini"].includes(normalized)) {
+    if (["all", "antigravity", "gemini-agy", "agy"].includes(normalized)) {
         installed.push(...installToAntigravity(root));
     }
+    if (["all", "hermes"].includes(normalized)) {
+        installed.push(...installToHermes());
+    }
+    if (["all", "opencode"].includes(normalized)) {
+        installed.push(...installToOpenCode(root));
+    }
+    if (["all", "commandcode"].includes(normalized)) {
+        installed.push(...installToCommandCode(root));
+    }
+    if (["all", "codex"].includes(normalized)) {
+        installed.push(...installToCodex(root));
+    }
+    if (["all", "gemini"].includes(normalized)) {
+        installed.push(...installToGeminiCli(root));
+    }
 
-    return installed;
+    return Array.from(new Set(installed));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -210,28 +388,29 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (action === "status" || action === "list") {
         const detected = detectPlatforms(root);
         process.stdout.write("================================================================================\n");
-        process.stdout.write("  SHADOW CORE - AI AGENT SKILL INTEGRATION STATUS\n");
+        process.stdout.write("  HETZER / SHADOW - AI AGENT SKILL INTEGRATION STATUS\n");
         process.stdout.write("================================================================================\n");
         for (const p of detected) {
             const status = p.detected ? "[v] Terdeteksi" : "[ ] Tidak terdeteksi";
             process.stdout.write(`  ${p.name.padEnd(26)} : ${status}\n`);
         }
         process.stdout.write("================================================================================\n");
-        process.stdout.write("Jalankan 'shadow skill install' untuk memasang ke seluruh agent.\n");
+        process.stdout.write("Jalankan 'hetzer skill install' untuk memasang ke seluruh agent.\n");
         process.exit(0);
     }
 
     if (action === "install") {
         process.stdout.write("================================================================================\n");
-        process.stdout.write("  SHADOW CORE - UNIVERSAL AI AGENT SKILL INSTALLER\n");
+        process.stdout.write("  HETZER / SHADOW - UNIVERSAL AI AGENT SKILL INSTALLER\n");
         process.stdout.write("================================================================================\n");
         const results = installSkill({ root, target });
         for (const file of results) {
-            process.stdout.write(`  [v] Dikonfigurasi: ${path.relative(root, file) || file}\n`);
+            const rel = path.relative(root, file);
+            process.stdout.write(`  [v] Dikonfigurasi: ${rel.startsWith("..") ? file : rel}\n`);
         }
         process.stdout.write("--------------------------------------------------------------------------------\n");
-        process.stdout.write("  [v] Selesai! Agen AI Anda (Cursor/Claude/Cline/Antigravity) kini secara otomatis\n");
-        process.stdout.write("      terlindungi oleh Shadow Vault. Token/kredensial tidak akan pernah bocor ke LLM.\n");
+        process.stdout.write("  [v] Selesai! Seluruh Agen AI (Hermes, AGY, OpenCode, CommandCode, Cursor,\n");
+        process.stdout.write("      Claude, Cline, Codex, Gemini) terlindungi oleh Zero-Plaintext Armor.\n");
         process.stdout.write("================================================================================\n");
         process.exit(0);
     }

@@ -3,9 +3,11 @@
   "version": "0.2.1",
   "description": "Local-first AI command plane & orchestrator with encrypted credential vault (AES-256-GCM), 9Router gateway, MCP bridge, and modular memory.",
   "bin": {
-    "shadow": "cli/bin/shadow.js"
+    "shadow": "cli/bin/shadow.js",
+    "hetzer": "cli/bin/hetzer.js"
   },
   "files": [
+    "assets",
     "cli/bin",
     "cli/core",
     "cli/mcp",

@@ -7,46 +7,75 @@ import test from "node:test";
 import {
     detectPlatforms,
     installSkill,
-    installToCursor,
+    installToAntigravity,
     installToCline,
+    installToCursor,
+    installToHermes,
+    installToOpenCode,
+    writePointerBlock,
 } from "./installer.mjs";
 
 test("detectPlatforms reports available agents and returns structured list", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-skill-detect-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-skill-detect-"));
     try {
         const list = detectPlatforms(tempDir);
         assert.ok(Array.isArray(list));
-        assert.ok(list.length >= 3);
+        assert.ok(list.length >= 7);
         const ids = list.map((p) => p.id);
         assert.ok(ids.includes("cursor"));
         assert.ok(ids.includes("claude"));
         assert.ok(ids.includes("cline"));
+        assert.ok(ids.includes("hermes"));
+        assert.ok(ids.includes("antigravity"));
+        assert.ok(ids.includes("opencode"));
     } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
     }
 });
 
-test("installToCursor writes .cursor/rules/shadow-vault.mdc and .cursorrules", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-skill-cursor-"));
+test("writePointerBlock is cleanly idempotent and replaces existing block without duplication", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-pointer-"));
+    try {
+        const file = path.join(tempDir, "AGENTS.md");
+        fs.writeFileSync(file, "# Project Agents\n\nInitial rules here.\n", "utf8");
+
+        writePointerBlock(file);
+        const firstPass = fs.readFileSync(file, "utf8");
+        assert.ok(firstPass.includes("<!-- hetzer:start -->"));
+        assert.ok(firstPass.includes("<!-- hetzer:end -->"));
+        assert.ok(firstPass.includes("Initial rules here."));
+
+        // Second pass should replace cleanly, not duplicate
+        writePointerBlock(file);
+        const secondPass = fs.readFileSync(file, "utf8");
+        const matchCount = (secondPass.match(/<!-- hetzer:start -->/g) || []).length;
+        assert.equal(matchCount, 1, "Pointer block must exist exactly once");
+    } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+});
+
+test("installToCursor writes rules and AGENTS.md entry pointer", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-skill-cursor-"));
     try {
         const created = installToCursor(tempDir);
         assert.ok(created.length >= 2);
 
-        const mdcFile = path.join(tempDir, ".cursor", "rules", "shadow-vault.mdc");
-        assert.ok(fs.existsSync(mdcFile), ".cursor/rules/shadow-vault.mdc must exist");
+        const mdcFile = path.join(tempDir, ".cursor", "rules", "hetzer.mdc");
+        assert.ok(fs.existsSync(mdcFile), ".cursor/rules/hetzer.mdc must exist");
         const mdcContent = fs.readFileSync(mdcFile, "utf8");
         assert.ok(mdcContent.includes("Zero-Plaintext"));
         assert.ok(mdcContent.includes("secretRef:"));
 
-        const legacyFile = path.join(tempDir, ".cursorrules");
-        assert.ok(fs.existsSync(legacyFile), ".cursorrules must exist");
+        const agentsMd = path.join(tempDir, "AGENTS.md");
+        assert.ok(fs.existsSync(agentsMd), "AGENTS.md must exist");
     } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
     }
 });
 
 test("installToCline writes .clinerules in workspace", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-skill-cline-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-skill-cline-"));
     try {
         const created = installToCline(tempDir);
         assert.ok(created.length >= 1);
@@ -61,12 +90,36 @@ test("installToCline writes .clinerules in workspace", () => {
     }
 });
 
+test("installToOpenCode writes .opencode/skills and AGENTS.md", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-skill-opencode-"));
+    try {
+        const created = installToOpenCode(tempDir);
+        assert.ok(created.length >= 2);
+        assert.ok(fs.existsSync(path.join(tempDir, ".opencode", "skills", "hetzer", "SKILL.md")));
+        assert.ok(fs.existsSync(path.join(tempDir, "AGENTS.md")));
+    } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+});
+
+test("installToAntigravity writes workspace .agents/skills and AGENTS.md", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-skill-agy-"));
+    try {
+        const created = installToAntigravity(tempDir);
+        assert.ok(created.length >= 2);
+        assert.ok(fs.existsSync(path.join(tempDir, ".agents", "skills", "hetzer", "SKILL.md")));
+        assert.ok(fs.existsSync(path.join(tempDir, "AGENTS.md")));
+    } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+});
+
 test("installSkill dispatches target correctly", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-skill-dispatch-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-skill-dispatch-"));
     try {
         const created = installSkill({ root: tempDir, target: "cursor" });
         assert.ok(created.length >= 2);
-        assert.ok(fs.existsSync(path.join(tempDir, ".cursor", "rules", "shadow-vault.mdc")));
+        assert.ok(fs.existsSync(path.join(tempDir, ".cursor", "rules", "hetzer.mdc")));
     } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
     }
