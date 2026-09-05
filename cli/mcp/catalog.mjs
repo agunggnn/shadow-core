@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { parseEnv } from "../core/env.mjs";
 import { loadModuleRegistry, publicModuleSummary } from "../modules/registry.mjs";
 import { Grimoire, resolveVaultPath } from "../vault/shadow-vault.mjs";
+import { scanText, redactAndVault } from "../vault/sniffer.mjs";
 import { synthesizeServiceTools } from "./synthesis.mjs";
 
 const EMPTY_SCHEMA = { type: "object", additionalProperties: false };
@@ -35,14 +36,6 @@ export function createToolCatalog({ root = process.env.SHADOW_ROOT || process.cw
         disabledModules: getEnvironment(fileEnv, "SHADOW_DISABLED_MODULES"),
         enabledModules: getEnvironment(fileEnv, "SHADOW_ENABLED_MODULES"),
     });
-    const tools = [{
-        name: "shadow_modules_list",
-        title: "Shadow modules",
-        description: "List core and outpost recipes, including dependency and enablement state.",
-        inputSchema: EMPTY_SCHEMA,
-        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-        execute: async () => ({ modules: publicModuleSummary(registry), warnings: registry.warnings }),
-    }];
 
     let vault;
     const getVault = () => {
@@ -56,6 +49,81 @@ export function createToolCatalog({ root = process.env.SHADOW_ROOT || process.cw
         }
         return vault;
     };
+
+    const tools = [
+        {
+            name: "shadow_modules_list",
+            title: "Shadow modules",
+            description: "List core and outpost recipes, including dependency and enablement state.",
+            inputSchema: EMPTY_SCHEMA,
+            annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+            execute: async () => ({ modules: publicModuleSummary(registry), warnings: registry.warnings }),
+        },
+        {
+            name: "shadow_vault_has",
+            title: "Check Vault Secret",
+            description: "Check if a credential or secretRef exists in Grimoire Vault without exposing the raw secret.",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    id: { type: "string", description: "The credential identifier to check (e.g. 'npm-token')" },
+                },
+                required: ["id"],
+            },
+            annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+            execute: async ({ id }) => {
+                const targetId = String(id).replace(/^secretRef:/, "");
+                const entry = getVault().find(targetId);
+                return { id: targetId, exists: Boolean(entry), ref: `secretRef:${targetId}` };
+            },
+        },
+        {
+            name: "shadow_vault_list",
+            title: "List Vault Secrets",
+            description: "List all configured credential IDs and descriptions in Grimoire Vault without exposing plaintext secrets.",
+            inputSchema: EMPTY_SCHEMA,
+            annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+            execute: async () => {
+                const list = getVault().list();
+                return {
+                    credentials: list.map((item) => ({
+                        id: item.id,
+                        label: item.label,
+                        authType: item.authType,
+                        ref: `secretRef:${item.id}`,
+                    })),
+                };
+            },
+        },
+        {
+            name: "shadow_sniffer_scan",
+            title: "Scan Secrets in Text",
+            description: "Rapidly inspect text for sensitive credentials (npm, API keys, tokens) in under 2ms.",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    text: { type: "string", description: "Text content to analyze for exposed credentials" },
+                },
+                required: ["text"],
+            },
+            annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+            execute: async ({ text }) => scanText(text),
+        },
+        {
+            name: "shadow_sniffer_redact",
+            title: "Redact and Auto-Vault Secrets",
+            description: "Scans text, auto-vaults any detected raw credentials into Grimoire Vault, and returns sanitized text with secretRef references.",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    text: { type: "string", description: "Text content containing potential raw credentials" },
+                },
+                required: ["text"],
+            },
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+            execute: async ({ text }) => redactAndVault(text, { root }),
+        },
+    ];
 
     const addServiceTool = (service, definition) => {
         const hasSchemaProps = Boolean(definition.inputSchema?.properties && Object.keys(definition.inputSchema.properties).length > 0);

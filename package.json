@@ -12,6 +12,7 @@
     "cli/modules",
     "cli/templates",
     "cli/vault",
+    "cli/skills",
     "docs",
     "modules/cognee",
     ".env.example",

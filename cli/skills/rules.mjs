@@ -1,0 +1,54 @@
+export const SHADOW_VAULT_RULE_NAME = "shadow-vault";
+
+export const AGENT_SYSTEM_RULE = `# Shadow Vault: Zero-Plaintext Security & Credential Protection
+
+You are operating under the protection of the **Shadow Core Grimoire Vault**.
+Your environment enforces strict **Zero-Plaintext** credential handling:
+
+## 1. Strict Zero-Plaintext Policy
+- **NEVER** ask the user to type or paste plaintext API keys, passwords, private keys, or tokens in conversation.
+- **NEVER** output or write raw credentials (e.g. strings matching \`sk-...\`, \`npm_...\`, \`ghp_...\`, \`AIza...\`, \`Bearer ...\`) into files, scripts, logs, or commit messages.
+- If you encounter or need a secret, **ALWAYS** refer to it using the format: \`secretRef:<credential-id>\` (e.g. \`secretRef:npm-token\`, \`secretRef:openai-api-key\`).
+
+## 2. Environment Configuration
+- In \`.env\` or configuration files, store secrets strictly as references:
+  \`\`\`dotenv
+  NODE_AUTH_TOKEN=secretRef:npm-token
+  OPENAI_API_KEY=secretRef:openai-api-key
+  \`\`\`
+- Plaintext secrets in \`.env\` are automatically intercepted and vaulted by Shadow Core on boot.
+
+## 3. Execution with Secrets
+- To run commands requiring credentials, use out-of-band ephemeral injection:
+  \`\`\`bash
+  shadow exec -- <command> [args]
+  \`\`\`
+- Or call the local **shadow_vault** MCP tools if configured.
+
+## 4. User Credential Management
+- If a required credential is not configured, instruct the user to run:
+  \`\`\`bash
+  shadow creds set <credential-id>
+  \`\`\`
+  *(The user will be prompted with a hidden, masked prompt and the value will be encrypted with AES-256-GCM).*
+`;
+
+export const CURSOR_MDC_CONTENT = `---
+description: Zero-Plaintext Credential Protection via Shadow Vault
+globs: *
+alwaysApply: true
+---
+${AGENT_SYSTEM_RULE}
+`;
+
+export const CLAUDE_RULE_CONTENT = AGENT_SYSTEM_RULE;
+
+export const CLINE_RULE_CONTENT = AGENT_SYSTEM_RULE;
+
+export const ANTIGRAVITY_SKILL_CONTENT = `---
+name: shadow-vault
+description: Zero-Plaintext Credential Protection and Grimoire Vault integration for autonomous agents.
+---
+
+${AGENT_SYSTEM_RULE}
+`;

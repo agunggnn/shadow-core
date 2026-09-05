@@ -209,6 +209,33 @@ shadow creds set cognee-llm-api-key
 
 ---
 
+## 🧩 Universal AI Agent Skill (Mode Headless - 0 Docker, 0 RAM)
+
+Ingin melindungi token Anda di **Cursor**, **Claude Desktop**, atau **Cline** tanpa perlu menyalakan Docker dan tanpa mengorbankan RAM?
+
+Gunakan Shadow Core sebagai **Universal Agent Skill** (mirip konsep *antislop*):
+
+```bash
+# Pasang otomatis ke seluruh agent terdeteksi (Cursor, Claude, Cline, Antigravity):
+shadow skill install
+
+# Atau jalankan langsung via npx:
+npx @agunggnn/shadow-core skill install
+```
+
+### Mengapa Sangat Ringan dan Tidak Membebani Komputer?
+1. **0 Docker**: Tidak butuh Docker Engine berjalan di background.
+2. **Pakai AI yang Sudah Aktif**: Otomatis menggunakan LLM bawaan pengguna (Claude 3.7 Sonnet di Claude Desktop, GPT-4o / Claude di Cursor, Gemini di Antigravity). Tidak memaksakan proxy gateway tambahan.
+3. **0 MB RAM saat Idle**: MCP server berjalan melalui mode *stdio* bawaan Node.js. Proses hanya menyala dalam milidetik saat agent memanggil tool, lalu langsung idle/keluar.
+4. **Penyimpanan Sangat Kecil**: Database Grimoire Vault lokal hanya berukuran ~100 KB di disk Anda.
+
+Cek status integrasi agent yang terpasang di komputer Anda:
+```bash
+shadow skill status
+```
+
+---
+
 ## 🧠 Mengaktifkan Memori Persisten (Modul Cognee)
 
 Cognee menyediakan memori graf dan vektor untuk agen AI Anda melalui protokol Model Context Protocol (MCP).
@@ -271,6 +298,7 @@ shadow module create my-custom-service --source https://github.com/user/my-repo
 | `shadow creds reveal <id>` | Menampilkan nilai asli rahasia terenkripsi |
 | `shadow creds set <id> [val]` | Menyimpan rahasia baru dengan enkripsi AES-256-GCM (masked prompt) |
 | `shadow sniffer [scan\|redact]`| Pindai dan amankan kredensial dari teks/prompt secara instan (<2ms) |
+| `shadow skill [install\|status]`| Pasang Universal AI Skill ke Cursor, Claude, Cline (0 Docker, 0 RAM) |
 | `shadow modules` | Menampilkan daftar modul yang terinstal dan tersedia |
 | `shadow install <module>` | Mengaktifkan modul baru melalui interactive wizard |
 | `shadow remove <module>` | Menonaktifkan modul tanpa menghapus data persisten |

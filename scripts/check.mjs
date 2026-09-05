@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const sourceRoots = ["cli/core", "cli/modules", "cli/mcp", "cli/vault"];
+const sourceRoots = ["cli/core", "cli/modules", "cli/mcp", "cli/vault", "cli/skills"];
 
 function filesUnder(dir) {
     if (!fs.existsSync(dir)) return [];

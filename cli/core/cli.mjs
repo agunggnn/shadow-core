@@ -395,6 +395,7 @@ Commands:
   validate [module]         Validasi integritas, keamanan, dan resep Docker modul
   creds [list|reveal|set]   Kelola rahasia terenkripsi di Shadow Vault
   sniffer [scan|redact] <t> Pindai dan amankan kredensial dari teks secara instan (<2ms)
+  skill [install|status]    Pasang Universal AI Skill ke Cursor, Claude, Cline (0 Docker, 0 RAM)
   mcp configure|serve|ping  Konfigurasi, jalankan bridge, atau diagnostik ping Shadow MCP
   mcp tools <service>       Daftar tools MCP service beserta klasifikasi Offline/LLM
   mcp call <srv> <tool> [a] Panggil tool MCP service secara langsung tanpa AI client eksternal
@@ -563,6 +564,16 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             return;
         }
         throw new Error(`Subcommand sniffer tidak dikenal: '${sub}'. Gunakan 'scan' atau 'redact'.`);
+    }
+    if (["skill", "skills"].includes(command)) {
+        const action = args[0] || "install";
+        const target = args[1] || "all";
+        run(process.execPath, [
+            path.join(cliRoot, "skills", "installer.mjs"),
+            action,
+            target,
+        ], { cwd: root });
+        return;
     }
     if (command === "modules") {
         if (args[0] && !args[0].startsWith("-")) {
