@@ -534,7 +534,18 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         if (hasVerify || (target !== "*" && target !== "all")) {
             const serviceId = target === "cognee" ? "cognee-mcp" : (target === "9router" ? "nine-router" : target);
             const composeFile = path.join(root, "modules", target, `docker-compose.${target}.yml`);
-            await verifyModuleDeployment({ root, moduleId: target, serviceId, composeFile });
+            const endpointUrl = target === "cognee"
+                ? `http://127.0.0.1:${values.COGNEE_MCP_PORT || 8001}/health`
+                : (target === "9router" ? `http://127.0.0.1:${values.NINE_ROUTER_PORT || 20140}/api/health` : null);
+            const timeoutMs = target === "cognee" ? 75000 : 35000;
+            await verifyModuleDeployment({
+                root,
+                moduleId: target,
+                serviceId,
+                composeFile,
+                endpointUrl,
+                timeoutMs,
+            });
         }
         return;
     }

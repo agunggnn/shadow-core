@@ -48,10 +48,31 @@ function getContainerLogs(target, exec, tail = 60) {
             encoding: "utf8",
             windowsHide: true,
         });
-        return String(logsRes.stdout || "") + "\n" + String(logsRes.stderr || "");
+        const out = String(logsRes.stdout || "") + "\n" + String(logsRes.stderr || "");
+        if (logsRes.status === 0) return out;
     } catch {
-        return "";
+        // ignore
     }
+
+    // Fallback: search actual container ID via docker ps filter
+    try {
+        const psRes = exec("docker", ["ps", "-a", "--filter", `name=${target}`, "--format", "{{.ID}}"], {
+            encoding: "utf8",
+            windowsHide: true,
+        });
+        if (psRes.status === 0 && psRes.stdout.trim()) {
+            const containerId = psRes.stdout.trim().split("\n")[0];
+            const logsRes2 = exec("docker", ["logs", containerId, "--tail", String(tail)], {
+                encoding: "utf8",
+                windowsHide: true,
+            });
+            return String(logsRes2.stdout || "") + "\n" + String(logsRes2.stderr || "");
+        }
+    } catch {
+        // ignore
+    }
+
+    return "";
 }
 
 export async function verifyModuleDeployment({
@@ -61,7 +82,7 @@ export async function verifyModuleDeployment({
     composeFile,
     exec = spawnSync,
     out = process.stdout,
-    timeoutMs = 30000,
+    timeoutMs = 60000,
     pollIntervalMs = 1500,
     fetchFn = globalThis.fetch,
     endpointUrl = null,
@@ -80,6 +101,7 @@ export async function verifyModuleDeployment({
 
         if (inspectData) {
             const state = inspectData.State || {};
+            const containerRef = inspectData.Id || target;
 
             // 1. Cek apakah container sudah mati dengan exit code != 0
             if (state.Running === false && state.ExitCode !== 0) {
@@ -87,7 +109,23 @@ export async function verifyModuleDeployment({
                 break;
             }
 
-            // 2. Cek Docker Healthcheck jika didefinisikan
+            // 2. Cek apakah HTTP smoketest sudah responsif
+            if (endpointUrl && typeof fetchFn === "function") {
+                try {
+                    const controller = new AbortController();
+                    const timer = setTimeout(() => controller.abort(), 2000);
+                    const res = await fetchFn(endpointUrl, { signal: controller.signal });
+                    clearTimeout(timer);
+                    if (res.ok || res.status === 404 || res.status === 400) {
+                        out.write(`[v] Smoketest endpoint HTTP '${endpointUrl}' berhasil merespons (HTTP ${res.status}).\n`);
+                        return { ok: true, healthStatus: state.Health?.Status || "running", smoketest: true, target };
+                    }
+                } catch {
+                    // Endpoint belum binding, lanjutkan loop
+                }
+            }
+
+            // 3. Cek Docker Healthcheck jika didefinisikan
             const healthStatus = state.Health?.Status;
             if (healthStatus) {
                 if (healthStatus === "healthy") {
@@ -106,8 +144,7 @@ export async function verifyModuleDeployment({
                 }
             } else if (state.Running === true) {
                 // Container tidak memiliki healthcheck bawaan docker
-                // Cek log apakah ada crash loop atau error fatal
-                const currentLogs = getContainerLogs(target, exec, 20);
+                const currentLogs = getContainerLogs(containerRef, exec, 20);
                 const hasFatalLog = currentLogs.includes("Permission denied")
                     || currentLogs.includes("PermissionError")
                     || currentLogs.includes("address already in use")
@@ -118,22 +155,7 @@ export async function verifyModuleDeployment({
                     break;
                 }
 
-                // Lakukan HTTP smoketest jika endpointUrl disediakan
-                if (endpointUrl && typeof fetchFn === "function") {
-                    try {
-                        const controller = new AbortController();
-                        const timer = setTimeout(() => controller.abort(), 2000);
-                        const res = await fetchFn(endpointUrl, { signal: controller.signal });
-                        clearTimeout(timer);
-                        if (res.ok || res.status === 404 || res.status === 400) {
-                            out.write(`[v] Smoketest endpoint HTTP '${endpointUrl}' berhasil merespons (HTTP ${res.status}).\n`);
-                            return { ok: true, healthStatus: "running", smoketest: true, target };
-                        }
-                    } catch {
-                        // Masih booting, lanjutkan loop
-                    }
-                } else if (iteration >= 2 || timeoutMs <= 5000) {
-                    // Berjalan normal tanpa healthcheck khusus
+                if (iteration >= 2 || timeoutMs <= 5000) {
                     out.write(`[v] Container '${target}' berjalan stabil dalam status RUNNING.\n`);
                     return { ok: true, healthStatus: "running", target };
                 }
@@ -148,7 +170,8 @@ export async function verifyModuleDeployment({
     }
 
     // Jika sampai di sini, container mengalami kegagalan atau timeout
-    const logs = getContainerLogs(target, exec, 50);
+    const containerRef = inspectData?.Id || target;
+    const logs = getContainerLogs(containerRef, exec, 50);
     const state = inspectData?.State;
 
     out.write("\n================================================================================\n");
