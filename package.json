@@ -1,7 +1,7 @@
 {
   "name": "@agunggnn/shadow-core",
-  "version": "0.2.0",
-  "description": "Local-first AI command plane with a cross-platform CLI, terminal UI, encrypted credentials, MCP, and optional Cognee memory.",
+  "version": "0.2.1",
+  "description": "Local-first AI command plane & orchestrator with encrypted credential vault (AES-256-GCM), 9Router gateway, MCP bridge, and modular memory.",
   "bin": {
     "shadow": "cli/bin/shadow.js"
   },
@@ -23,12 +23,19 @@
   ],
   "keywords": [
     "ai",
+    "ai-gateway",
+    "9router",
     "cognee",
+    "credential-vault",
     "docker-compose",
+    "encryption",
     "local-first",
     "mcp",
+    "model-context-protocol",
+    "orchestrator",
     "rag",
-    "tui"
+    "tui",
+    "command-plane"
   ],
   "license": "Apache-2.0",
   "repository": {
@@ -44,7 +51,8 @@
   },
   "scripts": {
     "check": "node scripts/check.mjs",
-    "test": "node scripts/check.mjs"
+    "test": "node --test \"**/*.test.mjs\"",
+    "lint": "node scripts/check.mjs"
   },
   "preferGlobal": true
 }

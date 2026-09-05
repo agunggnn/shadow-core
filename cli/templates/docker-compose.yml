@@ -2,8 +2,14 @@ name: ${SHADOW_PROJECT_NAME:-shadow}
 
 services:
   nine-router:
-    image: ${NINE_ROUTER_IMAGE:-ghcr.io/decolua/9router@sha256:f00fe389ef41a1999dd0d0275ad0c2955d13d176f7c4c5cb844b2f88c293c471}
-    profiles: [core]
+    image: ${NINE_ROUTER_IMAGE:-ghcr.io/decolua/9router@sha256:a510ea0295d39680921c777619f2b476d02db2115426a944eb2785cbc8bd0699}
+    command:
+      - sh
+      - -c
+      - >-
+        node -e 'const fs=require("node:fs"),path=require("node:path");let patched=0;function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory()){walk(file);continue}if(!entry.name.endsWith("_client-reference-manifest.js"))continue;const source=fs.readFileSync(file,"utf8"),encoded=source.replaceAll("%5B","%255B").replaceAll("%5D","%255D");if(encoded!==source){fs.writeFileSync(file,encoded);patched++}}}walk("/app/.next/server");console.log("[shadow] Encoded dynamic route paths in "+patched+" manifest(s)");'
+        && exec node custom-server.js
+    profiles: [9router]
     restart: unless-stopped
     ports:
       - "${SHADOW_BIND_ADDRESS:-127.0.0.1}:${NINE_ROUTER_PORT:-20140}:${NINE_ROUTER_PORT:-20140}"

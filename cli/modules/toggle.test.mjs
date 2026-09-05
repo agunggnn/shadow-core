@@ -3,25 +3,89 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-
 import { setModuleEnabled } from "./toggle.mjs";
 
-const builtinFile = path.resolve("cli", "modules", "builtin.json");
+function setupTempModule(root, moduleId) {
+    const moduleDir = path.join(root, "modules", moduleId);
+    fs.mkdirSync(moduleDir, { recursive: true });
+    fs.writeFileSync(path.join(moduleDir, "module.json"), JSON.stringify({
+        id: moduleId,
+        label: moduleId,
+        version: "1",
+        profile: moduleId,
+        lifecycle: "compose",
+        surface: "headless",
+        defaultEnabled: false,
+        requires: ["core"],
+        composeFiles: ["docker-compose.yml"],
+        services: []
+    }, null, 2));
+}
 
-test("module install and remove update state without deleting the recipe", () => {
+test("setModuleEnabled adds to SHADOW_ENABLED_MODULES", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
-    const recipe = path.join(root, "modules", "cognee");
-    fs.mkdirSync(recipe, { recursive: true });
-    fs.writeFileSync(path.join(recipe, "module.json"), JSON.stringify({
-        id: "cognee", lifecycle: "external", surface: "headless", defaultEnabled: false, services: [],
-    }));
     const envFile = path.join(root, ".env");
     fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+    setupTempModule(root, "cognee");
+    setModuleEnabled({ root, envFile, moduleId: "cognee", enabled: true, builtinFile: path.resolve("cli/modules/builtin.json") });
+    const updated = fs.readFileSync(envFile, "utf8");
+    assert.ok(updated.includes("SHADOW_ENABLED_MODULES=cognee"));
+    fs.rmSync(root, { recursive: true, force: true });
+});
 
-    setModuleEnabled({ root, envFile, moduleId: "cognee", enabled: true, builtinFile });
-    assert.match(fs.readFileSync(envFile, "utf8"), /SHADOW_ENABLED_MODULES=cognee/);
-    setModuleEnabled({ root, envFile, moduleId: "cognee", enabled: false, builtinFile });
-    assert.match(fs.readFileSync(envFile, "utf8"), /SHADOW_DISABLED_MODULES=cognee/);
-    assert.equal(fs.existsSync(path.join(recipe, "module.json")), true);
+test("setModuleEnabled removes from SHADOW_ENABLED_MODULES", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
+    const envFile = path.join(root, ".env");
+    fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=cognee\nSHADOW_DISABLED_MODULES=\n");
+    setupTempModule(root, "cognee");
+    setModuleEnabled({ root, envFile, moduleId: "cognee", enabled: false, builtinFile: path.resolve("cli/modules/builtin.json") });
+    const updated = fs.readFileSync(envFile, "utf8");
+    assert.ok(updated.includes("SHADOW_DISABLED_MODULES=cognee"));
+    assert.ok(!updated.includes("SHADOW_ENABLED_MODULES=cognee"));
+    fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("setModuleEnabled throws on unknown module", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
+    const envFile = path.join(root, ".env");
+    fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+    setupTempModule(root, "cognee");
+    assert.throws(() => setModuleEnabled({ root, envFile, moduleId: "nonexistent", enabled: true, builtinFile: path.resolve("cli/modules/builtin.json") }), /not installed/);
+    fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("setModuleEnabled throws when trying to disable core", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
+    const envFile = path.join(root, ".env");
+    fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+    assert.throws(() => setModuleEnabled({ root, envFile, moduleId: "core", enabled: false, builtinFile: path.resolve("cli/modules/builtin.json") }), /cannot be removed/);
+    fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("setModuleEnabled allows disabling and enabling 9router module", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
+    const envFile = path.join(root, ".env");
+    fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+    // Disable 9router
+    setModuleEnabled({ root, envFile, moduleId: "9router", enabled: false, builtinFile: path.resolve("cli/modules/builtin.json") });
+    let updated = fs.readFileSync(envFile, "utf8");
+    assert.ok(updated.includes("SHADOW_DISABLED_MODULES=9router"));
+    // Re-enable 9router
+    setModuleEnabled({ root, envFile, moduleId: "9router", enabled: true, builtinFile: path.resolve("cli/modules/builtin.json") });
+    updated = fs.readFileSync(envFile, "utf8");
+    assert.ok(updated.includes("SHADOW_ENABLED_MODULES=9router"));
+    assert.ok(!updated.includes("SHADOW_DISABLED_MODULES=9router"));
+    fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("setModuleEnabled sets chmod 600 on .env (Unix)", { skip: process.platform === "win32" }, () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
+    const envFile = path.join(root, ".env");
+    fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+    setupTempModule(root, "cognee");
+    fs.chmodSync(envFile, 0o644); // start with loose perms
+    setModuleEnabled({ root, envFile, moduleId: "cognee", enabled: true, builtinFile: path.resolve("cli/modules/builtin.json") });
+    const stats = fs.statSync(envFile);
+    assert.equal(stats.mode & 0o777, 0o600);
     fs.rmSync(root, { recursive: true, force: true });
 });

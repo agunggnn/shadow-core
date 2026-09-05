@@ -7,9 +7,9 @@ import { loadModuleRegistry, publicModuleSummary } from "./registry.mjs";
 const builtinFile = path.resolve("cli", "modules", "builtin.json");
 const root = path.resolve(".");
 
-test("public registry contains only core and optional Cognee", () => {
+test("public registry contains core, 9router, and optional Cognee", () => {
     const registry = loadModuleRegistry({ builtinFile, root });
-    assert.deepEqual(publicModuleSummary(registry).map((module) => module.id), ["core", "cognee"]);
+    assert.deepEqual(publicModuleSummary(registry).map((module) => module.id), ["core", "9router", "cognee"]);
     assert.equal(registry.services.find((service) => service.id === "9router").surface, "iframe");
     assert.equal(registry.services.some((service) => service.id === "cognee"), false);
 });

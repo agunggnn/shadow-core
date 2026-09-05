@@ -11,7 +11,9 @@ export function resolveModuleProfiles({ registry, target }) {
     const byId = new Map(registry.modules.map((module) => [module.id, module]));
     const selected = [];
     const seen = new Set();
+    const visiting = new Set();
     const visit = (id, explicit = false) => {
+        if (visiting.has(id)) throw new Error(`Circular dependency detected involving module '${id}'.`);
         if (seen.has(id)) return;
         const module = byId.get(id);
         if (!module) throw new Error(`Unknown module '${id}'. Add modules/${id}/module.json first.`);
@@ -22,7 +24,9 @@ export function resolveModuleProfiles({ registry, target }) {
             if (explicit) throw new Error(`Module '${id}' is externally managed and has no Shadow runtime to start.`);
             return;
         }
+        visiting.add(id);
         for (const dependency of module.requires) visit(dependency);
+        visiting.delete(id);
         seen.add(id);
         selected.push(module.profile);
     };

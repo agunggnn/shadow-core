@@ -13,3 +13,5 @@ logs/
 *.dump
 .DS_Store
 Thumbs.db
+.hermes/
+.superpowers/

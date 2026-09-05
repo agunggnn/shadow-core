@@ -37,6 +37,7 @@ export function setModuleEnabled({ root, envFile, moduleId, enabled, builtinFile
     text = setEnvValue(text, "SHADOW_ENABLED_MODULES", [...enabledModules].sort().join(","));
     text = setEnvValue(text, "SHADOW_DISABLED_MODULES", [...disabledModules].sort().join(","));
     fs.writeFileSync(envFile, text, "utf8");
+    try { fs.chmodSync(envFile, 0o600); } catch { /* Windows */ }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
