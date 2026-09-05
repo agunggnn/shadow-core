@@ -16,7 +16,7 @@ export const KNOWN_CREDENTIALS = Object.freeze({
         authType: "password",
         label: "9Router Initial Password",
         description: "Password login awal untuk Web UI 9Router (http://127.0.0.1:20140).",
-        usage: "Buka http://127.0.0.1:20140 di browser, login pertama kali menggunakan password ini.",
+        usage: "Buka http://127.0.0.1:20140 di browser, login menggunakan password ini (form 9Router hanya meminta Password, tanpa username). Jika sebelumnya pernah dijalankan, jalankan 'shadow down -v && shadow up' agar volume lama direset ke password baru.",
     }),
     "nine-router-jwt-secret": Object.freeze({
         envVar: "NINE_ROUTER_JWT_SECRET",

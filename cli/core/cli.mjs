@@ -146,8 +146,13 @@ function printInitWizard(result) {
     process.stdout.write("  INFORMASI LOGIN & KREDENSIAL AWAL 9ROUTER:\n");
     process.stdout.write("--------------------------------------------------------------------------------\n");
     process.stdout.write("  URL Web UI       : http://127.0.0.1:20140\n");
-    process.stdout.write("  Username Default : admin (atau saat setup pertama kali di UI)\n");
+    process.stdout.write("  Form Login       : Masukkan password di bawah (9Router hanya meminta Password)\n");
     process.stdout.write(`  Initial Password : ${result.initialPassword || "(tersimpan di vault)"}\n\n`);
+    process.stdout.write("  CATATAN PENTING INISIALISASI:\n");
+    process.stdout.write("  9Router hanya membaca Initial Password saat database pertama kali dibuat.\n");
+    process.stdout.write("  Jika sebelumnya 9Router sudah pernah dijalankan, jalankan:\n");
+    process.stdout.write("    shadow down -v && shadow up\n");
+    process.stdout.write("  untuk menghapus volume lama agar password baru ini aktif.\n\n");
     process.stdout.write("  CATATAN KEAMANAN (ZERO-PLAINTEXT):\n");
     process.stdout.write("  Password ini telah dienkripsi di Grimoire Vault (data/shadow-vault.db).\n");
     process.stdout.write("  File .env hanya menyimpan referensi aman:\n");

@@ -96,8 +96,14 @@ CLI akan membuat struktur proyek, mengamankan file `.env` (izin akses `600`), me
   INFORMASI LOGIN & KREDENSIAL AWAL 9ROUTER:
 --------------------------------------------------------------------------------
   URL Web UI       : http://127.0.0.1:20140
-  Username Default : admin
+  Form Login       : Masukkan password di bawah (9Router hanya meminta Password)
   Initial Password : 9f8a7b6c5d4e3f21
+
+  CATATAN PENTING INISIALISASI:
+  9Router hanya membaca Initial Password saat database pertama kali dibuat.
+  Jika sebelumnya 9Router sudah pernah dijalankan, jalankan:
+    shadow down -v && shadow up
+  untuk menghapus volume lama agar password baru ini aktif.
 
   CATATAN KEAMANAN (ZERO-PLAINTEXT):
   Password ini telah dienkripsi di Grimoire Vault (data/shadow-vault.db).
