@@ -221,7 +221,7 @@ Cognee adalah modul memori graf dan vektor persisten yang terhubung melalui Mode
 | `shadow modules [id]` | Tampilkan daftar modul yang tersedia atau panduan detail modul |
 | `shadow install <module>` | Aktifkan modul via interactive wizard (otomatis terhubung ke 9Router) |
 | `shadow remove <module>` | Nonaktifkan modul tanpa menghapus data |
-| `shadow module create <id>` | Scaffold resep modul baru yang aman & siap jalan |
+| `shadow module create <id> [--source <repo>]` | Buat resep modul baru secara otonom (analisis spesifikasi AI via 9Router) |
 | `shadow validate [module]` | Validasi integritas, kepatuhan keamanan, dan compose modul |
 | `shadow creds [list]` | Tampilkan daftar kredensial dalam Grimoire Vault |
 | `shadow creds reveal <id>` | Tampilkan nilai rahasia terenkripsi dan petunjuk penggunaannya |

@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { listMcpTools, runMcpToolCommand } from "../mcp/call.mjs";
 import { configureMcp } from "../mcp/configure.mjs";
 import { diagnoseMcpService } from "../mcp/ping.mjs";
-import { createModuleRecipe } from "../modules/create.mjs";
+import { createModuleRecipe, createModuleRecipeFromSource } from "../modules/create.mjs";
 import { runInstallWizard } from "../modules/install-wizard.mjs";
 import { loadModuleRegistry } from "../modules/registry.mjs";
 import { resolveModuleProfiles } from "../modules/resolve.mjs";
@@ -296,6 +296,7 @@ export function printModuleHelp(moduleId, root, values) {
     process.stdout.write("================================================================================\n");
     process.stdout.write(`  Status      : ${isEnabled ? "Aktif (Enabled)" : "Nonaktif (Disabled)"}\n`);
     process.stdout.write(`  Lifecycle   : ${module.lifecycle}${isCompose ? " (Docker Compose Container)" : " (Host Process)"}\n`);
+    if (module.sourceUrl) process.stdout.write(`  Source Repo : ${module.sourceUrl}\n`);
     if (service.role) process.stdout.write(`  Peran       : ${service.role}\n`);
     if (service.lore) process.stdout.write(`  Deskripsi   : ${service.lore}\n`);
     if (service.portEnv && values[service.portEnv]) {
@@ -305,6 +306,8 @@ export function printModuleHelp(moduleId, root, values) {
     }
     if (service.mcpServer) {
         process.stdout.write(`  MCP Server  : ${service.mcpServer.name} (${service.mcpServer.transport} at ${service.mcpServer.path})\n`);
+        process.stdout.write(`  Cek Tools   : shadow mcp tools ${service.mcpServer.name}\n`);
+        process.stdout.write(`  Ping Test   : shadow mcp ping ${service.mcpServer.name}\n`);
     }
 
     process.stdout.write("--------------------------------------------------------------------------------\n");
@@ -352,10 +355,11 @@ export function printModuleHelp(moduleId, root, values) {
         process.stdout.write("   - Reset Volume (Password)   : shadow down -v && shadow up 9router\n");
     }
 
-    if (module.id === "cognee") {
-        process.stdout.write("\n4. INTEGRASI MCP CLIENT:\n");
-        process.stdout.write("   - Daftarkan ke editor/client: shadow mcp configure\n");
-        process.stdout.write("   - Tools yang disediakan     : remember, recall, improve, forget_memory\n");
+    if (service.mcpServer) {
+        process.stdout.write(`\n4. INTEGRASI & EKSEKUSI MCP TOOL (${service.mcpServer.name}):\n`);
+        process.stdout.write(`   - Cek daftar & sifat tool   : shadow mcp tools ${service.mcpServer.name}\n`);
+        process.stdout.write(`   - Panggil tool langsung CLI : shadow mcp call ${service.mcpServer.name} <tool> [args]\n`);
+        process.stdout.write(`   - Daftarkan ke AI client    : shadow mcp configure\n`);
     }
 
     process.stdout.write("================================================================================\n");
@@ -381,7 +385,7 @@ Commands:
   install <module>          Aktifkan modul (contoh: 9router, cognee)
   remove <module>           Nonaktifkan modul tanpa menghapus data
   module <id> [action|help] Panduan perintah native atau jalankan action host modul
-  module create <id>        Buat template resep modul baru yang aman & siap jalan
+  module create <id> [--source <repo>] Buat resep modul baru (analisis AI via 9Router)
   validate [module]         Validasi integritas, keamanan, dan resep Docker modul
   creds [list|reveal|set]   Kelola rahasia terenkripsi di Shadow Vault
   mcp configure|serve|ping  Konfigurasi, jalankan bridge, atau diagnostik ping Shadow MCP
@@ -628,24 +632,50 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         if (moduleId === "create") {
             const targetId = action;
             if (!targetId || targetId.startsWith("-")) {
-                throw new Error("Penggunaan: shadow module create <id> [--label <label>] [--port <port>] [--mcp] [--web-ui]");
+                throw new Error("Penggunaan: shadow module create <id> [--source <repo/url>] [--label <label>] [--port <port>] [--mcp] [--web-ui]");
             }
             let label = "";
-            let port = 8080;
+            let port = 0;
             let mcp = false;
             let webUi = false;
+            let source = "";
             for (let i = 2; i < args.length; i++) {
                 if (args[i] === "--label" && args[i + 1]) {
                     label = args[++i];
                 } else if (args[i] === "--port" && args[i + 1]) {
-                    port = parseInt(args[++i], 10) || 8080;
+                    port = parseInt(args[++i], 10) || 0;
                 } else if (args[i] === "--mcp") {
                     mcp = true;
                 } else if (args[i] === "--web-ui") {
                     webUi = true;
+                } else if (args[i] === "--source" && args[i + 1]) {
+                    source = args[++i];
                 }
             }
-            const created = createModuleRecipe({ root, moduleId: targetId, label, port, mcp, webUi });
+
+            let created;
+            if (source) {
+                process.stdout.write(`[i] Menganalisis source modul via 9Router AI Engine: ${source}...\n`);
+                created = await createModuleRecipeFromSource({
+                    root,
+                    moduleId: targetId,
+                    source,
+                    label,
+                    port: port || undefined,
+                    mcp: mcp || undefined,
+                    webUi: webUi || undefined,
+                });
+            } else {
+                created = createModuleRecipe({
+                    root,
+                    moduleId: targetId,
+                    label,
+                    port: port || 8080,
+                    mcp,
+                    webUi,
+                });
+            }
+
             process.stdout.write("================================================================================\n");
             process.stdout.write(`  SHADOW CORE - MODULE GENERATOR: ${created.moduleId}\n`);
             process.stdout.write("================================================================================\n");
@@ -653,6 +683,9 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             process.stdout.write(`  [v] Manifest dibuat     : modules/${created.moduleId}/module.json\n`);
             process.stdout.write(`  [v] Compose dibuat      : modules/${created.moduleId}/docker-compose.${created.moduleId}.yml\n`);
             process.stdout.write(`  [v] Dokumentasi dibuat  : modules/${created.moduleId}/README.md\n`);
+            if (created.sourceUrl) {
+                process.stdout.write(`  [v] Upstream Source     : ${created.sourceUrl}\n`);
+            }
             process.stdout.write("--------------------------------------------------------------------------------\n");
             process.stdout.write("  Langkah selanjutnya:\n");
             process.stdout.write(`    1. Validasi resep     : shadow validate ${created.moduleId}\n`);

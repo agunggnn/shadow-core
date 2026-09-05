@@ -205,3 +205,112 @@ Berikan analisis dalam format JSON persis seperti ini:
         error: aiRes.error || "Gagal mendapatkan analisis dari AI.",
     };
 }
+
+export async function analyzeModuleSource({
+    sourceContent = "",
+    sourceUrl = "",
+    root = process.cwd(),
+    fetchFn = globalThis.fetch,
+}) {
+    // 1. Static pattern extraction fallback
+    let detectedPort = 8080;
+    const portMatch = sourceContent.match(/(?:EXPOSE|port|listening on|bind|localhost:)\s*[:=]?\s*(\d{4,5})/i);
+    if (portMatch) {
+        const p = parseInt(portMatch[1], 10);
+        if (p > 1024 && p < 65535) detectedPort = p;
+    }
+
+    const hasMcp = /mcp|model context protocol|model-context-protocol|tools\/list|json-rpc/i.test(sourceContent);
+    const hasWebUi = /dashboard|web\s*ui|interface|browser|frontend|gui/i.test(sourceContent);
+    const nonRoot = /1000:1000|uid 1000|non-root|appuser/i.test(sourceContent) ? 1000 : null;
+
+    const envVarMatches = sourceContent.match(/\b[A-Z0-9_]{3,}_(?:API_KEY|KEY|SECRET|TOKEN|ENDPOINT|URL|PORT|HOST)\b/g) || [];
+    const uniqueEnvs = [...new Set(envVarMatches)].map((name) => ({
+        name,
+        isSecret: /KEY|SECRET|TOKEN|PASS/i.test(name),
+        defaultVal: /PORT/i.test(name) ? String(detectedPort) : "",
+    }));
+
+    const staticResult = {
+        ok: true,
+        source: "static-heuristics",
+        label: "",
+        port: detectedPort,
+        webUi: hasWebUi,
+        mcp: hasMcp,
+        mcpPath: "/mcp",
+        envVars: uniqueEnvs,
+        volumes: [{ containerPath: "/data", hostVolume: "data" }],
+        healthPath: "/health",
+        nonRootUid: nonRoot,
+        sourceUrl: sourceUrl || "",
+        description: "Modul pihak ketiga diintegrasikan ke Shadow Core.",
+    };
+
+    // 2. Check 9Router availability
+    const reasonerStatus = await checkReasonerStatus({ root, timeoutMs: 2000, fetchFn });
+    if (!reasonerStatus.available) {
+        return staticResult;
+    }
+
+    // 3. Ask 9Router AI
+    const prompt = `Analisis dokumentasi / source modul baru berikut untuk membuat resep integrasi Shadow Core:
+SOURCE URL: ${sourceUrl || "N/A"}
+KONTEN REPO / DOKUMENTASI:
+"""
+${sourceContent.slice(0, 4000)}
+"""
+
+Tugas: Ekstrak spesifikasi teknis modul dalam format JSON tunggal persis seperti berikut:
+{
+  "label": "Nama representatif modul (contoh: Mem0, SearXNG, Neo4j)",
+  "port": 8080,
+  "webUi": true,
+  "mcp": false,
+  "mcpPath": "/mcp",
+  "description": "Deskripsi singkat 1 kalimat apa fungsi modul ini",
+  "envVars": [
+    { "name": "SERVICE_API_KEY", "defaultVal": "", "isSecret": true, "description": "API key upstream" }
+  ],
+  "volumes": [
+    { "containerPath": "/data", "hostVolume": "data" }
+  ],
+  "healthPath": "/health",
+  "nonRootUid": null
+}`;
+
+    const aiRes = await askReasoner({
+        prompt,
+        systemPrompt: "You are Shadow Core's AI Software Architect. Extract precise technical specs for Docker and MCP integration. Return ONLY a valid JSON object.",
+        root,
+        fetchFn,
+    });
+
+    if (aiRes.ok && aiRes.content) {
+        try {
+            const jsonMatch = aiRes.content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                return {
+                    ok: true,
+                    source: "9router-ai",
+                    label: parsed.label || staticResult.label,
+                    port: parseInt(parsed.port, 10) || staticResult.port,
+                    webUi: typeof parsed.webUi === "boolean" ? parsed.webUi : staticResult.webUi,
+                    mcp: typeof parsed.mcp === "boolean" ? parsed.mcp : staticResult.mcp,
+                    mcpPath: parsed.mcpPath || "/mcp",
+                    description: parsed.description || staticResult.description,
+                    envVars: Array.isArray(parsed.envVars) && parsed.envVars.length > 0 ? parsed.envVars : staticResult.envVars,
+                    volumes: Array.isArray(parsed.volumes) && parsed.volumes.length > 0 ? parsed.volumes : staticResult.volumes,
+                    healthPath: parsed.healthPath || staticResult.healthPath,
+                    nonRootUid: parsed.nonRootUid || staticResult.nonRootUid,
+                    sourceUrl: sourceUrl || "",
+                };
+            }
+        } catch {
+            // Fallback to static
+        }
+    }
+
+    return staticResult;
+}

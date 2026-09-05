@@ -192,6 +192,7 @@ function validateModule(module, source, root) {
         services,
         runtime,
         source,
+        sourceUrl: module.sourceUrl ? String(module.sourceUrl).slice(0, 255) : undefined,
     };
 }
 
