@@ -15,7 +15,8 @@ import { resolveModuleProfiles } from "../modules/resolve.mjs";
 import { setModuleEnabled } from "../modules/toggle.mjs";
 import { formatValidationReport, validateAllModules, validateModuleRecipe } from "../modules/validate.mjs";
 import { KNOWN_CREDENTIALS, listCredentials, promptSecret, revealCredential, setCredential } from "../vault/creds.mjs";
-import { migrateEnvCredentials } from "../vault/migrate-env.mjs";
+import { autoIngestPlaintextEnv, migrateEnvCredentials } from "../vault/migrate-env.mjs";
+import { redactAndVault, scanText, restoreSecrets } from "../vault/sniffer.mjs";
 import { runDoctor } from "./doctor.mjs";
 import { parseEnv } from "./env.mjs";
 import {
@@ -107,6 +108,11 @@ function projectEnvironment(root) {
         const isHome = root === defaultShadowHome();
         const locationMsg = isHome ? "Global user home (~/.shadow)" : `Direktori '${root}'`;
         throw new Error(`${locationMsg} belum diinisialisasi (file .env tidak ditemukan).\nJalankan 'shadow init' terlebih dahulu untuk membuat konfigurasi awal.`);
+    }
+    try {
+        autoIngestPlaintextEnv({ root, envFile });
+    } catch {
+        // Continue if auto-ingest encounters non-fatal issue
     }
     const values = parseEnv(fs.readFileSync(envFile, "utf8"));
     return { envFile, values };
@@ -388,6 +394,7 @@ Commands:
   module create <id> [--source <repo>] Buat resep modul baru (analisis AI via 9Router)
   validate [module]         Validasi integritas, keamanan, dan resep Docker modul
   creds [list|reveal|set]   Kelola rahasia terenkripsi di Shadow Vault
+  sniffer [scan|redact] <t> Pindai dan amankan kredensial dari teks secara instan (<2ms)
   mcp configure|serve|ping  Konfigurasi, jalankan bridge, atau diagnostik ping Shadow MCP
   mcp tools <service>       Daftar tools MCP service beserta klasifikasi Offline/LLM
   mcp call <srv> <tool> [a] Panggil tool MCP service secara langsung tanpa AI client eksternal
@@ -520,6 +527,42 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             return;
         }
         throw new Error(`Subcommand creds tidak dikenal: '${subCommand}'. Gunakan 'list', 'reveal', atau 'set'.`);
+    }
+    if (["sniffer", "sniff"].includes(command)) {
+        const sub = args[0] || "scan";
+        const input = args.slice(1).join(" ");
+        if (!input) {
+            throw new Error("Usage: shadow sniffer <scan|redact> <text>");
+        }
+        if (sub === "scan") {
+            const res = scanText(input);
+            process.stdout.write("================================================================================\n");
+            process.stdout.write("  SHADOW CORE - SECRET SNIFFER (SUB-2MS DETECTOR)\n");
+            process.stdout.write("================================================================================\n");
+            process.stdout.write(`  Status Deteksi : ${res.hasSecrets ? "[!] KREDENSIAL DITEMUKAN" : "[v] AMAN (Tidak ada kredensial terdeteksi)"}\n`);
+            process.stdout.write(`  Waktu Eksekusi : ${res.latencyMs} ms\n`);
+            if (res.hasSecrets) {
+                process.stdout.write("--------------------------------------------------------------------------------\n");
+                for (const m of res.matches) {
+                    process.stdout.write(`  * ${m.label} (${m.type}) di indeks ${m.index}\n`);
+                }
+            }
+            process.stdout.write("================================================================================\n");
+            return;
+        }
+        if (sub === "redact") {
+            const res = redactAndVault(input, { root, envFile });
+            process.stdout.write("================================================================================\n");
+            process.stdout.write("  SHADOW CORE - SECRET SNIFFER (REDACT & AUTO-VAULT)\n");
+            process.stdout.write("================================================================================\n");
+            process.stdout.write(`  Waktu Eksekusi : ${res.latencyMs} ms\n`);
+            process.stdout.write(`  Jumlah Diamankan: ${res.redactedCount}\n`);
+            process.stdout.write("--------------------------------------------------------------------------------\n");
+            process.stdout.write(`  Teks Aman Dikirim ke AI:\n  ${res.text}\n`);
+            process.stdout.write("================================================================================\n");
+            return;
+        }
+        throw new Error(`Subcommand sniffer tidak dikenal: '${sub}'. Gunakan 'scan' atau 'redact'.`);
     }
     if (command === "modules") {
         if (args[0] && !args[0].startsWith("-")) {

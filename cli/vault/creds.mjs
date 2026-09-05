@@ -227,6 +227,26 @@ export function revealCredential({ root, envFile, id }) {
     }
 }
 
+export async function ensureCredential({ root, envFile, id, promptMessage }) {
+    if (!id) throw new Error("ID kredensial wajib diisi.");
+    try {
+        const revealed = revealCredential({ root, envFile, id });
+        if (revealed && revealed.secret) {
+            return revealed.secret;
+        }
+    } catch {
+        // Not found in vault, prompt JIT
+    }
+
+    const promptText = promptMessage || `[!] Kredensial '${id}' belum ada di Grimoire Vault.\nMasukkan nilai rahasia (input masked): `;
+    const secret = await promptSecret(promptText);
+    if (!secret) {
+        throw new Error(`Kredensial '${id}' tidak boleh kosong.`);
+    }
+    setCredential({ root, envFile, id, secret });
+    return secret;
+}
+
 export function setCredential({ root, envFile, id, secret }) {
     if (!id || typeof id !== "string") throw new Error("ID kredensial wajib diisi.");
     if (typeof secret !== "string" || !secret) throw new Error("Nilai rahasia (secret) wajib diisi.");
