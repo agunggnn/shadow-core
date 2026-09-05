@@ -105,3 +105,20 @@ test("install auto-scaffolds module directory from templates if missing in works
     }
 });
 
+test("validate CLI command validates modules successfully", async () => {
+    let output = "";
+    const originalStdout = process.stdout.write;
+    process.stdout.write = (chunk) => {
+        output += chunk;
+        return true;
+    };
+    try {
+        await main(["validate", "cognee"], { root: "." });
+        assert.match(output, /VALIDASI MODUL: cognee/);
+        assert.match(output, /Status: Modul 'cognee' VALID/);
+    } finally {
+        process.stdout.write = originalStdout;
+    }
+});
+
+

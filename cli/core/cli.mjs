@@ -9,7 +9,8 @@ import { configureMcp } from "../mcp/configure.mjs";
 import { loadModuleRegistry } from "../modules/registry.mjs";
 import { resolveModuleProfiles } from "../modules/resolve.mjs";
 import { setModuleEnabled } from "../modules/toggle.mjs";
-import { KNOWN_CREDENTIALS, listCredentials, revealCredential, setCredential } from "../vault/creds.mjs";
+import { formatValidationReport, validateAllModules, validateModuleRecipe } from "../modules/validate.mjs";
+import { KNOWN_CREDENTIALS, listCredentials, promptSecret, revealCredential, setCredential } from "../vault/creds.mjs";
 import { migrateEnvCredentials } from "../vault/migrate-env.mjs";
 import { runDoctor } from "./doctor.mjs";
 import { parseEnv } from "./env.mjs";
@@ -375,6 +376,7 @@ Commands:
   install <module>          Aktifkan modul (contoh: 9router, cognee)
   remove <module>           Nonaktifkan modul tanpa menghapus data
   module <id> [action|help] Panduan perintah native atau jalankan action host modul
+  validate [module]         Validasi integritas, keamanan, dan resep Docker modul
   creds [list|reveal|set]   Kelola rahasia terenkripsi di Shadow Vault
   mcp configure|serve       Konfigurasi atau jalankan bridge Shadow MCP
   tui                       Buka tampilan operasional terminal interaktif
@@ -476,8 +478,12 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         }
         if (subCommand === "set") {
             const id = args[1];
-            const secret = args[2];
-            if (!id || !secret) throw new Error("Usage: shadow creds set <id> <value>");
+            let secret = args[2];
+            if (!id) throw new Error("Usage: shadow creds set <id> [value]");
+            if (!secret) {
+                secret = await promptSecret(`Masukkan nilai rahasia untuk '${id}': `);
+            }
+            if (!secret) throw new Error("Nilai rahasia (secret) wajib diisi.");
             const result = setCredential({ root, envFile, id, secret });
             process.stdout.write("================================================================================\n");
             process.stdout.write(`[v] Kredensial '${result.id}' berhasil disimpan ke Vault (AES-256-GCM)!\n`);
@@ -577,14 +583,63 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         compose(root, envFile, [...profileArguments(root, values, "*").arguments, "logs", "-f", ...mappedArgs]);
         return;
     }
+    if (command === "validate") {
+        const targetModule = args[0];
+        if (targetModule) {
+            const result = validateModuleRecipe({ root, moduleId: targetModule });
+            process.stdout.write(formatValidationReport(result));
+            if (!result.valid) process.exitCode = 1;
+        } else {
+            const results = validateAllModules({ root });
+            if (!results.length) {
+                process.stdout.write("Tidak ada recipe modul ditemukan di folder 'modules/'.\n");
+                return;
+            }
+            let hasError = false;
+            for (const r of results) {
+                process.stdout.write(formatValidationReport(r));
+                if (!r.valid) hasError = true;
+            }
+            if (hasError) process.exitCode = 1;
+        }
+        return;
+    }
     if (command === "module") {
         const moduleId = args[0];
         const action = args[1];
+        if (moduleId === "validate") {
+            const targetModule = action;
+            if (targetModule) {
+                const result = validateModuleRecipe({ root, moduleId: targetModule });
+                process.stdout.write(formatValidationReport(result));
+                if (!result.valid) process.exitCode = 1;
+            } else {
+                const results = validateAllModules({ root });
+                if (!results.length) {
+                    process.stdout.write("Tidak ada recipe modul ditemukan di folder 'modules/'.\n");
+                    return;
+                }
+                let hasError = false;
+                for (const r of results) {
+                    process.stdout.write(formatValidationReport(r));
+                    if (!r.valid) hasError = true;
+                }
+                if (hasError) process.exitCode = 1;
+            }
+            return;
+        }
+        if (action === "validate") {
+            const result = validateModuleRecipe({ root, moduleId });
+            process.stdout.write(formatValidationReport(result));
+            if (!result.valid) process.exitCode = 1;
+            return;
+        }
         if (!moduleId || ["help", "--help", "-h"].includes(moduleId)) {
-            process.stdout.write("Penggunaan: shadow module <id> [action|help]\n\n");
+            process.stdout.write("Penggunaan: shadow module <id> [action|help|validate]\n\n");
             process.stdout.write("Panduan perintah native modul bawaan:\n");
             process.stdout.write("  shadow module 9router help\n");
-            process.stdout.write("  shadow module cognee help\n\n");
+            process.stdout.write("  shadow module cognee help\n");
+            process.stdout.write("  shadow module validate [id]     (Validasi standar keamanan & resep modul)\n\n");
             process.stdout.write("Jalankan 'shadow modules' untuk melihat daftar seluruh modul.\n");
             return;
         }

@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { Readable } from "node:stream";
 import test from "node:test";
 
-import { listCredentials, revealCredential, setCredential } from "./creds.mjs";
+import { listCredentials, promptSecret, revealCredential, setCredential } from "./creds.mjs";
 import { Grimoire } from "./shadow-vault.mjs";
 
 test("creds module can list, set, and reveal credentials in Grimoire Vault", () => {
@@ -61,3 +62,10 @@ test("creds module can list, set, and reveal credentials in Grimoire Vault", () 
 
     fs.rmSync(root, { recursive: true, force: true });
 });
+
+test("promptSecret reads from non-TTY input stream cleanly", async () => {
+    const input = Readable.from(["my-streamed-secret\n"]);
+    const secret = await promptSecret("Prompt: ", { input, output: { write: () => {} } });
+    assert.equal(secret, "my-streamed-secret");
+});
+

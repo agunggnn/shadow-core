@@ -76,6 +76,56 @@ function replaceEnvValue(text, name, value) {
     return pattern.test(text) ? text.replace(pattern, line) : `${text.trimEnd()}\n${line}\n`;
 }
 
+export async function promptSecret(promptText = "Masukkan rahasia (secret): ", { input = process.stdin, output = process.stderr } = {}) {
+    if (!input.isTTY || typeof input.setRawMode !== "function") {
+        const chunks = [];
+        for await (const chunk of input) {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+        return Buffer.concat(chunks).toString("utf8").trim();
+    }
+    return new Promise((resolve) => {
+        output.write(promptText);
+        const wasRaw = input.isRaw;
+        input.setRawMode(true);
+        input.resume();
+
+        let secret = "";
+        const onData = (chunk) => {
+            const str = chunk.toString();
+            for (let i = 0; i < str.length; i++) {
+                const char = str[i];
+                if (char === "\r" || char === "\n" || char === "\u0004") {
+                    cleanup();
+                    output.write("\n");
+                    resolve(secret);
+                    return;
+                } else if (char === "\u0003") { // Ctrl+C
+                    cleanup();
+                    output.write("\n");
+                    process.exit(130);
+                } else if (char === "\b" || char === "\x7f") { // Backspace
+                    if (secret.length > 0) {
+                        secret = secret.slice(0, -1);
+                        output.write("\b \b");
+                    }
+                } else {
+                    secret += char;
+                    output.write("*");
+                }
+            }
+        };
+
+        function cleanup() {
+            input.removeListener("data", onData);
+            if (input.setRawMode) input.setRawMode(wasRaw || false);
+        }
+
+        input.on("data", onData);
+    });
+}
+
+
 function openVault(root, envFile) {
     const values = fs.existsSync(envFile) ? parseEnv(fs.readFileSync(envFile, "utf8")) : {};
     const masterKey = process.env.SHADOW_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "";
@@ -240,7 +290,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             process.stdout.write("--------------------------------------------------------------------------------\n");
             process.stdout.write("Perintah:\n");
             process.stdout.write("  - Lihat nilai rahasia : shadow creds reveal <id>\n");
-            process.stdout.write("  - Simpan/ubah nilai   : shadow creds set <id> <nilai>\n");
+            process.stdout.write("  - Simpan/ubah nilai   : shadow creds set <id> [nilai] (prompt jika nilai tidak disertakan)\n");
             process.stdout.write("================================================================================\n");
         } else if (action === "reveal" || action === "get") {
             const id = args[1];
@@ -259,8 +309,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             process.stdout.write("================================================================================\n");
         } else if (action === "set") {
             const id = args[1];
-            const secret = args[2];
-            if (!id || !secret) throw new Error("Usage: shadow creds set <id> <value>");
+            let secret = args[2];
+            if (!id) throw new Error("Usage: shadow creds set <id> [value]");
+            if (!secret) {
+                secret = await promptSecret(`Masukkan nilai rahasia untuk '${id}': `);
+            }
+            if (!secret) throw new Error("Nilai rahasia (secret) wajib diisi.");
             const result = setCredential({ root, envFile, id, secret });
             process.stdout.write("================================================================================\n");
             process.stdout.write(`[v] Kredensial '${result.id}' berhasil disimpan ke Vault (AES-256-GCM)!\n`);
