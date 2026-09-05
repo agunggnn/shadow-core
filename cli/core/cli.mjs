@@ -529,7 +529,39 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         return;
     }
     if (command === "logs") {
-        compose(root, envFile, [...profileArguments(root, values, "*").arguments, "logs", "-f", ...args]);
+        const registry = registryFor(root, values);
+        const mappedArgs = [];
+        for (const arg of args) {
+            if (arg.startsWith("-")) {
+                mappedArgs.push(arg);
+                continue;
+            }
+            let foundModule = null;
+            let foundService = null;
+            for (const mod of registry.modules) {
+                if (mod.id === arg) {
+                    foundModule = mod;
+                    foundService = mod.services[0];
+                    break;
+                }
+                const s = mod.services.find((cand) => cand.id === arg || cand.composeService === arg);
+                if (s) {
+                    foundModule = mod;
+                    foundService = s;
+                    break;
+                }
+            }
+            if (foundModule) {
+                if (!foundModule.enabled) {
+                    process.stderr.write(`[!] Modul '${foundModule.id}' belum diaktifkan.\n    Jalankan 'shadow install ${foundModule.id} && shadow up ${foundModule.id}' terlebih dahulu.\n`);
+                    return;
+                }
+                mappedArgs.push(foundService?.composeService || arg);
+            } else {
+                mappedArgs.push(arg);
+            }
+        }
+        compose(root, envFile, [...profileArguments(root, values, "*").arguments, "logs", "-f", ...mappedArgs]);
         return;
     }
     if (command === "module") {
