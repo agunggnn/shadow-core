@@ -271,7 +271,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             if (result.usage) {
                 process.stdout.write(`  Cara Pakai: ${result.usage}\n`);
             }
-            process.stdout.write("  Terapkan  : Jalankan 'shadow up' untuk memuat ulang ke container.\n");
+            const upTarget = result.module && result.module !== "core" ? `shadow up ${result.module}` : "shadow up";
+            process.stdout.write(`  Terapkan  : Jalankan '${upTarget}' (atau 'shadow up') untuk memuat ulang ke container.\n`);
             process.stdout.write("================================================================================\n");
         } else {
             throw new Error(`Perintah creds tidak dikenal: '${action}'. Gunakan 'list', 'reveal', atau 'set'.`);
