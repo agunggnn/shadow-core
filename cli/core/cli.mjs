@@ -6,6 +6,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { configureMcp } from "../mcp/configure.mjs";
+import { diagnoseMcpService } from "../mcp/ping.mjs";
+import { createModuleRecipe } from "../modules/create.mjs";
 import { loadModuleRegistry } from "../modules/registry.mjs";
 import { resolveModuleProfiles } from "../modules/resolve.mjs";
 import { setModuleEnabled } from "../modules/toggle.mjs";
@@ -366,7 +368,7 @@ Options:
 
 Commands:
   init [directory]          Inisialisasi Shadow Core (default: ~/.shadow)
-  doctor                    Cek kompatibilitas sistem, Docker engine, dan permissions
+  doctor [--fix]            Cek kompatibilitas sistem & Docker (--fix untuk auto-repair izin/direktori)
   up [module|all]           Jalankan container core, 9router, atau modul aktif
   update [target|all]       Tarik dan perbarui digest image modul/service
   down [-v]                 Hentikan service (gunakan -v untuk menghapus volume data)
@@ -376,9 +378,10 @@ Commands:
   install <module>          Aktifkan modul (contoh: 9router, cognee)
   remove <module>           Nonaktifkan modul tanpa menghapus data
   module <id> [action|help] Panduan perintah native atau jalankan action host modul
+  module create <id>        Buat template resep modul baru yang aman & siap jalan
   validate [module]         Validasi integritas, keamanan, dan resep Docker modul
   creds [list|reveal|set]   Kelola rahasia terenkripsi di Shadow Vault
-  mcp configure|serve       Konfigurasi atau jalankan bridge Shadow MCP
+  mcp configure|serve|ping  Konfigurasi, jalankan bridge, atau diagnostik ping Shadow MCP
   tui                       Buka tampilan operasional terminal interaktif
 `;
 }
@@ -400,7 +403,8 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         return;
     }
     if (command === "doctor") {
-        const result = runDoctor({ root, defaultHome: defaultShadowHome() });
+        const fix = args.includes("--fix");
+        const result = runDoctor({ root, defaultHome: defaultShadowHome(), fix });
         if (!result.ok) process.exitCode = 1;
         return;
     }
@@ -607,6 +611,42 @@ export async function main(argv = process.argv.slice(2), options = {}) {
     if (command === "module") {
         const moduleId = args[0];
         const action = args[1];
+        if (moduleId === "create") {
+            const targetId = action;
+            if (!targetId || targetId.startsWith("-")) {
+                throw new Error("Penggunaan: shadow module create <id> [--label <label>] [--port <port>] [--mcp] [--web-ui]");
+            }
+            let label = "";
+            let port = 8080;
+            let mcp = false;
+            let webUi = false;
+            for (let i = 2; i < args.length; i++) {
+                if (args[i] === "--label" && args[i + 1]) {
+                    label = args[++i];
+                } else if (args[i] === "--port" && args[i + 1]) {
+                    port = parseInt(args[++i], 10) || 8080;
+                } else if (args[i] === "--mcp") {
+                    mcp = true;
+                } else if (args[i] === "--web-ui") {
+                    webUi = true;
+                }
+            }
+            const created = createModuleRecipe({ root, moduleId: targetId, label, port, mcp, webUi });
+            process.stdout.write("================================================================================\n");
+            process.stdout.write(`  SHADOW CORE - MODULE GENERATOR: ${created.moduleId}\n`);
+            process.stdout.write("================================================================================\n");
+            process.stdout.write(`  [v] Direktori dibuat    : modules/${created.moduleId}/\n`);
+            process.stdout.write(`  [v] Manifest dibuat     : modules/${created.moduleId}/module.json\n`);
+            process.stdout.write(`  [v] Compose dibuat      : modules/${created.moduleId}/docker-compose.${created.moduleId}.yml\n`);
+            process.stdout.write(`  [v] Dokumentasi dibuat  : modules/${created.moduleId}/README.md\n`);
+            process.stdout.write("--------------------------------------------------------------------------------\n");
+            process.stdout.write("  Langkah selanjutnya:\n");
+            process.stdout.write(`    1. Validasi resep     : shadow validate ${created.moduleId}\n`);
+            process.stdout.write(`    2. Aktifkan modul     : shadow install ${created.moduleId}\n`);
+            process.stdout.write(`    3. Mulai container    : shadow up ${created.moduleId}\n`);
+            process.stdout.write("================================================================================\n");
+            return;
+        }
         if (moduleId === "validate") {
             const targetModule = action;
             if (targetModule) {
@@ -635,11 +675,13 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             return;
         }
         if (!moduleId || ["help", "--help", "-h"].includes(moduleId)) {
-            process.stdout.write("Penggunaan: shadow module <id> [action|help|validate]\n\n");
+            process.stdout.write("Penggunaan: shadow module <id> [action|help|validate]\n");
+            process.stdout.write("            shadow module create <id> [options]\n\n");
             process.stdout.write("Panduan perintah native modul bawaan:\n");
             process.stdout.write("  shadow module 9router help\n");
             process.stdout.write("  shadow module cognee help\n");
-            process.stdout.write("  shadow module validate [id]     (Validasi standar keamanan & resep modul)\n\n");
+            process.stdout.write("  shadow module validate [id]     (Validasi standar keamanan & resep modul)\n");
+            process.stdout.write("  shadow module create <id>       (Generate resep boilerplate modul baru)\n\n");
             process.stdout.write("Jalankan 'shadow modules' untuk melihat daftar seluruh modul.\n");
             return;
         }
@@ -659,7 +701,13 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             process.stdout.write(`Registered MCP servers in ${configureMcp(root)}\n`);
             return;
         }
-        if (action !== "serve") throw new Error("Usage: shadow mcp <configure|serve>");
+        if (action === "ping") {
+            const targetService = args[1];
+            const pingResult = await diagnoseMcpService({ root, targetService });
+            if (!pingResult.ok) process.exitCode = 1;
+            return;
+        }
+        if (action !== "serve") throw new Error("Usage: shadow mcp <configure|serve|ping [service]>");
         run(process.execPath, [
             path.join(cliRoot, "vault", "exec.mjs"),
             "--root", root,

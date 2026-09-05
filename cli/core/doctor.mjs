@@ -160,7 +160,75 @@ export function checkFilePermissions(targetPath) {
     }
 }
 
-export function runDoctor({ root, defaultHome, exec = spawnSync, out = process.stdout }) {
+export function applyDoctorFixes({ root, out = process.stdout }) {
+    const fixes = [];
+    const envFile = path.join(root, ".env");
+    const dataDir = path.join(root, "data");
+
+    // 1. Ensure data directory exists with 0700
+    if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+        try { fs.chmodSync(dataDir, 0o700); } catch { /* Windows */ }
+        fixes.push("Membuat direktori data/ dengan izin aman (0700)");
+    } else if (process.platform !== "win32") {
+        try {
+            const stat = fs.statSync(dataDir);
+            const mode = (stat.mode & 0o777).toString(8);
+            if (mode !== "700") {
+                fs.chmodSync(dataDir, 0o700);
+                fixes.push(`Memperbaiki izin direktori data/ dari ${mode} ke 0700`);
+            }
+        } catch { /* ignore */ }
+    }
+
+    // 2. Ensure .env permissions are 0600 on Unix
+    if (fs.existsSync(envFile) && process.platform !== "win32") {
+        try {
+            const stat = fs.statSync(envFile);
+            const mode = (stat.mode & 0o777).toString(8);
+            if (mode !== "600") {
+                fs.chmodSync(envFile, 0o600);
+                fixes.push(`Memperbaiki izin file .env dari ${mode} ke 0600`);
+            }
+        } catch { /* ignore */ }
+    }
+
+    // 3. Ensure root directory permissions on Unix
+    if (fs.existsSync(root) && process.platform !== "win32") {
+        try {
+            const stat = fs.statSync(root);
+            const mode = (stat.mode & 0o777).toString(8);
+            if (!["700", "750"].includes(mode)) {
+                fs.chmodSync(root, 0o700);
+                fixes.push(`Memperbaiki izin workspace root dari ${mode} ke 0700`);
+            }
+        } catch { /* ignore */ }
+    }
+
+    // 4. Missing .env from .env.example
+    const envExample = path.join(root, ".env.example");
+    if (!fs.existsSync(envFile) && fs.existsSync(envExample)) {
+        fs.copyFileSync(envExample, envFile);
+        try { fs.chmodSync(envFile, 0o600); } catch { /* Windows */ }
+        fixes.push("Menyalin .env dari .env.example (silakan jalankan 'shadow init' untuk mengisi kredensial)");
+    }
+
+    if (fixes.length > 0) {
+        out.write("--------------------------------------------------------------------------------\n");
+        out.write("  PERBAIKAN OTOMATIS (--fix):\n");
+        for (const f of fixes) {
+            out.write(`  [v] ${f}\n`);
+        }
+        out.write("--------------------------------------------------------------------------------\n\n");
+    }
+
+    return fixes;
+}
+
+export function runDoctor({ root, defaultHome, exec = spawnSync, out = process.stdout, fix = false }) {
+    if (fix) {
+        applyDoctorFixes({ root, out });
+    }
     const osInfo = getOperatingSystemInfo();
     const nodeCheck = checkNodeRuntime();
     const cliCheck = checkDockerCli(exec);

@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+    applyDoctorFixes,
     checkDockerCli,
     checkDockerCompose,
     checkDockerDaemon,
@@ -111,3 +112,16 @@ test("runDoctor formats report and returns health status", () => {
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
 });
+
+test("applyDoctorFixes automatically creates missing data directory", () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-doctor-fix-"));
+    try {
+        assert.equal(fs.existsSync(path.join(tempRoot, "data")), false);
+        const fixes = applyDoctorFixes({ root: tempRoot, out: { write: () => {} } });
+        assert.ok(fixes.some((f) => f.includes("data/")));
+        assert.equal(fs.existsSync(path.join(tempRoot, "data")), true);
+    } finally {
+        fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+});
+
