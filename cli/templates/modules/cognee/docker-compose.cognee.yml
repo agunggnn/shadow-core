@@ -3,6 +3,7 @@ services:
     image: ${COGNEE_MCP_IMAGE:-cognee/cognee-mcp@sha256:43030dd7aef73ef83f8b7a64c280b8ee15a4f6a37a057dc06b150a46ec27ae33}
     profiles: [cognee]
     restart: unless-stopped
+    user: "0:0"
     environment:
       TRANSPORT_MODE: http
       LLM_PROVIDER: ${COGNEE_LLM_PROVIDER:-openai}
