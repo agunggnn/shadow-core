@@ -142,9 +142,14 @@ export function initializeProject(root) {
     try { fs.chmodSync(resolvedRoot, 0o700); } catch { /* Windows */ }
     copyIfMissing(path.join(templatesDir, "docker-compose.yml"), path.join(resolvedRoot, "docker-compose.yml"));
     copyIfMissing(path.join(templatesDir, ".env.example"), path.join(resolvedRoot, ".env.example"));
-    const cogneeTemplate = path.join(templatesDir, "modules", "cognee");
-    if (fs.existsSync(cogneeTemplate)) {
-        copyIfMissing(cogneeTemplate, path.join(resolvedRoot, "modules", "cognee"));
+    const modulesTemplateDir = path.join(templatesDir, "modules");
+    if (fs.existsSync(modulesTemplateDir)) {
+        const entries = fs.readdirSync(modulesTemplateDir, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.isDirectory()) {
+                copyIfMissing(path.join(modulesTemplateDir, entry.name), path.join(resolvedRoot, "modules", entry.name));
+            }
+        }
     }
 
     const dataDir = path.join(resolvedRoot, "data");
@@ -411,15 +416,23 @@ export async function main(argv = process.argv.slice(2), options = {}) {
     const { envFile, values } = projectEnvironment(root);
     if (["install", "remove"].includes(command)) {
         if (!args[0]) throw new Error(`Usage: shadow ${command} <module>`);
+        const moduleId = args[0];
+        if (command === "install") {
+            const templateModuleDir = path.join(templatesDir, "modules", moduleId);
+            const targetModuleDir = path.join(root, "modules", moduleId);
+            if (!fs.existsSync(targetModuleDir) && fs.existsSync(templateModuleDir)) {
+                copyIfMissing(templateModuleDir, targetModuleDir);
+            }
+        }
         setModuleEnabled({
             root,
             envFile,
-            moduleId: args[0],
+            moduleId,
             enabled: command === "install",
             builtinFile,
         });
         configureMcp(root);
-        printModuleGuide(args[0], command);
+        printModuleGuide(moduleId, command);
         return;
     }
     if (["creds", "credentials"].includes(command)) {

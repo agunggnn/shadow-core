@@ -8,6 +8,7 @@ import {
     defaultShadowHome,
     initializeProject,
     isShadowWorkspace,
+    main,
     printModuleHelp,
     resolveProjectRoot,
 } from "./cli.mjs";
@@ -81,6 +82,26 @@ test("printModuleHelp renders native module guide for 9router and cognee", () =>
         assert.match(output, /nine-router-initial-password/);
     } finally {
         process.stdout.write = originalWrite;
+    }
+});
+
+test("install auto-scaffolds module directory from templates if missing in workspace", async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-install-test-"));
+    const originalStdout = process.stdout.write;
+    process.stdout.write = () => true;
+    try {
+        fs.writeFileSync(path.join(tempDir, "docker-compose.yml"), "services:\n");
+        fs.writeFileSync(path.join(tempDir, ".env"), "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+        assert.equal(fs.existsSync(path.join(tempDir, "modules", "cognee", "module.json")), false);
+
+        await main(["install", "cognee"], { root: tempDir });
+
+        assert.equal(fs.existsSync(path.join(tempDir, "modules", "cognee", "module.json")), true);
+        const envContent = fs.readFileSync(path.join(tempDir, ".env"), "utf8");
+        assert.match(envContent, /SHADOW_ENABLED_MODULES=.*cognee/);
+    } finally {
+        process.stdout.write = originalStdout;
+        fs.rmSync(tempDir, { recursive: true, force: true });
     }
 });
 
