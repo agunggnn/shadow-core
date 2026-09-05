@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { configureMcp } from "../mcp/configure.mjs";
 import { diagnoseMcpService } from "../mcp/ping.mjs";
 import { createModuleRecipe } from "../modules/create.mjs";
+import { runInstallWizard } from "../modules/install-wizard.mjs";
 import { loadModuleRegistry } from "../modules/registry.mjs";
 import { resolveModuleProfiles } from "../modules/resolve.mjs";
 import { setModuleEnabled } from "../modules/toggle.mjs";
@@ -22,6 +23,7 @@ import {
     resolveLifecycleTarget,
     updateComposeCommands,
 } from "./update.mjs";
+import { verifyModuleDeployment } from "./verifier.mjs";
 
 const cliRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const builtinFile = path.join(cliRoot, "modules", "builtin.json");
@@ -429,6 +431,8 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             if (!fs.existsSync(targetModuleDir) && fs.existsSync(templateModuleDir)) {
                 copyIfMissing(templateModuleDir, targetModuleDir);
             }
+            const nonInteractive = args.includes("--yes") || args.includes("--default");
+            await runInstallWizard({ root, envFile, moduleId, nonInteractive });
         }
         setModuleEnabled({
             root,
@@ -514,10 +518,17 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         return;
     }
     if (command === "up") {
-        const target = args[0] === "all" ? "*" : (args[0] || "*");
+        const hasVerify = args.includes("--verify");
+        const filteredArgs = args.filter((a) => a !== "--verify");
+        const target = filteredArgs[0] === "all" ? "*" : (filteredArgs[0] || "*");
         const selection = profileArguments(root, values, target);
         compose(root, envFile, [...selection.arguments, "pull", "--policy", "always", "--ignore-buildable"]);
         compose(root, envFile, [...selection.arguments, "up", "-d"]);
+        if (hasVerify || (target !== "*" && target !== "all")) {
+            const serviceId = target === "cognee" ? "cognee-mcp" : (target === "9router" ? "nine-router" : target);
+            const composeFile = path.join(root, "modules", target, `docker-compose.${target}.yml`);
+            await verifyModuleDeployment({ root, moduleId: target, serviceId, composeFile });
+        }
         return;
     }
     if (command === "update") {
