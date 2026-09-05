@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +11,7 @@ import { resolveModuleProfiles } from "../modules/resolve.mjs";
 import { setModuleEnabled } from "../modules/toggle.mjs";
 import { listCredentials, revealCredential, setCredential } from "../vault/creds.mjs";
 import { migrateEnvCredentials } from "../vault/migrate-env.mjs";
+import { runDoctor } from "./doctor.mjs";
 import { parseEnv } from "./env.mjs";
 import {
     migrateBundledImagePins,
@@ -21,6 +23,44 @@ import {
 const cliRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const builtinFile = path.join(cliRoot, "modules", "builtin.json");
 const templatesDir = path.join(cliRoot, "templates");
+
+export function defaultShadowHome() {
+    return process.env.SHADOW_HOME
+        ? path.resolve(process.env.SHADOW_HOME)
+        : path.join(os.homedir(), ".shadow");
+}
+
+export function isShadowWorkspace(dir) {
+    const composeFile = path.join(dir, "docker-compose.yml");
+    const envFile = path.join(dir, ".env");
+    const exampleFile = path.join(dir, ".env.example");
+    if (fs.existsSync(composeFile)) {
+        try {
+            const content = fs.readFileSync(composeFile, "utf8");
+            const isShadow = content.includes("nine-router") || content.includes("shadow-core") || content.includes("NINE_ROUTER");
+            if (isShadow && (fs.existsSync(envFile) || fs.existsSync(exampleFile))) {
+                return true;
+            }
+        } catch {
+            return false;
+        }
+    }
+    return false;
+}
+
+export function resolveProjectRoot(options = {}) {
+    if (options.root) {
+        return path.resolve(options.root);
+    }
+    if (process.env.SHADOW_ROOT) {
+        return path.resolve(process.env.SHADOW_ROOT);
+    }
+    const cwd = process.cwd();
+    if (isShadowWorkspace(cwd)) {
+        return cwd;
+    }
+    return defaultShadowHome();
+}
 
 function replaceEnvValue(text, name, value) {
     const line = `${name}=${value}`;
@@ -57,7 +97,11 @@ function run(file, args, options = {}) {
 
 function projectEnvironment(root) {
     const envFile = path.join(root, ".env");
-    if (!fs.existsSync(envFile)) throw new Error(`Missing ${envFile}. Run 'shadow init' first.`);
+    if (!fs.existsSync(envFile)) {
+        const isHome = root === defaultShadowHome();
+        const locationMsg = isHome ? "Global user home (~/.shadow)" : `Direktori '${root}'`;
+        throw new Error(`${locationMsg} belum diinisialisasi (file .env tidak ditemukan).\nJalankan 'shadow init' terlebih dahulu untuk membuat konfigurasi awal.`);
+    }
     const values = parseEnv(fs.readFileSync(envFile, "utf8"));
     return { envFile, values };
 }
@@ -94,13 +138,18 @@ function profileArguments(root, values, target) {
 
 export function initializeProject(root) {
     const resolvedRoot = path.resolve(root);
-    fs.mkdirSync(resolvedRoot, { recursive: true });
+    fs.mkdirSync(resolvedRoot, { recursive: true, mode: 0o700 });
+    try { fs.chmodSync(resolvedRoot, 0o700); } catch { /* Windows */ }
     copyIfMissing(path.join(templatesDir, "docker-compose.yml"), path.join(resolvedRoot, "docker-compose.yml"));
     copyIfMissing(path.join(templatesDir, ".env.example"), path.join(resolvedRoot, ".env.example"));
     const cogneeTemplate = path.join(templatesDir, "modules", "cognee");
     if (fs.existsSync(cogneeTemplate)) {
         copyIfMissing(cogneeTemplate, path.join(resolvedRoot, "modules", "cognee"));
     }
+
+    const dataDir = path.join(resolvedRoot, "data");
+    fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+    try { fs.chmodSync(dataDir, 0o700); } catch { /* Windows */ }
 
     const envFile = path.join(resolvedRoot, ".env");
     copyIfMissing(path.join(resolvedRoot, ".env.example"), envFile);
@@ -131,17 +180,24 @@ export function initializeProject(root) {
         const revealed = revealCredential({ root: resolvedRoot, envFile, id: "nine-router-initial-password" });
         if (revealed?.secret) initialPassword = revealed.secret;
     } catch { /* ignore */ }
+    try {
+        configureMcp(resolvedRoot);
+    } catch { /* ignore */ }
     return { root: resolvedRoot, envFile, initialPassword };
 }
 
 function printInitWizard(result) {
+    const isGlobal = result.root === defaultShadowHome();
     process.stdout.write("================================================================================\n");
-    process.stdout.write("  SHADOW CORE - INISIALISASI PROYEK BERHASIL\n");
+    process.stdout.write("  SHADOW CORE - INISIALISASI BERHASIL\n");
     process.stdout.write("================================================================================\n");
-    process.stdout.write(`[v] Direktori Proyek  : ${result.root}\n`);
+    process.stdout.write(`[v] Lokasi Instance   : ${result.root}${isGlobal ? " (Global User Home)" : " (Workspace Lokal)"}\n`);
     process.stdout.write(`[v] File Konfigurasi  : .env (izin akses diamankan chmod 600)\n`);
     process.stdout.write(`[v] Grimoire Vault    : data/shadow-vault.db (Terenkripsi AES-256-GCM)\n`);
     process.stdout.write(`[v] MCP Server        : .mcp.json terkonfigurasi\n`);
+    if (isGlobal) {
+        process.stdout.write(`[v] Akses Global      : Anda dapat menjalankan 'shadow' dari direktori mana saja!\n`);
+    }
     process.stdout.write("--------------------------------------------------------------------------------\n");
     process.stdout.write("  INFORMASI LOGIN & KREDENSIAL AWAL 9ROUTER:\n");
     process.stdout.write("--------------------------------------------------------------------------------\n");
@@ -213,48 +269,62 @@ function printModuleGuide(moduleId, action) {
 function help() {
     return `Shadow Core
 
-Usage: shadow <command> [arguments]
+Usage: shadow [options] <command> [arguments]
 
-  init [directory]          Create or secure a Shadow Core project
-  doctor                    Validate Docker and Compose configuration
-  up [module|all]           Pull and start core, 9router, or enabled modules
-  update [target|all]       Pull, recreate, and verify a module or service
-  down [-v]                 Stop services (use -v to remove data volumes)
-  status                    Show container and image state
-  logs [service]            Follow project logs
-  modules                   List available and enabled modules
-  install <module>          Enable a module (e.g. 9router, cognee)
-  remove <module>           Disable a module without deleting data
-  creds [list|reveal|set]   Manage encrypted secrets in Shadow Vault
-  module <id> <action>      Run a declared host-process module action
-  mcp configure|serve       Configure or run the Shadow MCP bridge
-  tui                       Open the live terminal operations view
+Options:
+  --root <path>             Tentukan root direktori Shadow instance (default: ~/.shadow)
+
+Commands:
+  init [directory]          Inisialisasi Shadow Core (default: ~/.shadow)
+  doctor                    Cek kompatibilitas sistem, Docker engine, dan permissions
+  up [module|all]           Jalankan container core, 9router, atau modul aktif
+  update [target|all]       Tarik dan perbarui digest image modul/service
+  down [-v]                 Hentikan service (gunakan -v untuk menghapus volume data)
+  status                    Lihat status kontainer dan image
+  logs [service]            Lihat log service
+  modules                   Daftar modul yang tersedia dan aktif
+  install <module>          Aktifkan modul (contoh: 9router, cognee)
+  remove <module>           Nonaktifkan modul tanpa menghapus data
+  creds [list|reveal|set]   Kelola rahasia terenkripsi di Shadow Vault
+  module <id> <action>      Jalankan action modul host-process
+  mcp configure|serve       Konfigurasi atau jalankan bridge Shadow MCP
+  tui                       Buka tampilan operasional terminal interaktif
 `;
 }
 
 export async function main(argv = process.argv.slice(2), options = {}) {
-    const command = argv[0] || "help";
-    const args = argv.slice(1);
-    const root = path.resolve(options.root || process.env.SHADOW_ROOT || process.cwd());
+    const parsedArgs = [...argv];
+    let rootOption = options.root;
+    const rootIndex = parsedArgs.indexOf("--root");
+    if (rootIndex !== -1 && parsedArgs[rootIndex + 1]) {
+        rootOption = parsedArgs[rootIndex + 1];
+        parsedArgs.splice(rootIndex, 2);
+    }
+    const command = parsedArgs[0] || "help";
+    const args = parsedArgs.slice(1);
+    const root = resolveProjectRoot({ root: rootOption });
 
     if (["help", "--help", "-h"].includes(command)) {
         process.stdout.write(help());
         return;
     }
+    if (command === "doctor") {
+        const result = runDoctor({ root, defaultHome: defaultShadowHome() });
+        if (!result.ok) process.exitCode = 1;
+        return;
+    }
     if (command === "init") {
-        const result = initializeProject(args[0] ? path.resolve(args[0]) : root);
+        const target = args[0]
+            ? path.resolve(args[0])
+            : (rootOption
+                ? path.resolve(rootOption)
+                : (isShadowWorkspace(process.cwd()) ? process.cwd() : defaultShadowHome()));
+        const result = initializeProject(target);
         printInitWizard(result);
         return;
     }
 
     const { envFile, values } = projectEnvironment(root);
-    if (command === "doctor") {
-        run("docker", ["compose", "version"], { cwd: root });
-        const selection = profileArguments(root, values, "*");
-        compose(root, envFile, [...selection.arguments, "config", "--quiet"]);
-        process.stdout.write("Shadow Core configuration is valid.\n");
-        return;
-    }
     if (["install", "remove"].includes(command)) {
         if (!args[0]) throw new Error(`Usage: shadow ${command} <module>`);
         setModuleEnabled({

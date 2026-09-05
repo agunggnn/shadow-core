@@ -7,9 +7,10 @@ export const BUNDLED_IMAGE_UPDATES = Object.freeze([
         moduleId: "9router",
         serviceId: "9router",
         variable: "NINE_ROUTER_IMAGE",
-        version: "0.5.59",
-        image: "ghcr.io/decolua/9router@sha256:a510ea0295d39680921c777619f2b476d02db2115426a944eb2785cbc8bd0699",
+        version: "0.5.65",
+        image: "ghcr.io/decolua/9router@sha256:3eb104460661900d0c387e2cce910fe348201e28dd6b31067f019a23ec04f95d",
         replaces: Object.freeze([
+            "ghcr.io/decolua/9router@sha256:a510ea0295d39680921c777619f2b476d02db2115426a944eb2785cbc8bd0699",
             "ghcr.io/decolua/9router@sha256:f00fe389ef41a1999dd0d0275ad0c2955d13d176f7c4c5cb844b2f88c293c471",
         ]),
     }),

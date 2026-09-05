@@ -40,24 +40,32 @@ npm install -g github:agunggnn/shadow-core
 npm install -g @agunggnn/shadow-core
 ```
 
-Setelah terinstal, buat proyek baru di mana saja:
+Setelah terinstal secara global, verifikasi kesiapan sistem Anda:
 
 ```bash
-mkdir my-ai-plane && cd my-ai-plane
+shadow doctor
+```
+> **Catatan Linux / Ubuntu**: Perintah `shadow doctor` akan mendeteksi apakah Docker Engine berjalan dan apakah user Anda memiliki izin socket Docker (`docker` group).
+
+Jalankan inisialisasi awal (otomatis menggunakan direktori global `~/.shadow` atau `%USERPROFILE%\.shadow`):
+
+```bash
 shadow init
 shadow up
 shadow tui
 ```
+*Anda dapat menjalankan perintah `shadow` dari direktori mana saja di terminal Anda tanpa perlu berpindah folder!*
 
-### Metode 2: Tanpa Instalasi Global (via `npx`)
+### Metode 2: Mode Direktori Lokal / Kustom
 
-Anda juga bisa langsung menginisialisasi proyek tanpa instalasi global:
+Jika Anda ingin membuat instance yang terisolasi di folder tertentu:
 
 ```bash
-npx @agunggnn/shadow-core init my-ai-plane
+shadow init ./my-ai-plane
 cd my-ai-plane
-npx @agunggnn/shadow-core up
+shadow up
 ```
+Atau gunakan flag `--root`: `shadow --root ./my-ai-plane up`
 
 ### Metode 3: Dari Source Git (Untuk Developer & Kontributor)
 
@@ -66,6 +74,7 @@ git clone https://github.com/agunggnn/shadow-core.git
 cd shadow-core
 npm install
 npm link
+shadow doctor
 shadow init
 shadow up
 ```
