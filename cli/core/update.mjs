@@ -28,7 +28,7 @@ export function resolveLifecycleTarget(registry, requestedTarget) {
     if (registry.modules.some((module) => module.id === target)) return target;
     const service = registry.services.find((candidate) => candidate.id === target);
     if (service) return service.module.id;
-    throw new Error(`Unknown module or service '${requestedTarget}'. Run 'shadow modules' to list available modules.`);
+    throw new Error(`Unknown module or service '${requestedTarget}'. Run 'hetzer modules' to list available modules.`);
 }
 
 export function moduleIdsForProfiles(registry, profiles) {

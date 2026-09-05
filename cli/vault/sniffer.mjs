@@ -6,7 +6,7 @@ import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
-import { Grimoire, resolveVaultPath } from "./shadow-vault.mjs";
+import { Grimoire, resolveVaultPath } from "./hetzer-vault.mjs";
 import { parseEnv } from "../core/env.mjs";
 
 export const DETECTION_RULES = [
@@ -129,11 +129,11 @@ export function redactAndVault(text, { root, envFile, masterKey, autoVault = tru
         try {
             const actualEnvFile = envFile || path.join(root, ".env");
             const values = fs.existsSync(actualEnvFile) ? parseEnv(fs.readFileSync(actualEnvFile, "utf8")) : {};
-            const key = masterKey || process.env.SHADOW_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "";
+            const key = masterKey || process.env.HETZER_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || "";
             if (key && !String(key).startsWith("secretRef:")) {
                 const envVault = resolveVaultPath(root);
                 vaultInstance = new Grimoire({
-                    dbPath: envVault || path.join(root, "data", "shadow-vault.db"),
+                    dbPath: envVault || path.join(root, "data", "hetzer-vault.db"),
                     masterKey: key,
                 });
             }
@@ -162,7 +162,7 @@ export function redactAndVault(text, { root, envFile, masterKey, autoVault = tru
                 try {
                     const existing = vaultInstance.find(refId);
                     const allowedActions = ["compose.start", "process.start"];
-                    vaultInstance.upsertTarget({ id: "sniffed-secrets", name: "sniffed-secrets", target_type: "shadow-module" });
+                    vaultInstance.upsertTarget({ id: "sniffed-secrets", name: "sniffed-secrets", target_type: "hetzer-module" });
                     if (existing) {
                         vaultInstance.update(refId, { secret: rawVal, allowedActions });
                     } else {
@@ -216,13 +216,13 @@ export function restoreSecrets(text, { root, envFile, masterKey } = {}) {
     if (actualEnvFile && fs.existsSync(actualEnvFile)) {
         values = parseEnv(fs.readFileSync(actualEnvFile, "utf8"));
     }
-    const key = masterKey || process.env.SHADOW_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "";
+    const key = masterKey || process.env.HETZER_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || "";
     if (!key || String(key).startsWith("secretRef:")) {
         return text;
     }
 
     const envVault = root ? resolveVaultPath(root) : null;
-    const dbPath = envVault || (root ? path.join(root, "data", "shadow-vault.db") : "");
+    const dbPath = envVault || (root ? path.join(root, "data", "hetzer-vault.db") : "");
     if (!dbPath || !fs.existsSync(dbPath)) {
         return text;
     }

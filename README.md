@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Zero-Plaintext Armor & Secret Interceptor for AI Agents</strong><br>
-  <em>Sub-2ms DFA Secret Sniffer • AES-256-GCM Grimoire Vault • Git Pre-Commit Guard • 0 Docker Overhead Universal Skills for Hermes, AGY, OpenCode, Cursor, and Claude.</em>
+  <em>Sub-2ms DFA Secret Sniffer • AES-256-GCM Grimoire Vault • Git Pre-Commit Guard • 0 Docker Overhead Universal Skills for Hermes, AGY, OpenCode, CommandCode, Cursor, and Claude.</em>
 </p>
 
 <p align="center">
@@ -19,31 +19,31 @@
 
 ---
 
-## ⚡ Quickstart (Tanpa Install via `npx`)
+## ⚡ Quickstart (Zero-Install via `npx`)
 
-Hetzer dapat dijalankan langsung di mesin mana pun yang memiliki Node.js:
+Hetzer runs instantly on any machine with Node.js installed without requiring global installation:
 
 ```bash
-# 1. Pasang pelindung ke Agen AI Anda (Hermes, AGY, OpenCode, Cursor, Claude, Cline)
+# 1. Install Zero-Plaintext Armor into your AI Agents (Hermes, AGY, OpenCode, Cursor, Claude, Cline)
 npx hetzer skill install
 
-# 2. Pasang Git Pre-Commit Guard (blokir kebocoran token ke GitHub dalam < 2ms)
+# 2. Install Git Pre-Commit Guard (blocks leaked tokens & .env from Git in < 2ms)
 npx hetzer hook install
 
-# 3. Simpan kredensial/token secara terenkripsi (bebas teks polos di .env)
+# 3. Store credentials & API keys into encrypted Grimoire Vault (AES-256-GCM)
 npx hetzer creds set openai-api-key
 ```
 
-### Opsi Instalasi Permanen:
+### Permanent Installation Options:
 
-- **Via NPM (Multi-Platform - Rekomendasi)**:
+- **Via NPM (Multi-Platform - Recommended)**:
   ```bash
   npm install -g hetzer
   ```
 - **Via Homebrew (macOS & Linux)**:
   ```bash
   brew install agunggnn/tap/hetzer
-  # atau gunakan formula lokal: brew install packaging/brew/hetzer.rb
+  # or install directly from formula: brew install packaging/brew/hetzer.rb
   ```
 - **Via Chocolatey (Windows)**:
   ```powershell
@@ -52,71 +52,73 @@ npx hetzer creds set openai-api-key
 
 ---
 
-## 📑 Dokumentasi Modular
+## 📑 Modular Documentation
 
-Untuk kenyamanan developer dan optimasi pencarian (SEO), dokumentasi Shadow Core dipecah menjadi modul-modul independen:
+For structured navigation and deep architectural insights, explore the dedicated documentation guides:
 
-| Modul Dokumentasi | Deskripsi & Isi |
+| Guide | Summary & Topics |
 |---|---|
-| 🚀 **[Panduan Instalasi Lengkap (`docs/installation.md`)](docs/installation.md)** | Panduan instalasi multi-OS (Ubuntu, Debian, CentOS, Windows WSL2, macOS, VPS), prasyarat Docker & Node.js, dan troubleshooting. |
-| 🏛️ **[Arsitektur Sistem & Spesifikasi Teknis (`docs/architecture.md`)](docs/architecture.md)** | Penjelasan mendalam tentang Grimoire Vault (AES-256-GCM), 9Router Gateway, Cognee Tri-layer Memory, diagram Mermaid, dan model isolasi jaringan. |
-| 🌐 **[Panduan Integrasi Model Context Protocol (`docs/mcp-guide.md`)](docs/mcp-guide.md)** | Cara menghubungkan Shadow Core ke Claude Desktop, Cursor, Cline, OpenCode, klasifikasi tools `[OFFLINE]`/`[HYBRID]`/`[LLM]`, dan CLI testing. |
-| 🧠 **[Modul Memori Persisten Cognee (`docs/modules/cognee.md`)](docs/modules/cognee.md)** | Konfigurasi memori graf dan vektor persisten, integrasi Ollama lokal, dan skema tools memori. |
+| 🚀 **[Installation Guide (`docs/installation.md`)](docs/installation.md)** | Multi-OS setup (Ubuntu, Debian, CentOS, Windows WSL2, macOS, VPS), Docker requirements, and troubleshooting. |
+| 🏛️ **[System Architecture (`docs/architecture.md`)](docs/architecture.md)** | Grimoire Vault (AES-256-GCM), 9Router Gateway, Cognee Tri-layer Memory, Mermaid diagrams, and network boundary. |
+| 🌐 **[Model Context Protocol Guide (`docs/mcp-guide.md`)](docs/mcp-guide.md)** | Connect Hetzer to Claude Desktop, Cursor, Cline, OpenCode, `[OFFLINE]`/`[HYBRID]`/`[LLM]` classification, and CLI testing. |
+| 🧠 **[Cognee Persistent Memory Module (`docs/modules/cognee.md`)](docs/modules/cognee.md)** | Graph and vector persistent memory, local Ollama integration, and memory tools. |
 
 ---
 
-## ⚡ Apa itu Shadow Core?
+## ⚡ What is Hetzer?
 
-**Shadow Core** adalah *local-first AI command plane & orchestrator* mandiri yang dirancang untuk mengoperasikan infrastruktur AI lokal secara aman, hemat sumber daya, dan terotomatisasi. 
+**Hetzer** is a high-performance, local-first **Zero-Plaintext Security Armor & AI Command Plane** engineered to shield autonomous AI agents and developer workstations from credential leaks, prompt injections, and accidental Git exposure.
 
-Dengan Shadow Core, Anda dapat menjalankan:
-1. **9Router Engine**: Gateway perutean multi-provider (OpenAI, Anthropic, Gemini, Groq, DeepSeek, Ollama) dengan fallback otomatis dan antarmuka web mandiri.
-2. **Cognee Memory Engine**: Memori graf dan vektor persisten yang menggabungkan **SQLite WAL** (relasional), **LanceDB** (vektor), dan **Kùzu** (knowledge graph).
-3. **Grimoire Vault**: Brankas kredensial terenkripsi **AES-256-GCM** berbasis SQLite lokal (*Zero-Plaintext Contract*). Kredensial tidak pernah tersimpan dalam teks polos di file `.env`.
-4. **Universal MCP Bridge**: Menghubungkan seluruh tools dan memori lokal ke agen AI modern seperti **Claude Desktop**, **Cursor IDE**, dan **Cline**.
+With Hetzer, you get:
+1. **Sub-2ms Transparent Secret Sniffer**: Intercepts and replaces raw API keys, bearer tokens, and private keys with `secretRef:<id>` references in real-time.
+2. **Grimoire Vault (AES-256-GCM)**: SQLite-backed local encrypted credential storage (*Zero-Plaintext Contract*). Secrets never live in plaintext in `.env` files or Git repositories.
+3. **Universal AI Agent Skills (Headless Mode - 0 Docker, 0 RAM)**: One-click setup protecting Hermes Agent, Google Antigravity (AGY), OpenCode, CommandCode, Cursor IDE, Claude Desktop, and Cline.
+4. **Git Pre-Commit Guard**: A zero-overhead pre-commit hook that inspects staged changes and blocks leaked secrets in < 2ms before they ever leave your laptop.
+5. **9Router AI Gateway & Cognee Memory (Optional Full-Stack)**: Multi-provider model routing with automatic fallback and tri-layer relational/vector/graph persistent memory in ~1.4 GiB RAM.
 
-Semua ini berjalan dalam **satu CLI mandiri** dengan **0 npm external dependencies** (hanya memanfaatkan pustaka standar Node.js) dan menggunakan total memori hanya **~1.4 GiB RAM**.
-
----
-
-## 🥊 Perbandingan: Shadow Core vs Solusi Lain
-
-Bagaimana Shadow Core dibandingkan dengan tools AI populer lainnya di GitHub?
-
-| Fitur / Dimensi | Shadow Core | LiteLLM / One-API | Mem0 / Letta (MemGPT) | Dify.ai / Flowise | Ollama / LocalAI |
-|---|:---:|:---:|:---:|:---:|:---:|
-| **Fokus Utama** | Local AI Command Plane | Model Gateway & Proxy | Agent Memory Layer | Low-Code App Platform | Model Inference Runtime |
-| **Zero External NPM Deps** | ✅ **Ya (0 dependencies)** | ❌ (Banyak deps Python/Go) | ❌ (Python deps besar) | ❌ (10+ service containers) | ✅ (Binary Go/C++) |
-| **Zero-Plaintext Vault** | ✅ **AES-256-GCM SQLite** | ❌ (Plaintext .env/DB) | ❌ (Plaintext API keys) | ❌ (Standard DB credentials)| ❌ (Plaintext CLI env) |
-| **Model Gateway (Routing & Fallback)** | ✅ **Terintegrasi (9Router)** | ✅ Ya (Sangat lengkap) | ❌ Tidak ada | ⚠️ Terbatas | ❌ Tidak ada |
-| **Tri-Layer Memory (Relational + Vector + Graph)**| ✅ **Terintegrasi (Cognee)** | ❌ Tidak ada | ⚠️ Vector / Basic Graph | ⚠️ Basic Vector DB | ❌ Tidak ada |
-| **Universal MCP Orchestrator** | ✅ **Built-in CLI & Bridge** | ❌ Tidak ada | ⚠️ Client only | ❌ Tidak ada | ❌ Tidak ada |
-| **Konsumsi RAM (Full Stack)** | 🟢 **~1.4 GiB RAM** | 🟡 ~300 MiB - 800 MiB | 🟡 ~800 MiB - 1.5 GiB | 🔴 4 GiB - 8 GiB+ | 🟡 Tergantung bobot model |
-| **Bisa Jalan di VPS $5 / 2GB RAM** | ✅ **Sangat Stabil** | ✅ Ya | ⚠️ Butuh swap | ❌ Sering OOM Crash | ⚠️ Terbatas model kecil |
+All built with **0 external npm dependencies** (100% Node.js standard library: `node:crypto`, `node:sqlite`, `node:fs`, `node:perf_hooks`).
 
 ---
 
-## 🏛️ Topologi Arsitektur
+## 🥊 Comparison: Hetzer vs Other AI Tools
+
+| Feature / Dimension | Hetzer | LLM-Guard (Protect AI) | LiteLLM / One-API | Mem0 / Letta |
+|---|:---:|:---:|:---:|:---:|
+| **Primary Focus** | Zero-Plaintext Armor & Command Plane | Enterprise LLM Scanner | Model Gateway & Proxy | Agent Memory Layer |
+| **Active Maintenance** | 🟢 **Active & Open-Source** | ⚠️ Archived (PANW Acquisition) | 🟢 Active | 🟢 Active |
+| **External Dependencies** | ✅ **0 Dependencies (Pure Node stdlib)** | ❌ Heavy (PyTorch, Transformers) | ❌ Many Python/Go deps | ❌ Heavy Python deps |
+| **Hardware Encryption** | ✅ **Hardware AES-NI Accelerated** | ❌ Software loops | ❌ None (Plaintext .env) | ❌ None (Plaintext keys) |
+| **Laptop Scan Latency** | 🟢 **< 2 milliseconds (Instant)** | 🔴 800 ms – 2,500 ms (Laggy) | ❌ N/A | ❌ N/A |
+| **Memory Consumption** | 🟢 **< 10 MiB RAM (Headless Skill)** | 🔴 1.5 GiB – 3.0 GiB RAM | 🟡 ~300 MiB – 800 MiB | 🟡 ~800 MiB – 1.5 GiB |
+| **Git Pre-Commit Hook** | ✅ **Built-in (`hetzer hook install`)** | ❌ None | ❌ None | ❌ None |
+| **Universal Agent Skills** | ✅ **Hermes, AGY, OpenCode, Cursor, Claude** | ❌ None | ❌ None | ⚠️ Client SDK only |
+
+---
+
+## 🏛️ System Topology
 
 ```mermaid
 flowchart TB
-    subgraph Clients["AI Clients & Antarmuka Pengembang"]
-        CLI["Shadow Core CLI\n(shadow up / creds / mcp)"]
-        TUI["Terminal Live Monitor\n(shadow tui)"]
-        Claude["Claude Desktop"]
-        Cursor["Cursor / Windsurf IDE"]
-        Cline["Cline / Roo Code Agents"]
-        Browser["Web Browser\n(9Router UI :20140)"]
+    subgraph Clients["AI Clients & Developer Interfaces"]
+        CLI["Hetzer CLI\n(hetzer up / creds / mcp)"]
+        TUI["Terminal Live Monitor\n(hetzer tui)"]
+        Claude["Claude Desktop / Code"]
+        Cursor["Cursor IDE"]
+        Hermes["Hermes Agent"]
+        AGY["Google Antigravity (AGY)"]
+        OpenCode["OpenCode / CommandCode"]
+        GitCommit["Git Commit Guard Hook\n(.git/hooks/pre-commit)"]
     end
 
-    subgraph HostPlane["Shadow Core Command Plane (Host Process)"]
-        GrimoireVault[("Grimoire Vault\nSQLite WAL + AES-256-GCM\ndata/shadow-vault.db")]
-        MCPBridge["Universal MCP Bridge\n(JSON-RPC / SSE Client)"]
+    subgraph HostPlane["Hetzer Command Plane (Host Process)"]
+        SecretSniffer["Sub-2ms DFA Secret Sniffer\n(Pure V8 DFA + Entropy Detector)"]
+        GrimoireVault[("Grimoire Vault\nSQLite WAL + AES-256-GCM\ndata/hetzer-vault.db")]
+        MCPBridge["Universal MCP Bridge\n(stdio & JSON-RPC Protocol)"]
         ModuleResolver["Module & Profile Resolver\n(Docker Compose Merger)"]
         HealthVerifier["Active Healthcheck & Probe Engine"]
     end
 
-    subgraph DockerPlane["Jaringan Terisolasi Docker (127.0.0.1 Loopback)"]
+    subgraph DockerPlane["Docker Isolated Network (127.0.0.1 Loopback)"]
         subgraph NineRouter["9Router AI Gateway (:20140)"]
             RouterProxy["Multi-Provider Model Router & Fallback"]
         end
@@ -132,282 +134,211 @@ flowchart TB
     CLI --> GrimoireVault
     CLI --> ModuleResolver
     CLI --> MCPBridge
+    GitCommit --> SecretSniffer
     TUI --> HealthVerifier
-    Claude -.->|"JSON-RPC / SSE"| MCPEndpoint
-    Cursor -.->|"JSON-RPC / SSE"| MCPEndpoint
-    Cline -.->|"JSON-RPC / SSE"| MCPEndpoint
-    Browser -->|"HTTP Web UI"| RouterProxy
+    Claude -.->|"stdio MCP"| MCPBridge
+    Cursor -.->|"stdio MCP"| MCPBridge
+    Hermes -.->|"stdio MCP"| MCPBridge
+    AGY -.->|"Native Skill"| GrimoireVault
+    OpenCode -.->|"Native Skill"| GrimoireVault
 
-    ModuleResolver -->|"docker compose up\n(Injeksi Kredensial Efemeral)"| DockerPlane
+    ModuleResolver -->|"docker compose up\n(Ephemeral Credential Injection)"| DockerPlane
     MCPBridge -->|"Direct Probe & Call"| MCPEndpoint
 ```
 
 ---
 
-## 🚀 Panduan Cepat 60 Detik (Quickstart)
-
-### 1. Instalasi Global CLI
-```bash
-# Instal langsung dari GitHub (tanpa perlu clone manual):
-npm install -g github:agunggnn/shadow-core
-
-# Atau melalui npm registry:
-npm install -g @agunggnn/shadow-core
-```
-
-### 2. Validasi Sistem & Auto-Repair
-```bash
-shadow doctor --fix
-```
-*Perintah ini memastikan engine Docker aktif, socket Docker dapat diakses oleh user non-root, dan versi Node.js memenuhi syarat (`>= 22.5.0`).*
-
-### 3. Inisialisasi Proyek
-```bash
-shadow init
-```
-*Membuat Grimoire Vault lokal, mengunci izin file `.env` ke `chmod 600`, dan menghasilkan password login 9Router secara acak.*
-
-### 4. Jalankan Service & Pantau Healthcheck
-```bash
-shadow up --wait
-```
-
-Buka **`http://127.0.0.1:20140`** di browser. Masukkan password yang dihasilkan. Lupa password? Tampilkan kapan saja:
-```bash
-shadow creds reveal nine-router-initial-password
-```
-
----
-
-## 🔐 Keamanan Zero-Plaintext (Grimoire Vault)
-
-Kebanyakan developer menyimpan API key OpenAI, Anthropic, dan password database dalam bentuk teks polos di file `.env` yang berisiko ter-push ke repository publik. 
-
-**Shadow Core mengeliminasi risiko ini dengan Triple-Layer Zero-Plaintext Defense:**
+## 🔐 Zero-Plaintext Security: The Four Defense Layers
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│             TRIPLE-LAYER ZERO-PLAINTEXT ENGINE DI SHADOW CORE               │
+│                      HETZER FOUR-LAYER DEFENSE MATRIX                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  Layer 1: Transparent Secret Sniffer (< 2 ms Latency)                       │
-│  ► Memindai prompt pengguna & argumen tool secara real-time.               │
-│  ► Mendeteksi token (npm, OpenAI, Anthropic, Gemini, GitHub, AWS, dll).      │
-│  ► Otomatis mengenkripsi ke Vault lokal & menggantinya jadi 'secretRef:'.   │
-│  ► Model AI (Claude/Gemini/GPT) TIDAK PERNAH melihat token asli!           │
+│  ► Real-time scan of user prompts, agent tool arguments, and code diffs.    │
+│  ► Detects tokens (npm, OpenAI, Anthropic, Gemini, GitHub, AWS, Stripe).    │
+│  ► Automatically vaults raw credentials and outputs safe 'secretRef:<id>'.  │
+│  ► AI models (Claude, GPT, Gemini) NEVER see raw tokens in context windows! │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Layer 2: Just-in-Time (JIT) Native Interactive Prompt                      │
-│  ► Jika suatu tool membutuhkan rahasia yang belum ada di Vault,             │
-│    sistem tidak crash atau memaksa buka terminal lain.                      │
-│  ► Prompt masked muncul langsung di sesi berjalan, paste, eksekusi lanjut.  │
+│  Layer 2: Just-in-Time (JIT) Native Interactive Masked Prompt               │
+│  ► When a tool or process requires a credential missing from the Vault,     │
+│    the system avoids crashes or context switching.                          │
+│  ► A masked interactive prompt appears, encrypts, and continues execution.  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  Layer 3: Silent Ingestion (.env Auto-Vaulting on Boot)                     │
-│  ► Menghapus kewajiban setup manual.                                       │
-│  ► Jika user paste teks polos di .env, sistem saat boot otomatis            │
-│    memindahkannya ke SQLite Vault terenkripsi dan mengganti ke 'secretRef:'. │
+│  ► Eliminates manual setup burdens.                                         │
+│  ► If plaintext keys are pasted in .env, Hetzer on boot encrypts them       │
+│    into SQLite and rewrites .env to 'secretRef:<id>'.                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Layer 4: Git Pre-Commit Guard Hook (< 2 ms Latency)                        │
+│  ► Intercepts 'git commit' before code is recorded into Git history.        │
+│  ► Scans added lines in staged diffs and blocks commits containing raw keys │
+│    or plaintext .env files.                                                 │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### ⚡ Benchmark Latensi di Laptop/Desktop Pengembang: Shadow Core vs LLM-Guard
+### Latency Benchmark: Hetzer Sniffer vs LLM-Guard
 
-Banyak library guardrails (seperti *LLM-Guard*) menjadi lambat (800ms – 2500ms) karena menjalankan model Deep Learning (PyTorch/Transformers) yang berat di CPU. Shadow Core menggunakan algoritma DFA C++ V8 dan instruksi silikon perangkat keras (**AES-NI**):
-
-| Parameter Uji | LLM-Guard (Python / PyTorch) | Shadow Core Sniffer (Pure Node.js stdlib) |
+| Benchmark Metric | LLM-Guard (Python / PyTorch) | Hetzer Sniffer (Pure Node.js stdlib) |
 |---|:---:|:---:|
-| **Metode Pemindaian** | Deep Learning Transformers (BERT/DeBERTa) | Regex DFA C++ V8 + Fast-Path Bailout |
-| **Akselerasi Kriptografi**| Software Loop Python | **Instruksi Silikon Hardware (AES-NI)** |
-| **Latensi di Laptop Biasa**| 🔴 **800 ms – 2.500 ms** (Terasa jeda) | 🟢 **< 2 milidetik (0.002 detik)** (Seketika) |
-| **Dependensi Eksternal** | Butuh PyTorch, HuggingFace (~2GB) | **0 Dependencies** (100% Pustaka Standar) |
-| **Konsumsi Memori Ekstra**| 1.5 GiB – 3.0 GiB RAM | **< 10 MiB RAM** |
+| **Scanning Engine** | Heavy Deep Learning (BERT / DeBERTa) | C++ V8 DFA Regex + Shannon Entropy |
+| **Hardware Acceleration** | Software Python Loop | **Hardware Silicon (AES-NI)** |
+| **Developer Laptop Latency** | 🔴 **800 ms – 2,500 ms** | 🟢 **< 2 milliseconds (Instant)** |
+| **External Dependencies** | ~2 GB (PyTorch, HuggingFace) | **0 Dependencies** (Pure Node stdlib) |
+| **Memory Footprint** | 1.5 GiB – 3.0 GiB RAM | **< 10 MiB RAM** |
 
-### 🛡️ Batasan Privasi Pemindaian (Privacy Perimeter)
-- **Hanya Memindai Konteks Aktif**: Yang dipindai hanyalah prompt yang dikirim pengguna, argumen tool yang dieksekusi agen AI, dan konfigurasi `.env` proyek lokal.
-- **Tanpa Telemetri / Cloud Phoning**: 100% pemrosesan dilakukan di RAM dan database SQLite lokal (`127.0.0.1`).
-- **Tidak Membaca File Pribadi**: Shadow Core tidak pernah memindai folder pribadi di luar workspace proyek aktif.
+---
 
-### Mengelola Kredensial via CLI:
+## 🧩 Universal AI Agent Skills (Headless Mode - 0 Docker, 0 RAM)
+
+Protect your tokens across **all modern AI coding agents** with zero container overhead:
+
 ```bash
-# Uji coba pemindaian teks instan (<2ms)
-shadow sniffer scan "Deploying with npm_abcdef1234567890abcdef12345678901234"
+# Install to all detected agents on your system:
+hetzer skill install
 
-# Pindai dan otomatis amankan ke Vault
-shadow sniffer redact "Deploying with npm_abcdef1234567890abcdef12345678901234"
+# Or run instantly via npx:
+npx hetzer skill install
+```
 
-# Lihat daftar rahasia tersimpan di Grimoire Vault
-shadow creds list
+### Supported Platforms:
+- **Hermes Agent**: Installed to `~/.hermes/skills/hetzer/SKILL.md` (`globalOnly: true`) and hooked into `~/.hermes/config.yaml`.
+- **Google Antigravity (AGY)**: Installed to `.agents/skills/hetzer/SKILL.md` (workspace), `~/.gemini/config/skills/` (global), and `AGENTS.md`.
+- **OpenCode & CommandCode**: Installed to `.opencode/skills/hetzer/` and `.commandcode/skills/hetzer/` with `AGENTS.md` entry pointers.
+- **Cursor IDE**: Installed to `.cursor/rules/hetzer.mdc`, `.cursor/skills/hetzer/`, and `.cursorrules`.
+- **Claude Desktop & Code**: Configured in `claude_desktop_config.json` via native stdio MCP and `.claude/skills/`.
+- **Cline / Roo Code**: Configured in `cline_mcp_settings.json` and `.clinerules`.
 
-# Tampilkan nilai rahasia tertentu
-shadow creds reveal cognee-llm-api-key
-
-# Simpan rahasia baru (akan meminta input masked jika nilai tidak disertakan)
-shadow creds set cognee-llm-api-key
+Check the installation status of all agents on your machine:
+```bash
+hetzer skill status
 ```
 
 ---
 
-## 🧩 Universal AI Agent Skill (Mode Headless - 0 Docker, 0 RAM)
+## 🛡️ Git Pre-Commit Guard Hook
 
-Ingin melindungi token Anda di **Cursor**, **Claude Desktop**, atau **Cline** tanpa perlu menyalakan Docker dan tanpa mengorbankan RAM?
-
-Gunakan Shadow Core sebagai **Universal Agent Skill** (mirip konsep *antislop*):
+Prevent accidental credential leaks before they ever reach GitHub:
 
 ```bash
-# Pasang otomatis ke seluruh agent terdeteksi (Cursor, Claude, Cline, Antigravity):
-shadow skill install
+# Install the hook to .git/hooks/pre-commit
+hetzer hook install
 
-# Atau jalankan langsung via npx:
-npx @agunggnn/shadow-core skill install
+# Check staged changes manually
+hetzer hook check
+
+# Uninstall the hook if no longer needed
+hetzer hook uninstall
 ```
 
-### Mengapa Sangat Ringan dan Tidak Membebani Komputer?
-1. **0 Docker**: Tidak butuh Docker Engine berjalan di background.
-2. **Pakai AI yang Sudah Aktif**: Otomatis menggunakan LLM bawaan pengguna (Claude 3.7 Sonnet di Claude Desktop, GPT-4o / Claude di Cursor, Gemini di Antigravity). Tidak memaksakan proxy gateway tambahan.
-3. **0 MB RAM saat Idle**: MCP server berjalan melalui mode *stdio* bawaan Node.js. Proses hanya menyala dalam milidetik saat agent memanggil tool, lalu langsung idle/keluar.
-4. **Penyimpanan Sangat Kecil**: Database Grimoire Vault lokal hanya berukuran ~100 KB di disk Anda.
+Whenever you or an AI agent attempts to run `git commit` with an exposed API key or `.env` file, Hetzer blocks the commit in < 2ms:
+```text
+================================================================================
+  🛑 HETZER ARMOR: GIT COMMIT BLOCKED (TOKEN LEAK DETECTED!)
+================================================================================
+  Scan Latency : 1.45 ms
+  Violations   : Detected 1 raw credential in staged changes:
 
-Cek status integrasi agent yang terpasang di komputer Anda:
-```bash
-shadow skill status
-```
+  * src/config.js:14 -> [OPENAI_API_KEY] OpenAI secret key
 
----
-
-## 🧠 Mengaktifkan Memori Persisten (Modul Cognee)
-
-Cognee menyediakan memori graf dan vektor untuk agen AI Anda melalui protokol Model Context Protocol (MCP).
-
-```bash
-# 1. Aktifkan modul Cognee
-shadow install cognee
-
-# 2. Masukkan API Key LLM untuk ekstraksi entitas graf
-shadow creds set cognee-llm-api-key "sk-proj-anda..."
-
-# 3. Jalankan container Cognee dengan verifikasi healthcheck
-shadow up --wait cognee
-
-# 4. Daftarkan tools ke Claude Desktop / Cursor
-shadow mcp configure
-```
-
-### Memanggil Tools MCP Langsung dari Terminal
-Anda dapat menguji fungsi memori tanpa perlu membuka IDE:
-```bash
-# Cek latency endpoint MCP
-shadow mcp ping cognee
-
-# Lihat daftar tools dengan status [OFFLINE], [HYBRID], atau [LLM REASONING]
-shadow mcp tools cognee
-
-# Simpan konteks ke memori jangka panjang
-shadow mcp call cognee remember '{"text": "Arsitektur database produksi menggunakan Postgres 16 di port 5432"}'
-
-# Lakukan semantic search memori
-shadow mcp call cognee recall '{"query": "database produksi port berapa?"}'
+  HOW TO FIX:
+  1. Save credential to Vault : hetzer creds set openai-api-key <secret>
+  2. Replace in your code with: secretRef:openai-api-key
+================================================================================
 ```
 
 ---
 
-## 🤖 Pembuat Resep Modul Otomatis (AI Synthesizer)
+## 🛠️ CLI Command Cheat Sheet
 
-Ingin menambahkan service atau container baru ke dalam ekosistem Shadow Core? Gunakan AI module synthesizer:
+All Hetzer commands are executed via the `hetzer` CLI:
 
-```bash
-shadow module create my-custom-service --source https://github.com/user/my-repo
-```
-9Router akan menganalisis repository atau file compose sumber, mendeteksi port dan volume yang dibutuhkan, mengamankan binding ke `127.0.0.1`, dan menghasilkan resep `recipe.json` yang tervalidasi secara otomatis.
-
----
-
-## 🛠️ Ringkasan Perintah CLI (Cheat Sheet)
-
-| Perintah | Fungsi & Kegunaan |
+| Command | Description |
 |---|---|
-| `shadow doctor [--fix]` | Memeriksa kesiapan sistem, Node.js, socket Docker, dan memperbaiki permission |
-| `shadow init [dir]` | Menginisialisasi instance baru, membuat Grimoire Vault, dan mengamankan `.env` |
-| `shadow up [srv\|all] [--wait]` | Menjalankan container dengan polling healthcheck dan HTTP smoketest aktif |
-| `shadow down [-v]` | Menghentikan container (`-v` menghapus volume data jika ingin reset total) |
-| `shadow status` | Menampilkan ringkasan status container, ports, dan image digests |
-| `shadow logs [service]` | Streaming log container secara real-time |
-| `shadow tui` | Membuka dashboard operations real-time di terminal |
-| `shadow creds [list]` | Menampilkan seluruh kunci rahasia yang tersimpan di Grimoire Vault |
-| `shadow creds reveal <id>` | Menampilkan nilai asli rahasia terenkripsi |
-| `shadow creds set <id> [val]` | Menyimpan rahasia baru dengan enkripsi AES-256-GCM (masked prompt) |
-| `shadow sniffer [scan\|redact]`| Pindai dan amankan kredensial dari teks/prompt secara instan (<2ms) |
-| `shadow skill [install\|status]`| Pasang Universal AI Skill ke Cursor, Claude, Cline (0 Docker, 0 RAM) |
-| `shadow modules` | Menampilkan daftar modul yang terinstal dan tersedia |
-| `shadow install <module>` | Mengaktifkan modul baru melalui interactive wizard |
-| `shadow remove <module>` | Menonaktifkan modul tanpa menghapus data persisten |
-| `shadow module create <id>` | Membuat resep modul baru dengan bantuan analisis AI 9Router |
-| `shadow mcp ping [service]` | Menguji handshake JSON-RPC dan latency endpoint MCP |
-| `shadow mcp tools [service]` | Melihat daftar tools MCP dan klasifikasi `[OFFLINE]`/`[HYBRID]`/`[LLM]` |
-| `shadow mcp call <srv> <tool>`| Mengeksekusi tool MCP secara langsung via CLI |
-| `shadow mcp configure` | Mendaftarkan endpoint MCP aktif ke konfigurasi `.mcp.json` |
+| `hetzer doctor [--fix]` | Validates system prerequisites, Node.js version, and Docker socket permissions |
+| `hetzer init [dir]` | Initializes a new Hetzer instance, creates Grimoire Vault, and secures `.env` |
+| `hetzer up [srv\|all] [--wait]` | Launches containers with active healthcheck polling and HTTP smoke tests |
+| `hetzer down [-v]` | Stops services (`-v` removes persistent data volumes for clean teardown) |
+| `hetzer status` | Displays live container states, forwarded ports, and image digests |
+| `hetzer logs [service]` | Streams container logs in real time |
+| `hetzer tui` | Opens the interactive terminal operations dashboard |
+| `hetzer creds [list]` | Lists all stored credential references in Grimoire Vault |
+| `hetzer creds reveal <id>` | Decrypts and prints the plaintext secret (owner terminal only) |
+| `hetzer creds set <id> [val]` | Encrypts and saves a credential via AES-256-GCM (masked prompt) |
+| `hetzer sniffer [scan\|redact]` | Scans or redacts credentials from input text in < 2ms |
+| `hetzer skill [install\|status]`| Deploys Universal AI Agent Skills to Hermes, AGY, OpenCode, Cursor, Claude |
+| `hetzer hook [install\|check]` | Installs or tests the Git pre-commit credential leak guard |
+| `hetzer modules` | Displays available and active native extension modules |
+| `hetzer install <module>` | Enables and configures an extension module (e.g. `cognee`, `9router`) |
+| `hetzer remove <module>` | Disables an extension module without deleting persistent data |
+| `hetzer module create <id>` | Generates a new module recipe using 9Router AI code analysis |
+| `hetzer mcp ping [service]` | Diagnoses JSON-RPC handshake and latency for MCP endpoints |
+| `hetzer mcp tools [service]` | Lists MCP tools and their execution classification |
+| `hetzer mcp call <srv> <tool>` | Invokes an MCP tool directly from the terminal without an AI client |
+| `hetzer publish` | Builds, verifies test suite, and publishes package to public npm |
 
 ---
 
-## ❓ Pertanyaan yang Sering Diajukan (FAQ)
+## ❓ Frequently Asked Questions (FAQ)
 
-### 1. Apakah kredensial yang tersimpan di Vault bisa dilihat kembali oleh saya?
-**Ya, tentu saja.** Selama Anda memiliki akses ke terminal mesin tersebut, Anda adalah pemilik sah (*administrator*). Anda dapat melihat daftar seluruh rahasia dan membuka nilai aslinya kapan saja:
+### 1. Can I reveal and inspect credentials stored in the Vault?
+**Yes, absolutely.** As the machine owner and terminal administrator, you have full authority to inspect and decrypt your secrets anytime:
 ```bash
-# Melihat daftar kredensial tersimpan
-shadow creds list
+# List all stored credential IDs and status
+hetzer creds list
 
-# Membuka nilai asli kredensial (terdekripsi dari AES-256-GCM)
-shadow creds reveal npm-token
-shadow creds reveal nine-router-initial-password
+# Decrypt and reveal the actual secret value (AES-256-GCM)
+hetzer creds reveal npm-token
+hetzer creds reveal nine-router-initial-password
 ```
 
-### 2. Apakah Agen AI (Claude, Cursor, Cline, GPT) bisa melihat kredensial tersebut?
-**Tidak bisa sama sekali.** Di sinilah garansi utama arsitektur *Zero-Plaintext*:
-- Tool MCP yang diekspos ke AI (`shadow_vault_has` dan `shadow_vault_list`) **hanya mengembalikan metadata** dan format referensi `secretRef:<id>`.
-- **Tidak ada tool `reveal` yang diekspos ke AI**. AI tidak memiliki izin ataupun fungsi untuk membaca string plaintext dari Grimoire Vault.
-- AI tetap bisa menjalankan tugas (misalnya memanggil API atau publish paket) karena kredensial disuntikkan secara *out-of-band* langsung ke memori subproses oleh host OS tanpa pernah melewati jendela obrolan (*context window*) AI.
-- Kebal terhadap serangan *Prompt Injection* dan *Jailbreak*: bahkan jika AI diperintahkan untuk membocorkan database vault, AI tidak memiliki akses untuk melakukannya.
+### 2. Can AI Agents (Claude, Cursor, Cline, GPT) see these credentials?
+**No, never.** This is the core guarantee of the *Zero-Plaintext* architecture:
+- The MCP tools exposed to AI (`hetzer_vault_has` and `hetzer_vault_list`) **only return metadata** and abstract reference strings (`secretRef:<id>`).
+- **No `reveal` tool is ever exposed over MCP**. AI models have neither permission nor functions to read plaintext strings from Grimoire Vault.
+- AI agents complete tasks (such as calling APIs or publishing packages) because credentials are injected *out-of-band* directly into subprocess memory by the host OS without ever traversing the chat window (*context window*).
+- **Immune to Prompt Injection & Jailbreaks**: Even if an attacker commands the AI to dump the vault, the AI cannot read it.
 
-### 3. Skenario kredensial apa saja yang didukung oleh Shadow Core?
-Grimoire Vault dan Secret Sniffer mendukung seluruh spektrum kredensial modern:
-- **API Keys & Bearer Tokens**: OpenAI (`sk-...`), Anthropic (`sk-ant-...`), Google Gemini (`AIza...`), Groq, DeepSeek, Stripe, dll.
-- **Developer Registry Tokens**: NPM Token (`npm_...`), GitHub PAT (`ghp_...`), GitLab, HuggingFace, Docker Hub.
-- **Password Layanan & Database**: Password admin 9Router, PostgreSQL, Redis, MySQL.
-- **Kredensial Multi-Baris**: Kunci privat SSH/RSA (`-----BEGIN PRIVATE KEY-----`), Sertifikat SSL PEM, dan Google Cloud Service Account JSON (`cat key.json | shadow creds set gcp-key`).
+### 3. What credential scenarios does Hetzer support?
+Grimoire Vault and Secret Sniffer support the entire modern credential spectrum:
+- **API Keys & Bearer Tokens**: OpenAI (`sk-...`), Anthropic (`sk-ant-...`), Google Gemini (`AIza...`), Groq, DeepSeek, Stripe, etc.
+- **Developer Registry Tokens**: NPM tokens (`npm_...`), GitHub PATs (`ghp_...`), GitLab, HuggingFace, Docker Hub.
+- **Service & Database Passwords**: 9Router admin passwords, PostgreSQL, Redis, MySQL credentials.
+- **Multi-line Credentials**: SSH/RSA private keys (`-----BEGIN PRIVATE KEY-----`), SSL PEM certificates, and Google Cloud Service Account JSON keys (`cat key.json | hetzer creds set gcp-key`).
 - **Database Connection URIs**: `postgresql://user:pass@host:5432/db`, `mongodb+srv://...`, `redis://...`.
-- **Cloud Multi-Key Pairs**: AWS (`AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY`), Azure Client Secret.
+- **Cloud Key Pairs**: AWS (`AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY`), Azure Client Secrets.
 
-### 4. Siapa saja yang sebenarnya dicegah dan dilindungi oleh sistem ini?
-- 🛡️ **Vendor AI Pihak Ketiga**: Token/password Anda tidak pernah terkirim ke server OpenAI, Anthropic, atau Google, tidak masuk ke log chat, dan tidak dijadikan data pelatihan (*training data*).
-- 🛡️ **Pencegahan Kebocoran Git**: File `.env` hanya menyimpan referensi abstrak `secretRef:<id>`. Jika file `.env` tidak sengaja ter-commit ke GitHub, penyerang tidak mendapatkan kredensial asli.
-- 🛡️ **Pengguna Lain di Komputer yang Sama**: File `.env` secara otomatis diamankan dengan izin akses ketat `chmod 600` (hanya akun OS Anda yang berhak membaca/menulis).
+### 4. Who does Hetzer protect you from?
+- 🛡️ **Third-Party AI Vendors**: Your tokens and passwords are never transmitted to OpenAI, Anthropic, or Google servers, preventing them from being logged or used for model training.
+- 🛡️ **Accidental Git Exposure**: Files and code only hold abstract references (`secretRef:<id>`). If a file is committed, attackers gain zero functional credentials.
+- 🛡️ **Local OS Users**: Files are automatically secured with strict POSIX permissions (`chmod 600`), restricting read/write access to your user account.
 
-### 5. Bagaimana jika saya ingin tingkat keamanan lebih tinggi di server produksi?
-Jika Anda tidak ingin menyimpan `SHADOW_GRIMOIRE_KEY` di file `.env` sama sekali, Anda dapat menghapus baris tersebut dari file `.env` dan mengekspornya hanya di sesi memori terminal:
+### 5. How do I achieve maximum security on production servers?
+If you prefer not to store `HETZER_GRIMOIRE_KEY` on disk, omit it from `.env` and provide it strictly via the in-memory terminal environment:
 ```bash
-export SHADOW_GRIMOIRE_KEY="kunci-master-pribadi-anda"
+export HETZER_GRIMOIRE_KEY="your-private-master-key"
 ```
-Dengan cara ini, di harddisk sama sekali tidak ada kunci pembuka. Siapa pun yang menyalin file `.env` atau database SQLite tidak akan bisa mendekripsi isinya tanpa master key yang Anda miliki di memori.
+Under this model, zero decryption keys exist on disk. Anyone copying the database cannot decrypt its contents without your in-memory master key.
 
 ---
 
-## 🗑️ Panduan Uninstall & Pembersihan Total
+## 🗑️ Complete Uninstallation & Teardown
 
-Untuk menghapus Shadow Core secara menyeluruh dari mesin Anda:
+To cleanly remove Hetzer from your machine:
 
 ```bash
-# 1. Hentikan container dan hapus volume persistent
-shadow down -v
+# 1. Stop containers and remove persistent volumes (if using Docker services)
+hetzer down -v
 
-# 2. Hapus direktori proyek
-cd .. && rm -rf shadow-core
+# 2. Uninstall global CLI binary
+npm uninstall -g hetzer
 
-# 3. Hapus binary CLI global
-npm uninstall -g @agunggnn/shadow-core
-
-# 4. (Opsional) Bersihkan image Docker yang tidak terpakai
-docker image prune -a
+# 3. Clean up project files
+cd .. && rm -rf hetzer
 ```
 
 ---
 
-## 📄 Lisensi
+## 📄 License
 
-Didistribusikan di bawah lisensi resmi **Apache-2.0**. Lihat file [`LICENSE`](LICENSE) dan [`NOTICE`](NOTICE) untuk detail selengkapnya.
+Distributed under the **Apache-2.0** License. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE) for complete legal details.

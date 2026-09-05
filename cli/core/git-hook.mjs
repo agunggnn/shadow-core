@@ -103,7 +103,7 @@ export function checkStagedDiff(root = process.cwd()) {
 export function installGitHook(root = process.cwd()) {
     const gitDir = findGitDir(root);
     if (!gitDir) {
-        throw new Error(`Direktori .git tidak ditemukan di '${root}'. Pastikan Anda berada dalam repositori Git.`);
+        throw new Error(`.git directory not found in '${root}'. Ensure you are inside a Git repository.`);
     }
 
     const hooksDir = path.join(gitDir, "hooks");
@@ -162,13 +162,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             process.stdout.write("================================================================================\n");
             process.stdout.write("  HETZER - GIT PRE-COMMIT HOOK INSTALLER\n");
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  [v] Hook berhasil dipasang di: ${res.path}\n`);
-            process.stdout.write("  [v] Seluruh 'git commit' kini terlindungi oleh sub-2ms Secret Sniffer.\n");
-            process.stdout.write("      Setiap token/password/file .env yang bocor akan diblokir otomatis.\n");
+            process.stdout.write(`  [v] Hook successfully installed at: ${res.path}\n`);
+            process.stdout.write("  [v] All 'git commit' calls are now protected by sub-2ms Secret Sniffer.\n");
+            process.stdout.write("      Any leaked token, password, or .env file will be blocked automatically.\n");
             process.stdout.write("================================================================================\n");
             process.exit(0);
         } catch (err) {
-            process.stderr.write(`[x] Gagal memasang git hook: ${err.message}\n`);
+            process.stderr.write(`[x] Failed to install git hook: ${err.message}\n`);
             process.exit(1);
         }
     }
@@ -176,9 +176,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (action === "uninstall") {
         const res = uninstallGitHook(root);
         if (res.uninstalled) {
-            process.stdout.write(`[v] Hetzer pre-commit hook berhasil dicopot dari: ${res.path}\n`);
+            process.stdout.write(`[v] Hetzer pre-commit hook successfully uninstalled from: ${res.path}\n`);
         } else {
-            process.stdout.write("[i] Tidak ada Hetzer pre-commit hook yang terpasang.\n");
+            process.stdout.write("[i] No Hetzer pre-commit hook installed.\n");
         }
         process.exit(0);
     }
@@ -187,10 +187,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         const result = checkStagedDiff(root);
         if (!result.ok) {
             process.stderr.write("\n================================================================================\n");
-            process.stderr.write("  🛑 HETZER ARMOR: GIT COMMIT DIBATALKAN (KEBOCORAN TOKEN TERDETEKSI!)\n");
+            process.stderr.write("  🛑 HETZER ARMOR: GIT COMMIT BLOCKED (TOKEN LEAK DETECTED!)\n");
             process.stderr.write("================================================================================\n");
-            process.stderr.write(`  Waktu Pindai : ${result.latencyMs} ms\n`);
-            process.stderr.write(`  Pelanggaran  : Ditemukan ${result.violations.length} kredensial mentah di staged changes:\n\n`);
+            process.stderr.write(`  Scan Latency : ${result.latencyMs} ms\n`);
+            process.stderr.write(`  Violations   : Detected ${result.violations.length} raw credential(s) in staged changes:\n\n`);
             for (const v of result.violations) {
                 if (v.line > 0) {
                     process.stderr.write(`  * ${v.file}:${v.line} -> [${v.type}] ${v.label}\n`);
@@ -198,14 +198,14 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
                     process.stderr.write(`  * ${v.file} -> [${v.type}] ${v.label}\n`);
                 }
             }
-            process.stderr.write("\n  CARA MEMPERBAIKI:\n");
-            process.stderr.write("  1. Simpan nilai ke Vault: hetzer creds set <id> <nilai>\n");
-            process.stderr.write("  2. Ganti token di file Anda dengan: secretRef:<id>\n");
-            process.stderr.write("  3. Jika tidak sengaja commit file .env, jalankan: git rm --cached .env\n");
+            process.stderr.write("\n  HOW TO FIX:\n");
+            process.stderr.write("  1. Save value to Vault: hetzer creds set <id> <value>\n");
+            process.stderr.write("  2. Replace token in your code with: secretRef:<id>\n");
+            process.stderr.write("  3. If .env was staged by mistake, run: git rm --cached .env\n");
             process.stderr.write("================================================================================\n\n");
             process.exit(1);
         }
-        process.stdout.write(`[v] Hetzer Sniffer: Staged changes aman (${result.latencyMs} ms). Commit diizinkan.\n`);
+        process.stdout.write(`[v] Hetzer Sniffer: Staged changes clean (${result.latencyMs} ms). Commit permitted.\n`);
         process.exit(0);
     }
 }

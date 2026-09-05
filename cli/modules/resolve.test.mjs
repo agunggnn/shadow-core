@@ -21,7 +21,7 @@ test("inactive modules must be explicitly installed before start", () => {
     assert.throws(() => resolveModuleProfiles({
         registry: { modules: [module("core"), module("cognee", ["core"], { enabled: false })] },
         target: "cognee",
-    }), /shadow install cognee/);
+    }), /hetzer install cognee/);
 });
 
 test("resolveModuleProfiles includes core plus enabled modules", () => {

@@ -1,4 +1,4 @@
-import { deriveKey, generateMasterKey } from "../cli/vault/shadow-vault.mjs";
+import { deriveKey, generateMasterKey } from "../cli/vault/hetzer-vault.mjs";
 import crypto from "node:crypto";
 
 function encryptSecret(masterKey, plaintext, aad) {

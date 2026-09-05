@@ -18,10 +18,10 @@ export function resolveModuleProfiles({ registry, target }) {
         const module = byId.get(id);
         if (!module) throw new Error(`Unknown module '${id}'. Add modules/${id}/module.json first.`);
         if (!module.enabled && (explicit || id !== "core")) {
-            throw new Error(`Module '${id}' is not active. Run 'shadow install ${id}' first.`);
+            throw new Error(`Module '${id}' is not active. Run 'hetzer install ${id}' first.`);
         }
         if (module.lifecycle === "external") {
-            if (explicit) throw new Error(`Module '${id}' is externally managed and has no Shadow runtime to start.`);
+            if (explicit) throw new Error(`Module '${id}' is externally managed and has no Hetzer runtime to start.`);
             return;
         }
         visiting.add(id);
@@ -49,14 +49,14 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             const index = args.indexOf(name);
             return index >= 0 ? args[index + 1] : "";
         };
-        const root = path.resolve(option("--root") || process.env.SHADOW_ROOT || process.cwd());
-        const envFile = path.resolve(option("--env-file") || process.env.SHADOW_ENV_FILE || path.join(root, ".env"));
+        const root = path.resolve(option("--root") || process.env.HETZER_ROOT || process.cwd());
+        const envFile = path.resolve(option("--env-file") || process.env.HETZER_ENV_FILE || path.join(root, ".env"));
         const values = fs.existsSync(envFile) ? parseEnv(fs.readFileSync(envFile, "utf8")) : {};
         const registry = loadModuleRegistry({
             builtinFile: path.join(path.dirname(fileURLToPath(import.meta.url)), "builtin.json"),
             root,
-            disabledModules: values.SHADOW_DISABLED_MODULES,
-            enabledModules: values.SHADOW_ENABLED_MODULES,
+            disabledModules: values.HETZER_DISABLED_MODULES,
+            enabledModules: values.HETZER_ENABLED_MODULES,
         });
         process.stdout.write(`${resolveModuleProfiles({ registry, target }).join("\n")}\n`);
     } catch (error) {

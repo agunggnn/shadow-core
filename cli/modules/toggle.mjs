@@ -18,15 +18,15 @@ function setEnvValue(text, name, value) {
 }
 
 export function setModuleEnabled({ root, envFile, moduleId, enabled, builtinFile }) {
-    if (moduleId === "core" && !enabled) throw new Error("Shadow core cannot be removed.");
+    if (moduleId === "core" && !enabled) throw new Error("Hetzer core cannot be removed.");
     let text = fs.readFileSync(envFile, "utf8");
     const values = parseEnv(text);
     const registry = loadModuleRegistry({ builtinFile, root, enabledModules: moduleId });
     if (!registry.modules.some((module) => module.id === moduleId)) {
         throw new Error(`Module '${moduleId}' is not installed under modules/${moduleId}/.`);
     }
-    const enabledModules = csv(values.SHADOW_ENABLED_MODULES);
-    const disabledModules = csv(values.SHADOW_DISABLED_MODULES);
+    const enabledModules = csv(values.HETZER_ENABLED_MODULES);
+    const disabledModules = csv(values.HETZER_DISABLED_MODULES);
     if (enabled) {
         disabledModules.delete(moduleId);
         enabledModules.add(moduleId);
@@ -34,8 +34,8 @@ export function setModuleEnabled({ root, envFile, moduleId, enabled, builtinFile
         enabledModules.delete(moduleId);
         disabledModules.add(moduleId);
     }
-    text = setEnvValue(text, "SHADOW_ENABLED_MODULES", [...enabledModules].sort().join(","));
-    text = setEnvValue(text, "SHADOW_DISABLED_MODULES", [...disabledModules].sort().join(","));
+    text = setEnvValue(text, "HETZER_ENABLED_MODULES", [...enabledModules].sort().join(","));
+    text = setEnvValue(text, "HETZER_DISABLED_MODULES", [...disabledModules].sort().join(","));
     fs.writeFileSync(envFile, text, "utf8");
     try { fs.chmodSync(envFile, 0o600); } catch { /* Windows */ }
 }
@@ -47,8 +47,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             throw new Error("Usage: toggle <install|remove> <module>");
         }
         const here = path.dirname(fileURLToPath(import.meta.url));
-        const root = path.resolve(process.env.SHADOW_ROOT || process.cwd());
-        const envFile = path.resolve(process.env.SHADOW_ENV_FILE || path.join(root, ".env"));
+        const root = path.resolve(process.env.HETZER_ROOT || process.cwd());
+        const envFile = path.resolve(process.env.HETZER_ENV_FILE || path.join(root, ".env"));
         setModuleEnabled({
             root,
             envFile,

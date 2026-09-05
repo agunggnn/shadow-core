@@ -31,12 +31,12 @@ export function prepareModuleInvocation({ root, envFile, builtinFile, moduleId, 
     const registry = loadModuleRegistry({
         builtinFile,
         root,
-        disabledModules: environmentValue(fileEnv, "SHADOW_DISABLED_MODULES"),
-        enabledModules: environmentValue(fileEnv, "SHADOW_ENABLED_MODULES"),
+        disabledModules: environmentValue(fileEnv, "HETZER_DISABLED_MODULES"),
+        enabledModules: environmentValue(fileEnv, "HETZER_ENABLED_MODULES"),
     });
     const module = registry.modules.find((candidate) => candidate.id === moduleId);
     if (!module) throw new Error(`Unknown module '${moduleId}'.`);
-    if (!module.enabled) throw new Error(`Module '${moduleId}' is not active. Run 'shadow install ${moduleId}' first.`);
+    if (!module.enabled) throw new Error(`Module '${moduleId}' is not active. Run 'hetzer install ${moduleId}' first.`);
     if (!module.runtime) throw new Error(`Module '${moduleId}' does not declare a host runtime.`);
     if (!module.runtime.actions.includes(action)) {
         throw new Error(`Action '${action}' is not available for module '${moduleId}'.`);
@@ -55,8 +55,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         const [moduleId, action, ...args] = process.argv.slice(2);
         if (!moduleId || !action) throw new Error("Usage: runtime <module> <action> [args]");
         const here = path.dirname(fileURLToPath(import.meta.url));
-        const root = path.resolve(process.env.SHADOW_ROOT || process.cwd());
-        const envFile = path.resolve(process.env.SHADOW_ENV_FILE || path.join(root, ".env"));
+        const root = path.resolve(process.env.HETZER_ROOT || process.cwd());
+        const envFile = path.resolve(process.env.HETZER_ENV_FILE || path.join(root, ".env"));
         const invocation = prepareModuleInvocation({
             root,
             envFile,
@@ -75,7 +75,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             process.execPath,
             invocation.entryPath,
             invocation.action,
-            "--shadow-root", root,
+            "--hetzer-root", root,
             ...invocation.args,
         ];
         const result = spawnSync(process.execPath, execArgs, { stdio: "inherit", windowsHide: true });

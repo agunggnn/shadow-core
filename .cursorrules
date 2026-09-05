@@ -1,6 +1,6 @@
-# Shadow Vault: Zero-Plaintext Security & Credential Protection
+# Hetzer Vault: Zero-Plaintext Security & Credential Protection
 
-You are operating under the protection of the **Shadow Core Grimoire Vault**.
+You are operating under the protection of the **Hetzer Grimoire Vault**.
 Your environment enforces strict **Zero-Plaintext** credential handling:
 
 ## 1. Strict Zero-Plaintext Policy
@@ -14,18 +14,18 @@ Your environment enforces strict **Zero-Plaintext** credential handling:
   NODE_AUTH_TOKEN=secretRef:npm-token
   OPENAI_API_KEY=secretRef:openai-api-key
   ```
-- Plaintext secrets in `.env` are automatically intercepted and vaulted by Shadow Core on boot.
+- Plaintext secrets in `.env` are automatically intercepted and vaulted by Hetzer on boot.
 
 ## 3. Execution with Secrets
 - To run commands requiring credentials, use out-of-band ephemeral injection:
   ```bash
-  shadow exec -- <command> [args]
+  hetzer exec -- <command> [args]
   ```
-- Or call the local **shadow_vault** MCP tools if configured.
+- Or call the local **hetzer_vault** MCP tools if configured.
 
 ## 4. User Credential Management
 - If a required credential is not configured, instruct the user to run:
   ```bash
-  shadow creds set <credential-id>
+  hetzer creds set <credential-id>
   ```
   *(The user will be prompted with a hidden, masked prompt and the value will be encrypted with AES-256-GCM).*

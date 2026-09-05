@@ -8,8 +8,8 @@ import { fileURLToPath } from "node:url";
 import { listCredentials, revealCredential, setCredential, promptSecret } from "../cli/vault/creds.mjs";
 import { parseEnv } from "../cli/core/env.mjs";
 
-const root = path.resolve(process.env.SHADOW_ROOT || process.cwd());
-const envFile = path.resolve(process.env.SHADOW_ENV_FILE || path.join(root, ".env"));
+const root = path.resolve(process.env.HETZER_ROOT || process.cwd());
+const envFile = path.resolve(process.env.HETZER_ENV_FILE || path.join(root, ".env"));
 
 async function main() {
     process.stdout.write("================================================================================\n");
@@ -17,7 +17,7 @@ async function main() {
     process.stdout.write("================================================================================\n");
 
     if (!fs.existsSync(envFile)) {
-        throw new Error("File .env tidak ditemukan. Jalankan 'shadow init' terlebih dahulu.");
+        throw new Error(".env file not found. Run 'hetzer init' first.");
     }
 
     // 1. Resolve or prompt for NPM Token
@@ -35,23 +35,23 @@ async function main() {
     }
 
     if (!npmToken) {
-        process.stdout.write("[!] Token NPM belum tersimpan di Grimoire Vault.\n");
-        process.stdout.write("    Input akan disembunyikan (masked) saat Anda mem-paste token.\n\n");
-        npmToken = await promptSecret("Masukkan NPM Auth Token (paste & tekan Enter): ");
+        process.stdout.write("[!] NPM Token is not yet stored in Grimoire Vault.\n");
+        process.stdout.write("    Input will be masked when you paste the token.\n\n");
+        npmToken = await promptSecret("Enter NPM Auth Token (paste & press Enter): ");
         if (!npmToken) {
-            throw new Error("Token NPM tidak boleh kosong. Proses publish dibatalkan.");
+            throw new Error("NPM Token cannot be empty. Publish process aborted.");
         }
 
         // Securely store into Grimoire Vault (AES-256-GCM)
         setCredential({ root, envFile, id: "npm-token", secret: npmToken });
-        process.stdout.write("[v] Token NPM berhasil dienkripsi & disimpan ke Grimoire Vault (data/shadow-vault.db)!\n");
-        process.stdout.write("[v] Referensi .env: NODE_AUTH_TOKEN=secretRef:npm-token (Zero-Plaintext)\n\n");
+        process.stdout.write("[v] NPM Token encrypted & stored in Grimoire Vault (AES-256-GCM)!\n");
+        process.stdout.write("[v] .env reference: NODE_AUTH_TOKEN=secretRef:npm-token (Zero-Plaintext)\n\n");
     } else {
-        process.stdout.write("[v] Menggunakan NPM Auth Token terenkripsi dari Grimoire Vault.\n\n");
+        process.stdout.write("[v] Using encrypted NPM Auth Token from Grimoire Vault.\n\n");
     }
 
     // 2. Validate NPM Authentication
-    process.stdout.write("[i] Memverifikasi otentikasi ke npm registry (https://registry.npmjs.org/)...\n");
+    process.stdout.write("[i] Verifying NPM registry authentication (https://registry.npmjs.org/)...\n");
     const whoami = spawnSync("npm", [
         "whoami",
         "--registry=https://registry.npmjs.org/",
@@ -65,26 +65,26 @@ async function main() {
 
     if (whoami.status !== 0) {
         const err = (whoami.stderr || whoami.stdout || "").trim();
-        throw new Error(`Otentikasi NPM gagal (Status ${whoami.status}): ${err}\nPastikan token npm Anda valid dengan izin Read & Publish.`);
+        throw new Error(`NPM authentication failed (Status ${whoami.status}): ${err}\nEnsure your npm token is valid with Read & Publish permissions.`);
     }
 
     const npmUser = whoami.stdout.trim();
-    process.stdout.write(`[v] Otentikasi sukses! Terhubung sebagai pengguna npm: @${npmUser}\n\n`);
+    process.stdout.write(`[v] Authentication successful! Connected as npm user: @${npmUser}\n\n`);
 
     // 3. Run Test Suite
-    process.stdout.write("[i] Menjalankan test suite dan static checks (node scripts/check.mjs)...\n");
+    process.stdout.write("[i] Running test suite and static checks (node scripts/check.mjs)...\n");
     const check = spawnSync(process.execPath, [path.join(root, "scripts", "check.mjs")], {
         cwd: root,
         stdio: "inherit",
         windowsHide: true,
     });
     if (check.status !== 0) {
-        throw new Error("Test suite gagal. Perbaiki pengujian sebelum mem-publish paket.");
+        throw new Error("Test suite failed. Fix test failures before publishing.");
     }
-    process.stdout.write("\n[v] Seluruh verifikasi internal lulus.\n\n");
+    process.stdout.write("\n[v] All internal verification checks passed.\n\n");
 
     // 4. Dry-run Pack Inspection
-    process.stdout.write("[i] Melakukan dry-run package bundling...\n");
+    process.stdout.write("[i] Running dry-run package bundling...\n");
     const pack = spawnSync("npm", ["pack", "--dry-run"], {
         cwd: root,
         encoding: "utf8",
@@ -92,19 +92,37 @@ async function main() {
         shell: process.platform === "win32",
     });
     if (pack.status !== 0) {
-        throw new Error(`npm pack --dry-run gagal: ${pack.stderr}`);
+        throw new Error(`npm pack --dry-run failed: ${pack.stderr}`);
     }
 
     const pkgJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-    process.stdout.write(`[v] Paket siap: ${pkgJson.name} (v${pkgJson.version})\n\n`);
+    process.stdout.write(`[v] Package ready: ${pkgJson.name} (v${pkgJson.version})\n\n`);
 
     // 5. Publish to NPM
-    process.stdout.write(`[i] Mem-publish ${pkgJson.name}@${pkgJson.version} ke npmjs.org (access: public)...\n`);
-    const publish = spawnSync("npm", [
+    let otp = process.env.NPM_OTP || "";
+    const otpArg = process.argv.find((arg) => arg.startsWith("--otp"));
+    if (otpArg) {
+        if (otpArg.includes("=")) {
+            otp = otpArg.split("=")[1];
+        } else {
+            const idx = process.argv.indexOf(otpArg);
+            if (process.argv[idx + 1] && !process.argv[idx + 1].startsWith("-")) {
+                otp = process.argv[idx + 1];
+            }
+        }
+    }
+
+    process.stdout.write(`[i] Publishing ${pkgJson.name}@${pkgJson.version} to npmjs.org (access: public)...\n`);
+    const publishArgs = [
         "publish",
         "--access", "public",
         `--//registry.npmjs.org/:_authToken=${npmToken}`,
-    ], {
+    ];
+    if (otp) {
+        publishArgs.push(`--otp=${otp}`);
+    }
+
+    const publish = spawnSync("npm", publishArgs, {
         cwd: root,
         stdio: "inherit",
         windowsHide: true,
@@ -116,12 +134,19 @@ async function main() {
     });
 
     if (publish.status !== 0) {
-        throw new Error(`npm publish gagal dengan exit code ${publish.status}`);
+        process.stderr.write("\n[!] If you received an E403 2FA error from npm:\n");
+        process.stderr.write("    1. Create a Granular Access Token at https://www.npmjs.com/settings/~/tokens\n");
+        process.stderr.write("       -> Select 'Read and write' on packages\n");
+        process.stderr.write("       -> Check 'Bypass two-factor authentication (2FA)' for automation\n");
+        process.stderr.write("       -> Save to vault: hetzer creds set npm-token <token>\n");
+        process.stderr.write("    2. Or provide your authenticator OTP directly:\n");
+        process.stderr.write("       npm run publish-pkg -- --otp=123456\n\n");
+        throw new Error(`npm publish failed with exit code ${publish.status}`);
     }
 
     process.stdout.write("\n================================================================================\n");
-    process.stdout.write(`  [v] PUBLISH BERHASIL!\n`);
-    process.stdout.write(`  Paket   : ${pkgJson.name}@${pkgJson.version}\n`);
+    process.stdout.write(`  [v] PUBLISH SUCCESSFUL!\n`);
+    process.stdout.write(`  Package : ${pkgJson.name}@${pkgJson.version}\n`);
     process.stdout.write(`  NPM URL : https://www.npmjs.com/package/${pkgJson.name}\n`);
     process.stdout.write("================================================================================\n");
 }

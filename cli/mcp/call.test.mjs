@@ -22,7 +22,7 @@ test("classifyToolNature classifies tools into OFFLINE, HYBRID, LLM REASONING, a
 });
 
 test("listMcpTools retrieves and classifies tools from MCP service", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-mcp-call-test-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-mcp-call-test-"));
     try {
         fs.writeFileSync(path.join(root, ".env"), "COGNEE_MCP_PORT=8001\n");
 
@@ -60,7 +60,7 @@ test("listMcpTools retrieves and classifies tools from MCP service", async () =>
 });
 
 test("callMcpTool invokes tool with JSON-RPC payload and handles response", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-mcp-call-test-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-mcp-call-test-"));
     try {
         fs.writeFileSync(path.join(root, ".env"), "COGNEE_MCP_PORT=8001\n");
 
@@ -96,7 +96,7 @@ test("callMcpTool invokes tool with JSON-RPC payload and handles response", asyn
 });
 
 test("runMcpToolCommand executes tool and writes output to stream", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-mcp-call-test-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-mcp-call-test-"));
     try {
         fs.writeFileSync(path.join(root, ".env"), "COGNEE_MCP_PORT=8001\n");
 
@@ -122,7 +122,7 @@ test("runMcpToolCommand executes tool and writes output to stream", async () => 
         });
 
         assert.equal(ok, true);
-        assert.match(output, /HASIL EKSEKUSI MCP TOOL: ping/);
+        assert.match(output, /MCP TOOL EXECUTION RESULT: ping/);
         assert.match(output, /Operation successful!/);
     } finally {
         fs.rmSync(root, { recursive: true, force: true });

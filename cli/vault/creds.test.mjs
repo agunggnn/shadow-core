@@ -6,14 +6,14 @@ import { Readable } from "node:stream";
 import test from "node:test";
 
 import { listCredentials, promptSecret, revealCredential, setCredential } from "./creds.mjs";
-import { Grimoire } from "./shadow-vault.mjs";
+import { Grimoire } from "./hetzer-vault.mjs";
 
 test("creds module can list, set, and reveal credentials in Grimoire Vault", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-creds-test-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-creds-test-"));
     fs.mkdirSync(path.join(root, "data"));
     const envFile = path.join(root, ".env");
     const masterKey = "test-master-key-for-creds-unit-testing-32chars";
-    fs.writeFileSync(envFile, `SHADOW_GRIMOIRE_KEY=${masterKey}\n`);
+    fs.writeFileSync(envFile, `HETZER_GRIMOIRE_KEY=${masterKey}\n`);
 
     // List initially
     const listInitial = listCredentials({ root, envFile });

@@ -37,7 +37,7 @@ test("selected profiles map back to Compose modules", () => {
 test("known 9Router pins migrate while custom pins remain untouched", () => {
     const update = BUNDLED_IMAGE_UPDATES[0];
     const known = migrateBundledImagePins({
-        envText: `SHADOW_PROJECT_NAME=shadow\n${update.variable}=${update.replaces[0]}\n`,
+        envText: `HETZER_PROJECT_NAME=hetzer\n${update.variable}=${update.replaces[0]}\n`,
         moduleIds: ["9router"],
     });
     assert.match(known.text, new RegExp(`${update.variable}=${update.image.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));

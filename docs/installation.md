@@ -1,8 +1,9 @@
-# Shadow Core: Complete Installation & Setup Guide
+# Hetzer: Complete Installation & Setup Guide
 
-> **Target OS**: Ubuntu/Debian, RHEL/CentOS, Windows (WSL2/Docker Desktop), macOS (Apple Silicon & Intel)  
+> **Target OS**: Ubuntu/Debian, RHEL/CentOS, Windows (WSL2/Native), macOS (Apple Silicon & Intel)  
 > **Node.js**: >= 22.5.0  
-> **Docker**: Engine >= 24.0, Docker Compose >= v2.20  
+> **Docker (Optional for Full Stack)**: Engine >= 24.0, Docker Compose >= v2.20  
+> **Headless Mode**: 0 Docker, 0 RAM, pure Node stdlib  
 > **Documentation Type**: Modular Reference & Step-by-Step Tutorial
 
 ---
@@ -14,13 +15,16 @@
 3. [OS-Specific Prerequisites](#3-os-specific-prerequisites)
    - [Ubuntu & Debian Linux](#31-ubuntu--debian-linux)
    - [CentOS, RHEL & Fedora](#32-centos-rhel--fedora)
-   - [Windows 10 / 11 (WSL2 & Docker Desktop)](#33-windows-10--11-wsl2--docker-desktop)
+   - [Windows 10 / 11 (Native & WSL2)](#33-windows-10--11-native--wsl2)
    - [macOS (Apple Silicon & Intel)](#34-macos-apple-silicon--intel)
    - [Cloud VPS (Hetzner, DigitalOcean, AWS EC2)](#35-cloud-vps-hetzner-digitalocean-aws-ec2)
 4. [Installation Methods](#4-installation-methods)
-   - [Method A: Global CLI via npm / GitHub (Recommended)](#method-a-global-cli-via-npm--github-recommended)
-   - [Method B: Clone from Source (Contributors & Developers)](#method-b-clone-from-source-contributors--developers)
-5. [Pre-flight Diagnostics (`shadow doctor`)](#5-pre-flight-diagnostics-shadow-doctor)
+   - [Method A: Zero-Install via npx (Fastest)](#method-a-zero-install-via-npx-fastest)
+   - [Method B: Global CLI via npm (Recommended)](#method-b-global-cli-via-npm-recommended)
+   - [Method C: Homebrew (macOS & Linux)](#method-c-homebrew-macos--linux)
+   - [Method D: Chocolatey (Windows)](#method-d-chocolatey-windows)
+   - [Method E: Clone from Source](#method-e-clone-from-source)
+5. [Pre-flight Diagnostics (`hetzer doctor`)](#5-pre-flight-diagnostics-hetzer-doctor)
 6. [Project Initialization & Secret Setup](#6-project-initialization--secret-setup)
 7. [Starting Services & Active Healthchecks](#7-starting-services--active-healthchecks)
 8. [Enabling Persistent Memory (Cognee Module)](#8-enabling-persistent-memory-cognee-module)
@@ -32,45 +36,42 @@
 
 ## 1. System Requirements
 
-Shadow Core is engineered for high density and low memory consumption. It does not require a dedicated GPU for its command plane, gateway, and memory indexers.
+Hetzer is engineered for high density and low memory consumption. It does not require a dedicated GPU.
 
-| Resource | Minimum Profile (`core` + `9router`) | Full AI Stack (`core` + `9router` + `cognee`) |
-|---|---|---|
-| **Operating System** | Linux (Kernel >= 5.4), Windows 10/11 (WSL2), macOS >= 12 | Linux (Kernel >= 5.4), Windows 10/11 (WSL2), macOS >= 12 |
-| **CPU Architecture** | x86_64 (AMD64) or ARM64 (aarch64) | x86_64 (AMD64) or ARM64 (aarch64) |
-| **CPU Cores** | 1 Core | 2 Cores (Recommended) |
-| **System RAM** | 1.0 GiB (uses ~200 MiB active) | 3.0 GiB (uses ~1.4 GiB active) |
-| **Swap Space** | 1.0 GiB recommended | 2.0 GiB recommended on budget VPS |
-| **Disk Storage** | 2.0 GB free | 5.0 GB free (for vector/graph persistent storage) |
-| **Runtime** | Node.js >= 22.5.0 | Node.js >= 22.5.0 |
-| **Container Engine**| Docker Engine >= 24.0 & Compose v2 | Docker Engine >= 24.0 & Compose v2 |
+| Mode | System Profile | RAM Consumption | Docker Required? |
+|---|---|---|---|
+| **Headless Armor & Skills** | Any machine with Node.js >= 22.5 | **< 10 MiB RAM** | ❌ **No (0 Docker)** |
+| **Full Stack (Core + 9Router)** | 1 Core CPU, 1.0 GiB RAM | ~200 MiB active | ✅ Yes (Docker Compose v2) |
+| **Full Stack + Cognee Memory**| 2 Cores CPU, 3.0 GiB RAM | ~1.4 GiB active | ✅ Yes (Docker Compose v2) |
 
 ---
 
 ## 2. 60-Second Quickstart
 
-If your machine already has Node.js (>= 22.5) and Docker running, copy and run:
+If your machine has Node.js (>= 22.5), run instantly without permanent installation:
 
 ```bash
-# 1. Install CLI globally from GitHub
-npm install -g github:agunggnn/shadow-core
+# 1. Protect all your local AI agents (Hermes, AGY, OpenCode, Cursor, Claude, Cline)
+npx hetzer skill install
 
-# 2. Run automated environment pre-flight check
-shadow doctor --fix
+# 2. Guard your Git repository from accidental token leaks
+npx hetzer hook install
 
-# 3. Initialize your command plane (auto-creates Grimoire Vault & secure .env)
-shadow init
+# 3. Store a secret securely in AES-256-GCM Grimoire Vault
+npx hetzer creds set openai-api-key
+```
 
-# 4. Launch services with active healthcheck verification
-shadow up --wait
-
-# 5. Open the terminal operations monitor
-shadow tui
+If using full stack container services:
+```bash
+# 4. Initialize and launch services with active healthcheck verification
+hetzer init
+hetzer up --wait
+hetzer tui
 ```
 
 Your 9Router AI Gateway will immediately be live at `http://127.0.0.1:20140`. Retrieve the generated password anytime with:
 ```bash
-shadow creds reveal nine-router-initial-password
+hetzer creds reveal nine-router-initial-password
 ```
 
 ---
@@ -79,7 +80,7 @@ shadow creds reveal nine-router-initial-password
 
 ### 3.1 Ubuntu & Debian Linux
 
-Install Node.js 22.x and Docker Engine:
+Install Node.js 22.x LTS and Docker Engine:
 
 ```bash
 # 1. Update packages
@@ -89,7 +90,7 @@ sudo apt-get update && sudo apt-get install -y curl ca-certificates gnupg
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-# 3. Install Docker Engine & Compose plugin
+# 3. Install Docker Engine & Compose plugin (optional for full stack)
 sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
@@ -122,45 +123,39 @@ newgrp docker
 
 ---
 
-### 3.3 Windows 10 / 11 (WSL2 & Docker Desktop)
+### 3.3 Windows 10 / 11 (Native & WSL2)
 
-1. **Install WSL2**:
-   Open PowerShell as Administrator and run:
-   ```powershell
-   wsl --install
-   ```
-2. **Install Docker Desktop**:
-   Download and install [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/).  
-   Ensure **"Use the WSL 2 based engine"** is enabled in Docker Settings > General.
-3. **Install Node.js >= 22**:
-   Inside your WSL2 Ubuntu shell or Native PowerShell using [fnm](https://github.com/Schniz/fnm) or [Node.js Official Installer](https://nodejs.org/):
+1. **Native Windows**:
+   Install Node.js >= 22 via winget or the official installer:
    ```powershell
    winget install OpenJS.NodeJS.LTS
    ```
+2. **Optional WSL2 & Docker Desktop (for full stack)**:
+   ```powershell
+   wsl --install
+   ```
+   Download and install [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/). Ensure "Use the WSL 2 based engine" is checked in Docker settings.
 
 ---
 
 ### 3.4 macOS (Apple Silicon & Intel)
 
-1. **Install Homebrew**:
-   ```bash
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-   ```
-2. **Install Node.js & OrbStack / Docker Desktop**:
-   ```bash
-   brew install node@22
-   brew link node@22
-   brew install --cask orbstack # Fast, lightweight Docker alternative for Mac
-   ```
+```bash
+# 1. Install Node.js 22
+brew install node@22
+brew link node@22
+
+# 2. (Optional) Install OrbStack or Docker Desktop for container services
+brew install --cask orbstack
+```
 
 ---
 
 ### 3.5 Cloud VPS (Hetzner, DigitalOcean, AWS EC2)
 
-On budget cloud instances (e.g. 1 vCPU, 2GB–4GB RAM), it is best practice to configure a swap file to guarantee stability during peak embedding indexing:
+On budget cloud instances (e.g. 1 vCPU, 2GB RAM), configure a swap file to guarantee stability during peak embedding indexing:
 
 ```bash
-# Set up 2GB swap file if not present
 sudo fallocate -l 2G /swapfile
 sudo chmod 600 /swapfile
 sudo mkswap /swapfile
@@ -172,52 +167,70 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
 ## 4. Installation Methods
 
-### Method A: Global CLI via npm / GitHub (Recommended)
+### Method A: Zero-Install via npx (Fastest)
 
-Install the CLI globally so that `shadow` commands can be invoked from any directory:
-
+Run any command on-demand:
 ```bash
-# Install directly from GitHub repository:
-npm install -g github:agunggnn/shadow-core
-
-# Or from npm registry:
-npm install -g @agunggnn/shadow-core
-```
-
-Verify the binary is available:
-```bash
-shadow --version
+npx hetzer skill install
+npx hetzer hook install
+npx hetzer creds list
 ```
 
 ---
 
-### Method B: Clone from Source (Contributors & Developers)
+### Method B: Global CLI via npm (Recommended)
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/agunggnn/shadow-core.git
-cd shadow-core
+npm install -g hetzer
+```
 
-# 2. Run internal checks (zero npm dependencies)
+Verify the binary is available:
+```bash
+hetzer --version
+```
+
+---
+
+### Method C: Homebrew (macOS & Linux)
+
+```bash
+brew install agunggnn/tap/hetzer
+# or use local formula:
+brew install packaging/brew/hetzer.rb
+```
+
+---
+
+### Method D: Chocolatey (Windows)
+
+```powershell
+choco install hetzer
+```
+
+---
+
+### Method E: Clone from Source (Contributors)
+
+```bash
+git clone https://github.com/agunggnn/hetzer.git
+cd hetzer
 npm test
-
-# 3. Symlink binary globally
 npm link
 ```
 
 ---
 
-## 5. Pre-flight Diagnostics (`shadow doctor`)
+## 5. Pre-flight Diagnostics (`hetzer doctor`)
 
-Before starting containers, run `shadow doctor` to inspect the host environment:
+Before starting containers, run `hetzer doctor` to inspect the host environment:
 
 ```bash
-shadow doctor
+hetzer doctor
 ```
 
-If permissions or directories need repair, use the auto-fix flag:
+To automatically repair directory permissions or structure:
 ```bash
-shadow doctor --fix
+hetzer doctor --fix
 ```
 
 The doctor command checks:
@@ -232,20 +245,20 @@ The doctor command checks:
 
 ## 6. Project Initialization & Secret Setup
 
-Run `shadow init` to create the command plane:
+Run `hetzer init` to create the command plane:
 
 ```bash
-# Initialize in the current directory:
-shadow init
+# Initialize in current directory:
+hetzer init
 
 # Or initialize inside a dedicated directory:
-shadow init ./my-ai-instance
-cd my-ai-instance
+hetzer init ./my-hetzer-instance
+cd my-hetzer-instance
 ```
 
-### What Happens During `shadow init`?
-1. Generates `data/shadow-vault.db` (encrypted SQLite database).
-2. Generates a secure master key (`SHADOW_GRIMOIRE_KEY`) if not already present.
+### What Happens During `hetzer init`?
+1. Generates `data/hetzer-vault.db` (AES-256-GCM encrypted SQLite database).
+2. Generates a secure master key (`HETZER_GRIMOIRE_KEY`) if not already present.
 3. Generates a 16-character hexadecimal password for 9Router admin access.
 4. Creates `.env` with strict `chmod 600` permissions.
 5. Populates `.env` using **Zero-Plaintext references**:
@@ -253,19 +266,19 @@ cd my-ai-instance
    NINE_ROUTER_INITIAL_PASSWORD=secretRef:nine-router-initial-password
    ```
 
-To reveal your 9Router password:
+To reveal your 9Router password anytime:
 ```bash
-shadow creds reveal nine-router-initial-password
+hetzer creds reveal nine-router-initial-password
 ```
 
 ---
 
 ## 7. Starting Services & Active Healthchecks
 
-Start your AI Command Plane:
+Start your container services:
 
 ```bash
-shadow up --wait
+hetzer up --wait
 ```
 
 The `--wait` flag automatically:
@@ -277,7 +290,7 @@ The `--wait` flag automatically:
 
 To monitor running services continuously:
 ```bash
-shadow tui
+hetzer tui
 ```
 
 ---
@@ -286,45 +299,35 @@ shadow tui
 
 Cognee is an optional module that adds graph and vector persistent memory via the Model Context Protocol (MCP).
 
-### Step 1: Install the Module
 ```bash
-shadow install cognee
+# 1. Install the module
+hetzer install cognee
+
+# 2. Configure your LLM API key into the Vault
+hetzer creds set cognee-llm-api-key
+
+# 3. Launch Cognee
+hetzer up --wait cognee
+
+# 4. Register MCP endpoint into .mcp.json
+hetzer mcp configure
 ```
 
-### Step 2: Configure Your LLM API Key into the Vault
-Choose your model provider and encrypt your API key:
-```bash
-# For OpenAI / Anthropic / Groq:
-shadow creds set cognee-llm-api-key "your-api-key-here"
-```
-*(If you leave the argument blank, a masked terminal prompt will securely accept the key).*
-
-### Step 3: Launch Cognee
-```bash
-shadow up --wait cognee
-```
-
-### Step 4: Register MCP Endpoint
-```bash
-shadow mcp configure
-```
-This updates `.mcp.json` so that Claude Desktop, Cursor, and Cline can immediately discover memory tools (`remember`, `recall`, `improve`).
+Claude Desktop, Cursor, and Cline can now immediately access memory tools (`remember`, `recall`, `improve`).
 
 ---
 
 ## 9. Updating & Maintenance
 
 ### Update Docker Container Digests
-Shadow Core pins container digests for cryptographic reproducibility. To fetch updated digests and rebuild services:
-
+Hetzer pins container digests for cryptographic reproducibility. To fetch updated digests:
 ```bash
-shadow update
+hetzer update
 ```
 
 ### Backup Grimoire Vault
-To safely back up your encrypted vault and configuration:
 ```bash
-cp data/shadow-vault.db data/shadow-vault.backup.db
+cp data/hetzer-vault.db data/hetzer-vault.backup.db
 cp .env .env.backup
 ```
 
@@ -332,17 +335,15 @@ cp .env .env.backup
 
 ## 10. Uninstallation & Teardown
 
-To cleanly wipe containers, data volumes, and the CLI:
-
 ```bash
 # 1. Stop containers and destroy named Docker volumes:
-shadow down -v
+hetzer down -v
 
 # 2. Remove the project directory:
-cd .. && rm -rf shadow-core
+cd .. && rm -rf hetzer
 
 # 3. Uninstall the global CLI binary:
-npm uninstall -g @agunggnn/shadow-core
+npm uninstall -g hetzer
 
 # 4. (Optional) Prune unused Docker images:
 docker image prune -a
@@ -353,18 +354,18 @@ docker image prune -a
 ## 11. Troubleshooting & FAQ
 
 ### Q1: `Permission denied while trying to connect to the Docker daemon socket`
-**Fix**: Your user is not in the `docker` group. Run:
+**Fix**: Add your user to the `docker` group:
 ```bash
 sudo usermod -aG docker $USER && newgrp docker
 ```
 
 ### Q2: `HTTP 406 Not Acceptable` when calling MCP tools
-**Fix**: Update to Shadow Core v1.0.0-rc or newer. The MCP bridge automatically negotiates `Accept: application/json, text/event-stream`.
+**Fix**: Ensure your MCP client sends `Accept: application/json, text/event-stream`. The Hetzer MCP bridge handles this automatically.
 
 ### Q3: `Container cognee-mcp restarting (ExitCode 1, Health: unhealthy)`
-**Fix**: On Linux, Docker volume mounts may have mismatched permissions. Shadow Core explicitly enforces `user: "0:0"` in `docker-compose.cognee.yml`. Ensure you have pulled the latest version and run `shadow up --wait cognee`.
+**Fix**: Ensure Docker volume permissions are clean. Hetzer enforces `user: "0:0"` in `docker-compose.cognee.yml`. Run `hetzer up --wait cognee`.
 
 ---
 
-*For detailed system architecture, see [docs/architecture.md](file:///E:/GitHub/shadow-core/docs/architecture.md).*  
-*For Model Context Protocol usage, see [docs/mcp-guide.md](file:///E:/GitHub/shadow-core/docs/mcp-guide.md).*
+*For detailed system architecture, see [docs/architecture.md](docs/architecture.md).*  
+*For Model Context Protocol usage, see [docs/mcp-guide.md](docs/mcp-guide.md).*

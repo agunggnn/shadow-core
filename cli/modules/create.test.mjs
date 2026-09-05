@@ -8,7 +8,7 @@ import { createModuleRecipe, createModuleRecipeFromSource } from "./create.mjs";
 import { validateModuleRecipe } from "./validate.mjs";
 
 test("createModuleRecipe generates a valid recipe passing validateModuleRecipe", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-create-test-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-create-test-"));
     try {
         const result = createModuleRecipe({
             root: tempDir,
@@ -31,14 +31,14 @@ test("createModuleRecipe generates a valid recipe passing validateModuleRecipe",
         assert.equal(validation.errors.length, 0);
         assert.ok(validation.passed.some((p) => p.includes("Loopback") || p.includes("127.0.0.1") || p.includes("loopback")));
         assert.ok(validation.passed.some((p) => p.includes("no-new-privileges")));
-        assert.ok(validation.passed.some((p) => p.includes("MCP Server terdaftar")));
+        assert.ok(validation.passed.some((p) => p.includes("MCP Server registered") || p.includes("MCP Server terdaftar")));
     } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
     }
 });
 
 test("createModuleRecipeFromSource analyzes source content and generates valid recipe", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-create-src-test-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-create-src-test-"));
     try {
         const sampleReadme = `
 # SearXNG Engine
@@ -73,17 +73,17 @@ Available web UI dashboard.
 });
 
 test("createModuleRecipe throws error on duplicate or invalid module id", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-create-test2-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-create-test2-"));
     try {
         assert.throws(
             () => createModuleRecipe({ root: tempDir, moduleId: "INVALID_ID" }),
-            /tidak valid/
+            /invalid/i
         );
 
         createModuleRecipe({ root: tempDir, moduleId: "my-mod" });
         assert.throws(
             () => createModuleRecipe({ root: tempDir, moduleId: "my-mod" }),
-            /sudah ada/
+            /already exists/i
         );
     } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });

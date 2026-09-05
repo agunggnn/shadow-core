@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseEnv } from "../core/env.mjs";
-import { Grimoire, resolveVaultPath } from "./shadow-vault.mjs";
+import { Grimoire, resolveVaultPath } from "./hetzer-vault.mjs";
 
 export const KNOWN_CREDENTIALS = Object.freeze({
     "nine-router-initial-password": Object.freeze({
@@ -15,8 +15,8 @@ export const KNOWN_CREDENTIALS = Object.freeze({
         keyName: "initial_password",
         authType: "password",
         label: "9Router Initial Password",
-        description: "Password login awal untuk Web UI 9Router (http://127.0.0.1:20140).",
-        usage: "Buka http://127.0.0.1:20140 di browser, login menggunakan password ini (form 9Router hanya meminta Password, tanpa username). Jika sebelumnya pernah dijalankan, jalankan 'shadow down -v && shadow up' agar volume lama direset ke password baru.",
+        description: "Initial login password for 9Router Web UI (http://127.0.0.1:20140).",
+        usage: "Open http://127.0.0.1:20140 in browser and log in with this password. If previously run, execute 'hetzer down -v && hetzer up' to reset volume to new password.",
     }),
     "nine-router-jwt-secret": Object.freeze({
         envVar: "NINE_ROUTER_JWT_SECRET",
@@ -25,8 +25,8 @@ export const KNOWN_CREDENTIALS = Object.freeze({
         keyName: "jwt_secret",
         authType: "api-key",
         label: "9Router JWT Secret",
-        description: "Kunci rahasia signing JWT session token pada 9Router.",
-        usage: "Digunakan internal oleh 9Router untuk validasi sesi browser dan API.",
+        description: "Secret key for signing JWT session tokens in 9Router.",
+        usage: "Used internally by 9Router for browser and API session validation.",
     }),
     "nine-router-api-key-secret": Object.freeze({
         envVar: "NINE_ROUTER_API_KEY_SECRET",
@@ -35,8 +35,8 @@ export const KNOWN_CREDENTIALS = Object.freeze({
         keyName: "api_key_secret",
         authType: "api-key",
         label: "9Router API Key Secret",
-        description: "Kunci rahasia hashing/verifikasi API key client pada 9Router.",
-        usage: "Digunakan internal oleh 9Router saat mengotentikasi request client.",
+        description: "Secret key for client API key hashing/verification in 9Router.",
+        usage: "Used internally by 9Router when authenticating client requests.",
     }),
     "nine-router-machine-id-salt": Object.freeze({
         envVar: "NINE_ROUTER_MACHINE_ID_SALT",
@@ -45,8 +45,8 @@ export const KNOWN_CREDENTIALS = Object.freeze({
         keyName: "machine_id_salt",
         authType: "api-key",
         label: "9Router Machine ID Salt",
-        description: "Salt unik identifikasi mesin instance 9Router.",
-        usage: "Digunakan internal oleh 9Router untuk derivasi node fingerprint.",
+        description: "Unique machine identification salt for 9Router instance.",
+        usage: "Used internally by 9Router for node fingerprint derivation.",
     }),
     "cognee-llm-api-key": Object.freeze({
         envVar: "COGNEE_LLM_API_KEY",
@@ -55,8 +55,8 @@ export const KNOWN_CREDENTIALS = Object.freeze({
         keyName: "llm_api_key",
         authType: "api-key",
         label: "Cognee LLM API Key",
-        description: "API key LLM provider (OpenAI, Anthropic, OpenRouter, dll.) untuk Cognee.",
-        usage: "Digunakan oleh container Cognee untuk ekstraksi knowledge graph dan memori.",
+        description: "LLM provider API key (OpenAI, Anthropic, OpenRouter, etc.) for Cognee.",
+        usage: "Used by Cognee container for knowledge graph extraction and memory indexing.",
     }),
     "cognee-embedding-api-key": Object.freeze({
         envVar: "COGNEE_EMBEDDING_API_KEY",
@@ -65,8 +65,8 @@ export const KNOWN_CREDENTIALS = Object.freeze({
         keyName: "embedding_api_key",
         authType: "api-key",
         label: "Cognee Embedding API Key",
-        description: "API key opsional khusus model embedding (jika terpisah dari LLM key).",
-        usage: "Digunakan oleh Cognee saat menggunakan model embedding pihak ketiga terpisah.",
+        description: "Optional API key for dedicated embedding models (if separate from LLM key).",
+        usage: "Used by Cognee when using a standalone embedding provider.",
     }),
     "npm-token": Object.freeze({
         envVar: "NODE_AUTH_TOKEN",
@@ -75,8 +75,8 @@ export const KNOWN_CREDENTIALS = Object.freeze({
         keyName: "auth_token",
         authType: "api-key",
         label: "NPM Registry Auth Token",
-        description: "Token otentikasi npm untuk publish paket @agunggnn/shadow-core ke npm registry.",
-        usage: "Digunakan saat publish ke https://registry.npmjs.org/. Jalankan 'npm run publish-pkg' untuk publish.",
+        description: "NPM authentication token to publish hetzer package to npm registry.",
+        usage: "Used when publishing to https://registry.npmjs.org/. Run 'npm run publish-pkg' or 'hetzer publish'.",
     }),
     "npm-auth-token": Object.freeze({
         envVar: "NODE_AUTH_TOKEN",
@@ -85,8 +85,8 @@ export const KNOWN_CREDENTIALS = Object.freeze({
         keyName: "auth_token",
         authType: "api-key",
         label: "NPM Auth Token (Alias)",
-        description: "Token otentikasi npm untuk publish paket @agunggnn/shadow-core ke npm registry.",
-        usage: "Digunakan saat publish ke https://registry.npmjs.org/. Jalankan 'npm run publish-pkg' untuk publish.",
+        description: "NPM authentication token alias to publish hetzer package to npm registry.",
+        usage: "Used when publishing to https://registry.npmjs.org/. Run 'npm run publish-pkg' or 'hetzer publish'.",
     }),
 });
 
@@ -96,7 +96,7 @@ function replaceEnvValue(text, name, value) {
     return pattern.test(text) ? text.replace(pattern, line) : `${text.trimEnd()}\n${line}\n`;
 }
 
-export async function promptSecret(promptText = "Masukkan rahasia (secret): ", { input = process.stdin, output = process.stderr } = {}) {
+export async function promptSecret(promptText = "Enter secret value: ", { input = process.stdin, output = process.stderr } = {}) {
     if (!input.isTTY || typeof input.setRawMode !== "function") {
         const chunks = [];
         for await (const chunk of input) {
@@ -148,12 +148,12 @@ export async function promptSecret(promptText = "Masukkan rahasia (secret): ", {
 
 function openVault(root, envFile) {
     const values = fs.existsSync(envFile) ? parseEnv(fs.readFileSync(envFile, "utf8")) : {};
-    const masterKey = process.env.SHADOW_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "";
+    const masterKey = process.env.HETZER_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || "";
     if (!masterKey || String(masterKey).startsWith("secretRef:")) {
-        throw new Error("SHADOW_GRIMOIRE_KEY belum diatur di .env atau environment. Jalankan 'shadow init' terlebih dahulu.");
+        throw new Error("HETZER_GRIMOIRE_KEY is not set in .env or environment. Run 'hetzer init' first.");
     }
     const envVault = resolveVaultPath(root);
-    const dbPath = envVault || path.join(root, "data", "shadow-vault.db");
+    const dbPath = envVault || path.join(root, "data", "hetzer-vault.db");
     return {
         vault: new Grimoire({ dbPath, masterKey }),
         values,
@@ -176,7 +176,7 @@ export function listCredentials({ root, envFile }) {
                 module: known?.moduleId || item.projectId || "custom",
                 authType: item.authType,
                 configured: true,
-                description: known?.description || item.notes || item.label || "Kredensial tersimpan",
+                description: known?.description || item.notes || item.label || "Stored credential",
                 usage: known?.usage || "",
             });
         }
@@ -205,11 +205,11 @@ export function revealCredential({ root, envFile, id }) {
     try {
         const entry = vault.find(id);
         if (!entry) {
-            throw new Error(`Kredensial '${id}' tidak ditemukan di Grimoire Vault.`);
+            throw new Error(`Credential '${id}' not found in Grimoire Vault.`);
         }
         const secret = vault.reveal(id);
         if (secret === null) {
-            throw new Error(`Gagal membuka kredensial '${id}'. Pastikan SHADOW_GRIMOIRE_KEY cocok dengan database.`);
+            throw new Error(`Failed to decrypt credential '${id}'. Ensure HETZER_GRIMOIRE_KEY matches the database.`);
         }
         const known = KNOWN_CREDENTIALS[id] || null;
         return {
@@ -217,7 +217,7 @@ export function revealCredential({ root, envFile, id }) {
             secret,
             module: known?.moduleId || entry.projectId || "custom",
             authType: entry.authType,
-            description: known?.description || entry.notes || entry.label || "Kredensial tersimpan",
+            description: known?.description || entry.notes || entry.label || "Stored credential",
             usage: known?.usage || "",
             createdAt: entry.createdAt,
             updatedAt: entry.updatedAt,
@@ -228,7 +228,7 @@ export function revealCredential({ root, envFile, id }) {
 }
 
 export async function ensureCredential({ root, envFile, id, promptMessage }) {
-    if (!id) throw new Error("ID kredensial wajib diisi.");
+    if (!id) throw new Error("Credential ID is required.");
     try {
         const revealed = revealCredential({ root, envFile, id });
         if (revealed && revealed.secret) {
@@ -238,29 +238,29 @@ export async function ensureCredential({ root, envFile, id, promptMessage }) {
         // Not found in vault, prompt JIT
     }
 
-    const promptText = promptMessage || `[!] Kredensial '${id}' belum ada di Grimoire Vault.\nMasukkan nilai rahasia (input masked): `;
+    const promptText = promptMessage || `[!] Credential '${id}' is not yet in Grimoire Vault.\nEnter secret value (masked input): `;
     const secret = await promptSecret(promptText);
     if (!secret) {
-        throw new Error(`Kredensial '${id}' tidak boleh kosong.`);
+        throw new Error(`Credential '${id}' cannot be empty.`);
     }
     setCredential({ root, envFile, id, secret });
     return secret;
 }
 
 export function setCredential({ root, envFile, id, secret }) {
-    if (!id || typeof id !== "string") throw new Error("ID kredensial wajib diisi.");
-    if (typeof secret !== "string" || !secret) throw new Error("Nilai rahasia (secret) wajib diisi.");
+    if (!id || typeof id !== "string") throw new Error("Credential ID is required.");
+    if (typeof secret !== "string" || !secret) throw new Error("Secret value is required.");
 
     const { vault, envFile: targetEnv } = openVault(root, envFile);
     try {
         const known = KNOWN_CREDENTIALS[id];
-        const targetId = known?.targetId || id.split("-")[0] || "shadow";
+        const targetId = known?.targetId || id.split("-")[0] || "hetzer";
         const keyName = known?.keyName || id;
         const authType = known?.authType || (id.includes("password") ? "password" : "api-key");
         const label = known?.label || id;
         const allowedActions = ["compose.start", "process.start"];
 
-        vault.upsertTarget({ id: targetId, name: targetId, target_type: "shadow-module" });
+        vault.upsertTarget({ id: targetId, name: targetId, target_type: "hetzer-module" });
         const existing = vault.find(id);
         if (existing) {
             vault.update(id, { secret, allowedActions });
@@ -286,11 +286,11 @@ export function setCredential({ root, envFile, id, secret }) {
         try { fs.chmodSync(targetEnv, 0o600); } catch { /* Windows */ }
 
         vault.recordAudit({
-            actor: "shadow-cli",
+            actor: "hetzer-cli",
             action: "vault.set-credential",
             target_id: targetId,
             credential_id: id,
-            reason: "User updated credential via shadow creds set",
+            reason: "User updated credential via hetzer creds set",
             outcome: "allowed",
             metadata: { envVar },
         });
@@ -311,72 +311,72 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     try {
         const args = process.argv.slice(2);
         const action = args[0] || "list";
-        const root = path.resolve(process.env.SHADOW_ROOT || process.cwd());
-        const envFile = path.resolve(process.env.SHADOW_ENV_FILE || path.join(root, ".env"));
+        const root = path.resolve(process.env.HETZER_ROOT || process.cwd());
+        const envFile = path.resolve(process.env.HETZER_ENV_FILE || path.join(root, ".env"));
 
         if (action === "list") {
             const list = listCredentials({ root, envFile });
             process.stdout.write("================================================================================\n");
-            process.stdout.write("  SHADOW CORE - CREDENTIAL VAULT (GRIMOIRE)\n");
+            process.stdout.write("  HETZER - CREDENTIAL VAULT (GRIMOIRE)\n");
             process.stdout.write("================================================================================\n");
-            process.stdout.write("ID                            MODUL     STATUS      DESKRIPSI\n");
+            process.stdout.write("ID                            MODULE    STATUS      DESCRIPTION\n");
             process.stdout.write("----------------------------  --------  ----------  ----------------------------\n");
             for (const item of list) {
                 const idCol = item.id.padEnd(28);
                 const modCol = item.module.padEnd(8);
-                const statusCol = (item.configured ? "tersimpan" : "belum diset").padEnd(10);
+                const statusCol = (item.configured ? "configured" : "not set").padEnd(10);
                 process.stdout.write(`${idCol}  ${modCol}  ${statusCol}  ${item.description}\n`);
             }
             process.stdout.write("--------------------------------------------------------------------------------\n");
-            process.stdout.write("Perintah:\n");
-            process.stdout.write("  - Lihat nilai rahasia : shadow creds reveal <id>\n");
-            process.stdout.write("  - Simpan/ubah nilai   : shadow creds set <id> [nilai] (prompt jika nilai tidak disertakan)\n");
+            process.stdout.write("Commands:\n");
+            process.stdout.write("  - Reveal secret value: hetzer creds reveal <id>\n");
+            process.stdout.write("  - Save/update value  : hetzer creds set <id> [value] (prompts if omitted)\n");
             process.stdout.write("================================================================================\n");
         } else if (action === "reveal" || action === "get") {
             const id = args[1];
-            if (!id) throw new Error("Usage: shadow creds reveal <id>");
+            if (!id) throw new Error("Usage: hetzer creds reveal <id>");
             const cred = revealCredential({ root, envFile, id });
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  DETAIL KREDENSIAL: ${cred.id}\n`);
+            process.stdout.write(`  CREDENTIAL DETAIL: ${cred.id}\n`);
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  Nilai Rahasia : ${cred.secret}\n`);
-            process.stdout.write(`  Modul         : ${cred.module}\n`);
-            process.stdout.write(`  Tipe          : ${cred.authType}\n`);
-            process.stdout.write(`  Deskripsi     : ${cred.description}\n`);
+            process.stdout.write(`  Secret Value : ${cred.secret}\n`);
+            process.stdout.write(`  Module       : ${cred.module}\n`);
+            process.stdout.write(`  Type         : ${cred.authType}\n`);
+            process.stdout.write(`  Description  : ${cred.description}\n`);
             if (cred.usage) {
-                process.stdout.write(`  Cara Pakai    : ${cred.usage}\n`);
+                process.stdout.write(`  Usage        : ${cred.usage}\n`);
             }
             process.stdout.write("================================================================================\n");
         } else if (action === "set") {
             const id = args[1];
             let secret = args[2];
-            if (!id) throw new Error("Usage: shadow creds set <id> [value]");
+            if (!id) throw new Error("Usage: hetzer creds set <id> [value]");
             if (!secret) {
-                secret = await promptSecret(`Masukkan nilai rahasia untuk '${id}': `);
+                secret = await promptSecret(`Enter secret value for '${id}': `);
             }
-            if (!secret) throw new Error("Nilai rahasia (secret) wajib diisi.");
+            if (!secret) throw new Error("Secret value is required.");
             const result = setCredential({ root, envFile, id, secret });
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`[v] Kredensial '${result.id}' berhasil disimpan ke Vault (AES-256-GCM)!\n`);
-            process.stdout.write(`[v] Konfigurasi .env diperbarui: ${result.envVar}=secretRef:${result.id}\n`);
+            process.stdout.write(`[v] Credential '${result.id}' successfully saved to Vault (AES-256-GCM)!\n`);
+            process.stdout.write(`[v] Updated .env configuration: ${result.envVar}=secretRef:${result.id}\n`);
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  Modul     : ${result.module}\n`);
-            process.stdout.write(`  Deskripsi : ${result.description}\n`);
+            process.stdout.write(`  Module      : ${result.module}\n`);
+            process.stdout.write(`  Description : ${result.description}\n`);
             if (result.usage) {
-                process.stdout.write(`  Cara Pakai: ${result.usage}\n`);
+                process.stdout.write(`  Usage       : ${result.usage}\n`);
             }
             if (result.id.startsWith("npm-")) {
-                process.stdout.write("  Terapkan  : Jalankan 'node scripts/publish.mjs' atau 'npm run publish-pkg' untuk publish ke npm.\n");
+                process.stdout.write("  Apply       : Run 'node scripts/publish.mjs' or 'npm run publish-pkg' to publish to npm.\n");
             } else {
-                const upTarget = result.module && result.module !== "core" ? `shadow up ${result.module}` : "shadow up";
-                process.stdout.write(`  Terapkan  : Jalankan '${upTarget}' (atau 'shadow up') untuk memuat ulang ke container.\n`);
+                const upTarget = result.module && result.module !== "core" ? `hetzer up ${result.module}` : "hetzer up";
+                process.stdout.write(`  Apply       : Run '${upTarget}' (or 'hetzer up') to reload services.\n`);
             }
             process.stdout.write("================================================================================\n");
         } else {
-            throw new Error(`Perintah creds tidak dikenal: '${action}'. Gunakan 'list', 'reveal', atau 'set'.`);
+            throw new Error(`Unknown creds command: '${action}'. Use 'list', 'reveal', or 'set'.`);
         }
     } catch (error) {
-        process.stderr.write(`[shadow creds error] ${error.message}\n`);
+        process.stderr.write(`[hetzer creds error] ${error.message}\n`);
         process.exitCode = 1;
     }
 }

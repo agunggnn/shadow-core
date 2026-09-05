@@ -78,7 +78,7 @@ test("checkDockerCompose handles missing compose v2 plugin on Linux", () => {
 });
 
 test("checkFilePermissions checks file mode", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-doctor-test-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-doctor-test-"));
     const perm = checkFilePermissions(tempDir);
     assert.equal(typeof perm.ok, "boolean");
     fs.rmSync(tempDir, { recursive: true, force: true });
@@ -98,7 +98,7 @@ test("runDoctor formats report and returns health status", () => {
         return { status: 0 };
     };
 
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-doctor-run-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-doctor-run-"));
     const result = runDoctor({
         root: tempRoot,
         defaultHome: tempRoot,
@@ -107,14 +107,14 @@ test("runDoctor formats report and returns health status", () => {
     });
     assert.equal(result.ok, true);
     assert.equal(result.issues.length, 0);
-    assert.match(output, /SHADOW CORE - COMPATIBILITY & SYSTEM DOCTOR/);
+    assert.match(output, /HETZER CORE - COMPATIBILITY & SYSTEM DOCTOR/);
     assert.match(output, /Global User Home/);
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
 });
 
 test("applyDoctorFixes automatically creates missing data directory", () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-doctor-fix-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-doctor-fix-"));
     try {
         assert.equal(fs.existsSync(path.join(tempRoot, "data")), false);
         const fixes = applyDoctorFixes({ root: tempRoot, out: { write: () => {} } });

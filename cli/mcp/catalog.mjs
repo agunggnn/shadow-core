@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { parseEnv } from "../core/env.mjs";
 import { loadModuleRegistry, publicModuleSummary } from "../modules/registry.mjs";
-import { Grimoire, resolveVaultPath } from "../vault/shadow-vault.mjs";
+import { Grimoire, resolveVaultPath } from "../vault/hetzer-vault.mjs";
 import { scanText, redactAndVault } from "../vault/sniffer.mjs";
 import { synthesizeServiceTools } from "./synthesis.mjs";
 
@@ -27,14 +27,14 @@ function serviceUrl(service, fileEnv) {
     return /^\d+$/.test(selected) ? `http://127.0.0.1:${selected}` : "";
 }
 
-export function createToolCatalog({ root = process.env.SHADOW_ROOT || process.cwd() } = {}) {
+export function createToolCatalog({ root = process.env.HETZER_ROOT || process.cwd() } = {}) {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const fileEnv = readEnvironment(root);
     const registry = loadModuleRegistry({
         builtinFile: path.resolve(here, "..", "modules", "builtin.json"),
         root,
-        disabledModules: getEnvironment(fileEnv, "SHADOW_DISABLED_MODULES"),
-        enabledModules: getEnvironment(fileEnv, "SHADOW_ENABLED_MODULES"),
+        disabledModules: getEnvironment(fileEnv, "HETZER_DISABLED_MODULES"),
+        enabledModules: getEnvironment(fileEnv, "HETZER_ENABLED_MODULES"),
     });
 
     let vault;
@@ -42,9 +42,9 @@ export function createToolCatalog({ root = process.env.SHADOW_ROOT || process.cw
         if (!vault) {
             const envVault = resolveVaultPath(root);
             vault = new Grimoire({
-                dbPath: envVault || path.join(root, "data", "shadow-vault.db"),
+                dbPath: envVault || path.join(root, "data", "hetzer-vault.db"),
                 legacyFile: path.join(root, "data", "vault.json"),
-                masterKey: getEnvironment(fileEnv, "SHADOW_GRIMOIRE_KEY"),
+                masterKey: getEnvironment(fileEnv, "HETZER_GRIMOIRE_KEY"),
             });
         }
         return vault;
@@ -52,15 +52,15 @@ export function createToolCatalog({ root = process.env.SHADOW_ROOT || process.cw
 
     const tools = [
         {
-            name: "shadow_modules_list",
-            title: "Shadow modules",
+            name: "hetzer_modules_list",
+            title: "Hetzer modules",
             description: "List core and outpost recipes, including dependency and enablement state.",
             inputSchema: EMPTY_SCHEMA,
             annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
             execute: async () => ({ modules: publicModuleSummary(registry), warnings: registry.warnings }),
         },
         {
-            name: "shadow_vault_has",
+            name: "hetzer_vault_has",
             title: "Check Vault Secret",
             description: "Check if a credential or secretRef exists in Grimoire Vault without exposing the raw secret.",
             inputSchema: {
@@ -78,7 +78,7 @@ export function createToolCatalog({ root = process.env.SHADOW_ROOT || process.cw
             },
         },
         {
-            name: "shadow_vault_list",
+            name: "hetzer_vault_list",
             title: "List Vault Secrets",
             description: "List all configured credential IDs and descriptions in Grimoire Vault without exposing plaintext secrets.",
             inputSchema: EMPTY_SCHEMA,
@@ -96,7 +96,7 @@ export function createToolCatalog({ root = process.env.SHADOW_ROOT || process.cw
             },
         },
         {
-            name: "shadow_sniffer_scan",
+            name: "hetzer_sniffer_scan",
             title: "Scan Secrets in Text",
             description: "Rapidly inspect text for sensitive credentials (npm, API keys, tokens) in under 2ms.",
             inputSchema: {
@@ -110,7 +110,7 @@ export function createToolCatalog({ root = process.env.SHADOW_ROOT || process.cw
             execute: async ({ text }) => scanText(text),
         },
         {
-            name: "shadow_sniffer_redact",
+            name: "hetzer_sniffer_redact",
             title: "Redact and Auto-Vault Secrets",
             description: "Scans text, auto-vaults any detected raw credentials into Grimoire Vault, and returns sanitized text with secretRef references.",
             inputSchema: {

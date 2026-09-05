@@ -22,7 +22,7 @@
 
 ## 1. Overview
 
-The **Model Context Protocol (MCP)** standardizes how AI applications connect to external tools, databases, and context servers. Shadow Core acts as an **autonomous MCP orchestrator**, providing:
+The **Model Context Protocol (MCP)** standardizes how AI applications connect to external tools, databases, and context servers. Hetzer acts as an **autonomous MCP orchestrator**, providing:
 - Automated loopback networking and port bindings (`127.0.0.1:8001/mcp`).
 - Zero-plaintext API key injection for cognitive memory backends.
 - Real-time diagnostic ping and interactive CLI execution.
@@ -32,7 +32,7 @@ The **Model Context Protocol (MCP)** standardizes how AI applications connect to
 
 ## 2. Tool Classification Taxonomy
 
-In high-throughput AI agent environments, knowing whether a tool call consumes cloud tokens or executes locally is critical for latency, cost control, and privacy. Shadow Core tags all discovered tools:
+In high-throughput AI agent environments, knowing whether a tool call consumes cloud tokens or executes locally is critical for latency, cost control, and privacy. Hetzer tags all discovered tools:
 
 ### `[OFFLINE]` (Zero Cost, Zero Latency)
 - **Execution**: 100% on localhost machine.
@@ -61,7 +61,7 @@ In high-throughput AI agent environments, knowing whether a tool call consumes c
 
 ### 3.1 Claude Desktop
 
-Add Shadow Core's MCP endpoint to your Claude Desktop configuration file:
+Add Hetzer's MCP endpoint to your Claude Desktop configuration file:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 - **Linux**: `~/.config/Claude/claude_desktop_config.json`
@@ -69,7 +69,7 @@ Add Shadow Core's MCP endpoint to your Claude Desktop configuration file:
 ```json
 {
   "mcpServers": {
-    "shadow-cognee": {
+    "hetzer-cognee": {
       "url": "http://127.0.0.1:8001/mcp"
     }
   }
@@ -83,7 +83,7 @@ Inside your project root or workspace settings, create or update `.cursor/mcp.js
 ```json
 {
   "mcpServers": {
-    "shadow-memory": {
+    "hetzer-memory": {
       "url": "http://127.0.0.1:8001/mcp"
     }
   }
@@ -97,7 +97,7 @@ In VS Code, open Settings or edit `cline_mcp_settings.json`:
 ```json
 {
   "mcpServers": {
-    "shadow-core-memory": {
+    "hetzer-core-memory": {
       "url": "http://127.0.0.1:8001/mcp",
       "disabled": false,
       "autoApprove": [
@@ -115,7 +115,7 @@ In Windsurf (`~/.codeium/windsurf/mcp_config.json`) or OpenCode settings:
 ```json
 {
   "mcpServers": {
-    "shadow-memory": {
+    "hetzer-memory": {
       "serverUrl": "http://127.0.0.1:8001/mcp"
     }
   }
@@ -126,12 +126,12 @@ In Windsurf (`~/.codeium/windsurf/mcp_config.json`) or OpenCode settings:
 
 ## 4. Testing & Calling Tools via CLI
 
-Shadow Core allows developers to interact with MCP tools directly from the terminal without opening an AI IDE:
+Hetzer allows developers to interact with MCP tools directly from the terminal without opening an AI IDE:
 
 ### 4.1 Ping and Health Diagnostics
 Test protocol handshake and roundtrip response latency:
 ```bash
-shadow mcp ping cognee
+hetzer mcp ping cognee
 ```
 *Output:*
 ```text
@@ -144,17 +144,17 @@ shadow mcp ping cognee
 ### 4.2 List Discovered Tools
 Inspect tools with their parameter schemas and operational classifications:
 ```bash
-shadow mcp tools cognee
+hetzer mcp tools cognee
 ```
 
-### 4.3 Direct Tool Execution (`shadow mcp call`)
+### 4.3 Direct Tool Execution (`hetzer mcp call`)
 Execute tools synchronously with JSON arguments:
 ```bash
 # Save information to persistent memory
-shadow mcp call cognee remember '{"text": "Production DB host is 10.0.0.45 on port 5432"}'
+hetzer mcp call cognee remember '{"text": "Production DB host is 10.0.0.45 on port 5432"}'
 
 # Search memory
-shadow mcp call cognee recall '{"query": "production database host"}'
+hetzer mcp call cognee recall '{"query": "production database host"}'
 ```
 
 ---
@@ -189,18 +189,18 @@ When the `cognee` module is active, the following cognitive tools are exposed:
 
 ### Issue: `HTTP 406: Not Acceptable`
 - **Root Cause**: The client did not supply `Accept: text/event-stream` or `Accept: application/json` headers required by MCP SSE servers.
-- **Solution**: Handled automatically in Shadow Core v1.0.0-rc (`cli/mcp/call.mjs` and `cli/mcp/ping.mjs`). If using custom curl, ensure:
+- **Solution**: Handled automatically in Hetzer v0.3.0 (`cli/mcp/call.mjs` and `cli/mcp/ping.mjs`). If using custom curl, ensure:
   ```bash
   curl -H "Accept: application/json, text/event-stream" http://127.0.0.1:8001/mcp
   ```
 
 ### Issue: `ECONNREFUSED 127.0.0.1:8001`
 - **Root Cause**: The Cognee container is not running or still initializing.
-- **Solution**: Run `shadow status` to verify container health. If unhealthy, execute:
+- **Solution**: Run `hetzer status` to verify container health. If unhealthy, execute:
   ```bash
-  shadow up --wait cognee
+  hetzer up --wait cognee
   ```
 
 ---
 
-*For full architectural details, refer to [docs/architecture.md](file:///E:/GitHub/shadow-core/docs/architecture.md).*
+*For full architectural details, refer to [docs/architecture.md](architecture.md).*

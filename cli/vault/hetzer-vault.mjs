@@ -1,4 +1,4 @@
-// Canonical Shadow credential vault.
+// Canonical Hetzer credential vault.
 // Grimoire is the product surface; this SQLite store is the only persistence
 // backend used by CLI services and MCP callers.
 
@@ -22,7 +22,7 @@ function sha256(text) {
 }
 
 export function deriveKey(masterKey) {
-    const raw = crypto.hkdfSync("sha256", String(masterKey), "shadow-grimoire-v1", "grimoire-master-key", 32);
+    const raw = crypto.hkdfSync("sha256", String(masterKey), "hetzer-grimoire-v1", "grimoire-master-key", 32);
     return Buffer.from(raw).toString("hex");
 }
 
@@ -44,7 +44,7 @@ export function parseSecretRef(reference) {
 }
 
 export function resolveVaultPath(root) {
-    const override = String(process.env.SHADOW_VAULT_PATH || "").trim();
+    const override = String(process.env.HETZER_VAULT_PATH || "").trim();
     if (!override) return "";
     if (override === ":memory:") return ":memory:";
     return path.isAbsolute(override) ? override : path.join(root || process.cwd(), override);
@@ -79,7 +79,7 @@ function decryptSecret(masterKey, payload, aad) {
 }
 
 function credentialAad(id, createdAt) {
-    return `shadow-vault:v1:${id}:${createdAt}`;
+    return `hetzer-vault:v1:${id}:${createdAt}`;
 }
 
 export function grimoireAad(id, createdAt) {
@@ -116,7 +116,7 @@ function ensureParent(file) {
 export class Grimoire {
     constructor({ dbPath, file, legacyFile, masterKey }) {
         const envPath = resolveVaultPath(process.cwd());
-        const resolvedDb = dbPath || file || envPath || path.join(process.cwd(), "data", "shadow-vault.db");
+        const resolvedDb = dbPath || file || envPath || path.join(process.cwd(), "data", "hetzer-vault.db");
         this.dbPath = resolvedDb;
         this.legacyFile = legacyFile || (String(file || "").endsWith(".json") ? file : "");
         this.masterKey = normalizeMasterKey(masterKey);
@@ -195,7 +195,7 @@ export class Grimoire {
                 notes TEXT,
                 allowed_actions TEXT NOT NULL DEFAULT '[]',
                 encrypted_value TEXT NOT NULL,
-                crypto_version TEXT NOT NULL DEFAULT 'shadow-vault-v1',
+                crypto_version TEXT NOT NULL DEFAULT 'hetzer-vault-v1',
                 source TEXT NOT NULL DEFAULT 'explicit',
                 expires_at TEXT,
                 created_at TEXT NOT NULL,
@@ -292,7 +292,7 @@ export class Grimoire {
         }
         this._setMeta(marker, JSON.stringify({ imported, importedAt: new Date().toISOString() }));
         this.recordAudit({
-            actor: "shadow-migration",
+            actor: "hetzer-migration",
             action: "vault.import-legacy-json",
             reason: "One-time migration from Grimoire JSON to the canonical SQLite vault.",
             outcome: "allowed",
@@ -340,42 +340,42 @@ export class Grimoire {
     create(input) {
         const id = slug(input.id);
         if (!ID_PATTERN.test(id) || id !== String(input.id || "").trim().toLowerCase()) {
-            throw new Error("id wajib kebab-case (huruf kecil, angka, tanda hubung).");
+            throw new Error("id must be lowercase kebab-case (letters, numbers, hyphens).");
         }
-        if (this.find(id)) throw new Error(`Kunci '${id}' sudah ada di grimoire.`);
+        if (this.find(id)) throw new Error(`Key '${id}' already exists in Grimoire Vault.`);
         return this._writeEntry(id, input, null);
     }
 
     update(id, input) {
         const row = this.db.prepare("SELECT * FROM vault_credentials WHERE id = ? AND is_valid = 1").get(id);
-        if (!row) throw new Error(`Kunci '${id}' tidak ditemukan.`);
+        if (!row) throw new Error(`Key '${id}' not found.`);
         return this._writeEntry(id, input, row);
     }
 
     _writeEntry(id, input, existing) {
         if (!this.unlocked) {
-            throw new Error("Grimoire terkunci: SHADOW_GRIMOIRE_KEY (master key) belum diatur.");
+            throw new Error("Grimoire is locked: HETZER_GRIMOIRE_KEY (master key) is not set.");
         }
         const secret = typeof input.secret === "string" ? input.secret : "";
-        if (!existing && !secret) throw new Error("secret wajib diisi untuk kunci baru.");
+        if (!existing && !secret) throw new Error("secret is required for new key.");
         if (secret.length > MAX_SECRET_LENGTH) {
-            throw new Error(`secret terlalu panjang (maksimal ${MAX_SECRET_LENGTH} karakter).`);
+            throw new Error(`secret is too long (maximum ${MAX_SECRET_LENGTH} characters).`);
         }
         if (!existing) {
             const total = this.db.prepare("SELECT COUNT(*) AS count FROM vault_credentials WHERE is_valid = 1").get().count;
-            if (Number(total) >= MAX_ENTRIES) throw new Error(`Grimoire penuh (maksimal ${MAX_ENTRIES} kunci).`);
+            if (Number(total) >= MAX_ENTRIES) throw new Error(`Grimoire Vault is full (maximum ${MAX_ENTRIES} entries).`);
         }
 
         const projectId = String(input.projectId || existing?.target_id || "").trim().toLowerCase();
         if (!ID_PATTERN.test(projectId)) {
-            throw new Error("projectId wajib kebab-case (contoh: sample-project, my-lab).");
+            throw new Error("projectId must be lowercase kebab-case (e.g. sample-project, my-lab).");
         }
         const now = new Date().toISOString();
         const createdAt = existing?.created_at || input.createdAt || now;
         const value = secret || (existing
             ? decryptSecret(this.masterKey, existing.encrypted_value, credentialAad(id, existing.created_at))
             : "");
-        if (value === null) throw new Error("Kunci lama tidak dapat dibuka dengan master key aktif.");
+        if (value === null) throw new Error("Existing key could not be decrypted with active master key.");
 
         const scope = SCOPES.has(input.scope) ? input.scope : (existing?.transport_scope || "header");
         const accessRole = ACCESS_ROLES.has(input.accessRole)
@@ -397,7 +397,7 @@ export class Grimoire {
                 id, target_id, key_name, label, realm, auth_type, transport_scope, access_role,
                 header_name, username, notes, allowed_actions, encrypted_value, crypto_version,
                 source, expires_at, created_at, updated_at, last_used_at, is_valid
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'shadow-vault-v1', ?, ?, ?, ?, ?, 1)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'hetzer-vault-v1', ?, ?, ?, ?, ?, 1)
             ON CONFLICT(id) DO UPDATE SET
                 target_id = excluded.target_id,
                 key_name = excluded.key_name,
@@ -463,7 +463,7 @@ export class Grimoire {
     }
 
     remove(id) {
-        if (!this.find(id)) throw new Error(`Kunci '${id}' tidak ditemukan.`);
+        if (!this.find(id)) throw new Error(`Key '${id}' not found.`);
         this.db.prepare("UPDATE vault_credentials SET is_valid = 0, updated_at = ? WHERE id = ?")
             .run(new Date().toISOString(), id);
     }
@@ -492,7 +492,7 @@ export class Grimoire {
 
     upsertTarget(target) {
         const id = slug(target.id || target.name);
-        if (!id) throw new Error("target id wajib diisi.");
+        if (!id) throw new Error("target id is required.");
         const now = new Date().toISOString();
         this.db.prepare(`
             INSERT INTO vault_targets (

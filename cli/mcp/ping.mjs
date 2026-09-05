@@ -26,7 +26,7 @@ export async function pingMcpServer({ url, timeoutMs = 5000, fetchFn = globalThi
         params: {
             protocolVersion: "2025-11-25",
             capabilities: {},
-            clientInfo: { name: "shadow-cli", version: "0.2.1" },
+            clientInfo: { name: "hetzer-cli", version: "0.3.0" },
         },
     };
 
@@ -52,7 +52,7 @@ export async function pingMcpServer({ url, timeoutMs = 5000, fetchFn = globalThi
             ok: false,
             url,
             latencyMs: Date.now() - start,
-            error: err.name === "AbortError" ? "Request timeout (melebihi batas waktu)" : err.message,
+            error: err.name === "AbortError" ? "Request timeout" : err.message,
         };
     }
 
@@ -82,7 +82,7 @@ export async function pingMcpServer({ url, timeoutMs = 5000, fetchFn = globalThi
             ok: false,
             url,
             latencyMs,
-            error: `Respon bukan JSON valid: ${err.message}`,
+            error: `Response is not valid JSON: ${err.message}`,
         };
     }
 
@@ -142,8 +142,8 @@ export async function diagnoseMcpService({ root, targetService, out = process.st
     const registry = loadModuleRegistry({
         builtinFile: path.resolve(here, "..", "modules", "builtin.json"),
         root,
-        disabledModules: environmentValue(fileEnv, "SHADOW_DISABLED_MODULES"),
-        enabledModules: environmentValue(fileEnv, "SHADOW_ENABLED_MODULES"),
+        disabledModules: environmentValue(fileEnv, "HETZER_DISABLED_MODULES"),
+        enabledModules: environmentValue(fileEnv, "HETZER_ENABLED_MODULES"),
     });
 
     const allMcpServices = registry.modules.flatMap((m) =>
@@ -151,20 +151,20 @@ export async function diagnoseMcpService({ root, targetService, out = process.st
     ).filter((s) => s.mcpServer);
 
     if (!allMcpServices.length) {
-        out.write("Tidak ada service dengan endpoint MCP yang terdaftar di Shadow Core.\n");
+        out.write("No services with MCP endpoints registered in Hetzer Core.\n");
         return { ok: false, checked: 0 };
     }
 
     if (targetService) {
         const found = allMcpServices.find((s) => s.id === targetService || s.moduleId === targetService || s.mcpServer.name === targetService);
         if (found && !found.moduleEnabled) {
-            out.write(`[!] Modul '${found.moduleId}' belum diaktifkan.\n`);
-            out.write(`    Jalankan 'shadow install ${found.moduleId} && shadow up ${found.moduleId}' untuk mengaktifkan service MCP ini.\n`);
+            out.write(`[!] Module '${found.moduleId}' is not enabled.\n`);
+            out.write(`    Run 'hetzer install ${found.moduleId} && hetzer up ${found.moduleId}' to enable this MCP service.\n`);
             return { ok: false, checked: 0 };
         }
         if (!found) {
-            out.write(`Service MCP '${targetService}' tidak ditemukan.\n`);
-            out.write(`Pilihan service MCP: ${allMcpServices.map((s) => s.mcpServer.name).join(", ")}\n`);
+            out.write(`MCP service '${targetService}' not found.\n`);
+            out.write(`Available MCP services: ${allMcpServices.map((s) => s.mcpServer.name).join(", ")}\n`);
             return { ok: false, checked: 0 };
         }
     }
@@ -174,14 +174,14 @@ export async function diagnoseMcpService({ root, targetService, out = process.st
         : allMcpServices.filter((s) => s.moduleEnabled);
 
     if (!targets.length) {
-        out.write("Tidak ada service dengan endpoint MCP yang sedang aktif di Shadow Core.\n");
-        out.write(`Modul MCP yang tersedia: ${allMcpServices.map((s) => s.moduleId).join(", ")}\n`);
-        out.write("Jalankan 'shadow install <modul> && shadow up <modul>' untuk mengaktifkannya.\n");
+        out.write("No active MCP services found in Hetzer Core.\n");
+        out.write(`Available MCP modules: ${allMcpServices.map((s) => s.moduleId).join(", ")}\n`);
+        out.write("Run 'hetzer install <module> && hetzer up <module>' to enable.\n");
         return { ok: false, checked: 0 };
     }
 
     out.write("================================================================================\n");
-    out.write("  SHADOW CORE - MCP DIAGNOSTIC & PING\n");
+    out.write("  HETZER CORE - MCP DIAGNOSTIC & PING\n");
     out.write("================================================================================\n");
 
     let allOk = true;
@@ -189,37 +189,37 @@ export async function diagnoseMcpService({ root, targetService, out = process.st
     for (const service of targets) {
         const baseUrl = serviceUrl(service, fileEnv);
         if (!baseUrl) {
-            out.write(`[-] ${service.id}: Port atau Base URL belum dikonfigurasi.\n\n`);
+            out.write(`[-] ${service.id}: Port or Base URL not configured.\n\n`);
             allOk = false;
             continue;
         }
 
         const endpointUrl = new URL(service.mcpServer.path, `${baseUrl}/`).href;
-        out.write(`Memeriksa: ${service.mcpServer.name} (${endpointUrl})\n`);
+        out.write(`Checking: ${service.mcpServer.name} (${endpointUrl})\n`);
         out.write("--------------------------------------------------------------------------------\n");
 
         const result = await pingMcpServer({ url: endpointUrl, fetchFn });
 
         if (result.ok) {
-            out.write(`  [v] Status Koneksi : OK (Latency: ${result.latencyMs}ms)\n`);
+            out.write(`  [v] Connection     : OK (Latency: ${result.latencyMs}ms)\n`);
             out.write(`  [v] Server Info    : ${result.serverInfo.name} v${result.serverInfo.version}\n`);
-            out.write(`  [v] Protokol       : v${result.protocolVersion}\n`);
+            out.write(`  [v] Protocol       : v${result.protocolVersion}\n`);
             if (result.tools.length > 0) {
-                out.write(`  [v] Tools Aktif    : ${result.tools.length} tools tersedia\n`);
+                out.write(`  [v] Active Tools   : ${result.tools.length} tools available\n`);
                 for (const tool of result.tools) {
-                    const desc = tool.description ? tool.description.replace(/\n.*/s, "").slice(0, 70) : "Tanpa deskripsi";
+                    const desc = tool.description ? tool.description.replace(/\n.*/s, "").slice(0, 70) : "No description";
                     out.write(`      - ${tool.name.padEnd(16)} : ${desc}\n`);
                 }
             } else {
-                out.write("  [i] Tools Aktif    : Belum ada tools yang diekspos server ini\n");
+                out.write("  [i] Active Tools   : No tools exposed by this server yet\n");
             }
-            out.write(`\nStatus: Endpoint MCP '${service.mcpServer.name}' BERFUNGSI NORMAL.\n`);
+            out.write(`\nStatus: MCP endpoint '${service.mcpServer.name}' OPERATIONAL.\n`);
         } else {
-            out.write(`  [x] Status Koneksi : GAGAL (${result.error})\n`);
-            out.write(`  [!] Panduan        : Pastikan container service sudah menyala.\n`);
-            out.write(`                       Jalankan: shadow up ${service.moduleId}\n`);
-            out.write(`                       Cek log : shadow logs ${service.composeService || service.id}\n`);
-            out.write(`\nStatus: Endpoint MCP '${service.mcpServer.name}' TIDAK DAPAT DIHUBUNGI.\n`);
+            out.write(`  [x] Connection     : FAILED (${result.error})\n`);
+            out.write(`  [!] Guide          : Ensure the container service is running.\n`);
+            out.write(`                       Run      : hetzer up ${service.moduleId}\n`);
+            out.write(`                       Check log: hetzer logs ${service.composeService || service.id}\n`);
+            out.write(`\nStatus: MCP endpoint '${service.mcpServer.name}' UNREACHABLE.\n`);
             allOk = false;
         }
         out.write("================================================================================\n");

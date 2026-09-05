@@ -4,7 +4,7 @@ use sha2::Sha256;
 use rand::RngCore;
 
 fn main() {
-    let hk = Hkdf::<Sha256>::new(None, b"shadow-grimoire-v1");
+    let hk = Hkdf::<Sha256>::new(None, b"hetzer-grimoire-v1");
     let mut key = [0u8; 32];
     hk.expand(b"grimoire-master-key", &mut key).unwrap();
     let cipher = Aes256Gcm::new((&key).into());

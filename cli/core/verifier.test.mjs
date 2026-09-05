@@ -28,7 +28,7 @@ test("verifyModuleDeployment handles running container without explicit healthch
     });
 
     assert.equal(res.ok, true);
-    assert.match(output, /berjalan stabil dalam status RUNNING/);
+    assert.match(output, /is running stably with status RUNNING/);
 });
 
 test("verifyModuleDeployment polls until Docker healthcheck reaches healthy", async () => {
@@ -97,7 +97,7 @@ test("verifyModuleDeployment performs HTTP smoketest when endpointUrl provided",
 
     assert.equal(res.ok, true);
     assert.equal(res.smoketest, true);
-    assert.match(output, /Smoketest endpoint HTTP/);
+    assert.match(output, /Smoketest for HTTP endpoint/);
 });
 
 test("verifyModuleDeployment detects failure and provides diagnosis", async () => {
@@ -124,6 +124,6 @@ test("verifyModuleDeployment detects failure and provides diagnosis", async () =
     });
 
     assert.equal(res.ok, false);
-    assert.match(output, /berhenti secara tidak normal/);
-    assert.match(output, /Analisis Masalah/);
+    assert.match(output, /stopped abnormally/);
+    assert.match(output, /Problem Analysis/);
 });

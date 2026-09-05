@@ -48,7 +48,7 @@ export function checkNodeRuntime() {
         major,
         ok,
         sqliteSupported,
-        message: ok ? `${version} (OK)` : `${version} (Memerlukan Node.js v20+)`,
+        message: ok ? `${version} (OK)` : `${version} (Requires Node.js v20+)`,
     };
 }
 
@@ -61,7 +61,7 @@ export function checkDockerCli(exec = spawnSync) {
         }
         return {
             ok: false,
-            error: String(result.stderr || result.stdout || "Perintah 'docker' tidak ditemukan di PATH.").trim(),
+            error: String(result.stderr || result.stdout || "Command 'docker' not found in PATH.").trim(),
         };
     } catch (err) {
         return { ok: false, error: err.message };
@@ -87,19 +87,19 @@ export function checkDockerDaemon(exec = spawnSync, osInfo = getOperatingSystemI
         let errorSummary = "";
 
         if (isPermissionDenied) {
-            errorSummary = "Izin akses Docker socket ditolak (Permission Denied).";
+            errorSummary = "Docker socket access denied (Permission Denied).";
             const user = os.userInfo().username || "ubuntu";
             guide = osInfo.platform === "linux"
-                ? `Di Linux Ubuntu/Debian, user '${user}' perlu dimasukkan ke grup 'docker':\n    sudo usermod -aG docker ${user}\n    newgrp docker\n    (atau log out dan log in kembali)`
-                : "Pastikan user Anda memiliki izin untuk mengakses Docker daemon.";
+                ? `On Linux Ubuntu/Debian, user '${user}' needs to be added to the 'docker' group:\n    sudo usermod -aG docker ${user}\n    newgrp docker\n    (or log out and log in again)`
+                : "Ensure your user account has permission to access the Docker daemon.";
         } else if (isNotRunning) {
-            errorSummary = "Docker daemon / service tidak berjalan.";
+            errorSummary = "Docker daemon / service is not running.";
             guide = osInfo.platform === "linux"
-                ? "Jalankan Docker service di Ubuntu/Debian:\n    sudo systemctl start docker\n    sudo systemctl enable docker"
-                : "Silakan buka aplikasi Docker Desktop dan pastikan status Engine 'Running'.";
+                ? "Start the Docker service on Ubuntu/Debian:\n    sudo systemctl start docker\n    sudo systemctl enable docker"
+                : "Please open Docker Desktop and ensure the Engine status is 'Running'.";
         } else {
-            errorSummary = errText.trim() || "Tidak dapat menghubungi Docker daemon.";
-            guide = "Pastikan Docker service berjalan.";
+            errorSummary = errText.trim() || "Cannot connect to Docker daemon.";
+            guide = "Ensure the Docker service is running.";
         }
 
         return {
@@ -114,7 +114,7 @@ export function checkDockerDaemon(exec = spawnSync, osInfo = getOperatingSystemI
         return {
             ok: false,
             error: err.message,
-            guide: "Pastikan Docker terinstal dan service berjalan.",
+            guide: "Ensure Docker is installed and the service is running.",
         };
     }
 }
@@ -127,24 +127,24 @@ export function checkDockerCompose(exec = spawnSync, osInfo = getOperatingSystem
             return { ok: true, version: versionStr };
         }
         const guide = osInfo.platform === "linux"
-            ? "Docker Compose v2 plugin tidak ditemukan. Di Ubuntu pasang dengan:\n    sudo apt-get update && sudo apt-get install -y docker-compose-plugin"
-            : "Docker Compose v2 tidak ditemukan. Pastikan Docker Desktop terinstal dengan benar.";
+            ? "Docker Compose v2 plugin not found. On Ubuntu install with:\n    sudo apt-get update && sudo apt-get install -y docker-compose-plugin"
+            : "Docker Compose v2 not found. Ensure Docker Desktop is properly installed.";
         return {
             ok: false,
-            error: String(result.stderr || result.stdout || "Docker Compose v2 plugin tidak ditemukan.").trim(),
+            error: String(result.stderr || result.stdout || "Docker Compose v2 plugin not found.").trim(),
             guide,
         };
     } catch (err) {
-        return { ok: false, error: err.message, guide: "Pastikan Docker Compose v2 plugin terpasang." };
+        return { ok: false, error: err.message, guide: "Ensure Docker Compose v2 plugin is installed." };
     }
 }
 
 export function checkFilePermissions(targetPath) {
     if (process.platform === "win32") {
-        return { ok: true, mode: "Windows ACL", note: "Dikelola oleh Windows ACL" };
+        return { ok: true, mode: "Windows ACL", note: "Managed by Windows ACL" };
     }
     if (!fs.existsSync(targetPath)) {
-        return { ok: true, mode: "N/A", note: "File/folder belum dibuat" };
+        return { ok: true, mode: "N/A", note: "File/directory not yet created" };
     }
     try {
         const stat = fs.statSync(targetPath);
@@ -153,10 +153,10 @@ export function checkFilePermissions(targetPath) {
         return {
             ok: isSecure,
             mode,
-            note: isSecure ? `Aman (${mode})` : `Peringatan: izin ${mode} terlalu terbuka (disarankan 0600 / 0700)`,
+            note: isSecure ? `Secure (${mode})` : `Warning: permission ${mode} is too permissive (recommend 0600 / 0700)`,
         };
     } catch {
-        return { ok: true, mode: "unknown", note: "Tidak dapat memeriksa izin" };
+        return { ok: true, mode: "unknown", note: "Unable to inspect permissions" };
     }
 }
 
@@ -169,14 +169,14 @@ export function applyDoctorFixes({ root, out = process.stdout }) {
     if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
         try { fs.chmodSync(dataDir, 0o700); } catch { /* Windows */ }
-        fixes.push("Membuat direktori data/ dengan izin aman (0700)");
+        fixes.push("Created data/ directory with secure permissions (0700)");
     } else if (process.platform !== "win32") {
         try {
             const stat = fs.statSync(dataDir);
             const mode = (stat.mode & 0o777).toString(8);
             if (mode !== "700") {
                 fs.chmodSync(dataDir, 0o700);
-                fixes.push(`Memperbaiki izin direktori data/ dari ${mode} ke 0700`);
+                fixes.push(`Fixed data/ directory permissions from ${mode} to 0700`);
             }
         } catch { /* ignore */ }
     }
@@ -188,7 +188,7 @@ export function applyDoctorFixes({ root, out = process.stdout }) {
             const mode = (stat.mode & 0o777).toString(8);
             if (mode !== "600") {
                 fs.chmodSync(envFile, 0o600);
-                fixes.push(`Memperbaiki izin file .env dari ${mode} ke 0600`);
+                fixes.push(`Fixed .env file permissions from ${mode} to 0600`);
             }
         } catch { /* ignore */ }
     }
@@ -200,7 +200,7 @@ export function applyDoctorFixes({ root, out = process.stdout }) {
             const mode = (stat.mode & 0o777).toString(8);
             if (!["700", "750"].includes(mode)) {
                 fs.chmodSync(root, 0o700);
-                fixes.push(`Memperbaiki izin workspace root dari ${mode} ke 0700`);
+                fixes.push(`Fixed workspace root permissions from ${mode} to 0700`);
             }
         } catch { /* ignore */ }
     }
@@ -210,12 +210,12 @@ export function applyDoctorFixes({ root, out = process.stdout }) {
     if (!fs.existsSync(envFile) && fs.existsSync(envExample)) {
         fs.copyFileSync(envExample, envFile);
         try { fs.chmodSync(envFile, 0o600); } catch { /* Windows */ }
-        fixes.push("Menyalin .env dari .env.example (silakan jalankan 'shadow init' untuk mengisi kredensial)");
+        fixes.push("Copied .env from .env.example (run 'hetzer init' to generate credentials)");
     }
 
     if (fixes.length > 0) {
         out.write("--------------------------------------------------------------------------------\n");
-        out.write("  PERBAIKAN OTOMATIS (--fix):\n");
+        out.write("  AUTOMATIC REPAIRS (--fix):\n");
         for (const f of fixes) {
             out.write(`  [v] ${f}\n`);
         }
@@ -262,7 +262,7 @@ export function runDoctor({ root, defaultHome, exec = spawnSync, out = process.s
     }
 
     out.write("================================================================================\n");
-    out.write("  SHADOW CORE - COMPATIBILITY & SYSTEM DOCTOR\n");
+    out.write("  HETZER CORE - COMPATIBILITY & SYSTEM DOCTOR\n");
     out.write("================================================================================\n");
 
     // OS
@@ -276,38 +276,38 @@ export function runDoctor({ root, defaultHome, exec = spawnSync, out = process.s
     if (cliCheck.ok) {
         out.write(`  Docker CLI        : ${cliCheck.version} [OK]\n`);
     } else {
-        out.write(`  Docker CLI        : Tidak terdeteksi [FAIL]\n`);
+        out.write(`  Docker CLI        : Not detected [FAIL]\n`);
     }
 
     // Docker Engine / Daemon
     if (daemonCheck.ok) {
         out.write(`  Docker Engine     : Running (v${daemonCheck.version}) [OK]\n`);
     } else {
-        out.write(`  Docker Engine     : GAGAL / Tidak Dapat Dihubungi [FAIL]\n`);
+        out.write(`  Docker Engine     : FAILED / Cannot connect [FAIL]\n`);
     }
 
     // Docker Compose
     if (composeCheck.ok) {
         out.write(`  Docker Compose    : ${composeCheck.version} [OK]\n`);
     } else {
-        out.write(`  Docker Compose    : Plugin v2 Tidak Ditemukan [FAIL]\n`);
+        out.write(`  Docker Compose    : Plugin v2 Not Found [FAIL]\n`);
     }
 
-    // Shadow Root & Instance
-    const rootLabel = isGlobal ? `${root} (Global User Home)` : `${root} (Workspace Lokal)`;
-    out.write(`  Shadow Root       : ${rootLabel}\n`);
+    // Hetzer Root & Instance
+    const rootLabel = isGlobal ? `${root} (Global User Home)` : `${root} (Local Workspace)`;
+    out.write(`  Hetzer Root       : ${rootLabel}\n`);
 
     // Instance Status
     if (envExists) {
-        out.write(`  Instance Status   : Terinisialisasi (.env aktif) [OK]\n`);
+        out.write(`  Instance Status   : Initialized (.env active) [OK]\n`);
         out.write(`  File Permissions  : ${permCheck.note} ${permCheck.ok ? "[OK]" : "[WARN]"}\n`);
         if (composeConfigValid === true) {
-            out.write(`  Compose Config    : Konfigurasi valid [OK]\n`);
+            out.write(`  Compose Config    : Configuration valid [OK]\n`);
         } else if (composeConfigValid === false) {
-            out.write(`  Compose Config    : Konfigurasi bermasalah [FAIL]\n`);
+            out.write(`  Compose Config    : Configuration issue [FAIL]\n`);
         }
     } else {
-        out.write(`  Instance Status   : Belum diinisialisasi (Jalankan 'shadow init') [INFO]\n`);
+        out.write(`  Instance Status   : Not yet initialized (Run 'hetzer init') [INFO]\n`);
     }
 
     out.write("================================================================================\n");
@@ -315,58 +315,58 @@ export function runDoctor({ root, defaultHome, exec = spawnSync, out = process.s
     const issues = [];
     if (!nodeCheck.ok) {
         issues.push({
-            title: "Versi Node.js Tidak Memenuhi Syarat",
-            detail: `Versi Node saat ini (${nodeCheck.version}) di bawah standar minimum v20.x.`,
-            solution: "Update Node.js ke versi 20 LTS atau 22 LTS (https://nodejs.org).",
+            title: "Node.js Version Does Not Meet Requirements",
+            detail: `Current Node version (${nodeCheck.version}) is below minimum requirement of v20.x.`,
+            solution: "Update Node.js to v20 LTS or v22 LTS (https://nodejs.org).",
         });
     }
     if (!cliCheck.ok) {
         issues.push({
-            title: "Docker CLI Tidak Ditemukan",
+            title: "Docker CLI Not Found",
             detail: cliCheck.error,
             solution: osInfo.platform === "linux"
-                ? "Di Ubuntu jalankan:\n    sudo apt-get update && sudo apt-get install -y docker.io"
-                : "Unduh dan pasang Docker Desktop dari https://www.docker.com/products/docker-desktop",
+                ? "On Ubuntu run:\n    sudo apt-get update && sudo apt-get install -y docker.io"
+                : "Download and install Docker Desktop from https://www.docker.com/products/docker-desktop",
         });
     }
     if (!daemonCheck.ok) {
         issues.push({
-            title: daemonCheck.error || "Docker Engine Tidak Terhubung",
+            title: daemonCheck.error || "Docker Engine Not Connected",
             detail: daemonCheck.rawError,
             solution: daemonCheck.guide,
         });
     }
     if (!composeCheck.ok) {
         issues.push({
-            title: "Docker Compose v2 Plugin Tidak Ditemukan",
+            title: "Docker Compose v2 Plugin Not Found",
             detail: composeCheck.error,
             solution: composeCheck.guide,
         });
     }
     if (composeConfigValid === false) {
         issues.push({
-            title: "Validasi Docker Compose Gagal",
+            title: "Docker Compose Validation Failed",
             detail: composeConfigError,
-            solution: "Periksa syntax docker-compose.yml atau jalankan 'shadow init' ulang.",
+            solution: "Check docker-compose.yml syntax or re-run 'hetzer init'.",
         });
     }
 
     if (issues.length === 0) {
-        out.write("[v] STATUS: Sistem Anda sepenuhnya kompatibel dan siap menjalankan Shadow Core!\n");
+        out.write("[v] STATUS: Your system is fully compatible and ready to run Hetzer Core!\n");
         if (!envExists) {
-            out.write("[i] Langkah berikutnya: jalankan 'shadow init' untuk membuat kredensial awal.\n");
+            out.write("[i] Next step: run 'hetzer init' to create initial credentials.\n");
         }
         return { ok: true, issues: [] };
     }
 
-    out.write(`[!] DITEMUKAN ${issues.length} KENDALA YANG PERLU DIPERBAIKI:\n`);
+    out.write(`[!] FOUND ${issues.length} ISSUE(S) THAT NEED RESOLUTION:\n`);
     for (let i = 0; i < issues.length; i += 1) {
         const issue = issues[i];
-        out.write(`\n  ${i + 1}. [KENDALA] ${issue.title}\n`);
+        out.write(`\n  ${i + 1}. [ISSUE] ${issue.title}\n`);
         if (issue.detail) {
-            out.write(`     Detail : ${issue.detail}\n`);
+            out.write(`     Detail   : ${issue.detail}\n`);
         }
-        out.write(`     Solusi :\n`);
+        out.write(`     Solution :\n`);
         for (const line of issue.solution.split("\n")) {
             out.write(`       ${line}\n`);
         }

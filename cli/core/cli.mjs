@@ -32,21 +32,20 @@ const cliRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const builtinFile = path.join(cliRoot, "modules", "builtin.json");
 const templatesDir = path.join(cliRoot, "templates");
 
-export function defaultShadowHome() {
-    return process.env.SHADOW_HOME
-        ? path.resolve(process.env.SHADOW_HOME)
-        : path.join(os.homedir(), ".shadow");
+export function defaultHetzerHome() {
+    if (process.env.HETZER_HOME) return path.resolve(process.env.HETZER_HOME);
+    return path.join(os.homedir(), ".hetzer");
 }
 
-export function isShadowWorkspace(dir) {
+export function isHetzerWorkspace(dir) {
     const composeFile = path.join(dir, "docker-compose.yml");
     const envFile = path.join(dir, ".env");
     const exampleFile = path.join(dir, ".env.example");
     if (fs.existsSync(composeFile)) {
         try {
             const content = fs.readFileSync(composeFile, "utf8");
-            const isShadow = content.includes("nine-router") || content.includes("shadow-core") || content.includes("NINE_ROUTER");
-            if (isShadow && (fs.existsSync(envFile) || fs.existsSync(exampleFile))) {
+            const isHetzer = content.includes("hetzer") || content.includes("nine-router") || content.includes("NINE_ROUTER");
+            if (isHetzer && (fs.existsSync(envFile) || fs.existsSync(exampleFile))) {
                 return true;
             }
         } catch {
@@ -60,14 +59,14 @@ export function resolveProjectRoot(options = {}) {
     if (options.root) {
         return path.resolve(options.root);
     }
-    if (process.env.SHADOW_ROOT) {
-        return path.resolve(process.env.SHADOW_ROOT);
+    if (process.env.HETZER_ROOT) {
+        return path.resolve(process.env.HETZER_ROOT);
     }
     const cwd = process.cwd();
-    if (isShadowWorkspace(cwd)) {
+    if (isHetzerWorkspace(cwd)) {
         return cwd;
     }
-    return defaultShadowHome();
+    return defaultHetzerHome();
 }
 
 function replaceEnvValue(text, name, value) {
@@ -106,9 +105,9 @@ function run(file, args, options = {}) {
 function projectEnvironment(root) {
     const envFile = path.join(root, ".env");
     if (!fs.existsSync(envFile)) {
-        const isHome = root === defaultShadowHome();
-        const locationMsg = isHome ? "Global user home (~/.shadow)" : `Direktori '${root}'`;
-        throw new Error(`${locationMsg} belum diinisialisasi (file .env tidak ditemukan).\nJalankan 'shadow init' terlebih dahulu untuk membuat konfigurasi awal.`);
+        const isHome = root === defaultHetzerHome();
+        const locationMsg = isHome ? "Global user home (~/.hetzer)" : `Directory '${root}'`;
+        throw new Error(`${locationMsg} is not initialized (.env file not found).\nRun 'hetzer init' first to create initial configuration.`);
     }
     try {
         autoIngestPlaintextEnv({ root, envFile });
@@ -123,8 +122,8 @@ function registryFor(root, values) {
     return loadModuleRegistry({
         builtinFile,
         root,
-        disabledModules: process.env.SHADOW_DISABLED_MODULES || values.SHADOW_DISABLED_MODULES,
-        enabledModules: process.env.SHADOW_ENABLED_MODULES || values.SHADOW_ENABLED_MODULES,
+        disabledModules: process.env.HETZER_DISABLED_MODULES || values.HETZER_DISABLED_MODULES,
+        enabledModules: process.env.HETZER_ENABLED_MODULES || values.HETZER_ENABLED_MODULES,
     });
 }
 
@@ -178,7 +177,7 @@ export function initializeProject(root) {
         NINE_ROUTER_INITIAL_PASSWORD: randomHex(16),
         NINE_ROUTER_API_KEY_SECRET: randomHex(),
         NINE_ROUTER_MACHINE_ID_SALT: randomHex(),
-        SHADOW_GRIMOIRE_KEY: crypto.randomBytes(48).toString("base64url"),
+        HETZER_GRIMOIRE_KEY: crypto.randomBytes(48).toString("base64url"),
     };
     for (const [name, value] of Object.entries(generated)) {
         if (!values[name] || String(values[name]).startsWith("replace-")) text = replaceEnvValue(text, name, value);
@@ -190,8 +189,8 @@ export function initializeProject(root) {
     migrateEnvCredentials({
         root: resolvedRoot,
         envFile,
-        masterKey: process.env.SHADOW_GRIMOIRE_KEY || current.SHADOW_GRIMOIRE_KEY,
-        authorizationRef: "user:shadow-init",
+        masterKey: process.env.HETZER_GRIMOIRE_KEY || current.HETZER_GRIMOIRE_KEY,
+        authorizationRef: "user:hetzer-init",
     });
     let initialPassword = generated.NINE_ROUTER_INITIAL_PASSWORD;
     try {
@@ -205,82 +204,82 @@ export function initializeProject(root) {
 }
 
 function printInitWizard(result) {
-    const isGlobal = result.root === defaultShadowHome();
+    const isGlobal = result.root === defaultHetzerHome();
     process.stdout.write("================================================================================\n");
-    process.stdout.write("  SHADOW CORE - INISIALISASI BERHASIL\n");
+    process.stdout.write("  HETZER - INITIALIZATION SUCCESSFUL\n");
     process.stdout.write("================================================================================\n");
-    process.stdout.write(`[v] Lokasi Instance   : ${result.root}${isGlobal ? " (Global User Home)" : " (Workspace Lokal)"}\n`);
-    process.stdout.write(`[v] File Konfigurasi  : .env (izin akses diamankan chmod 600)\n`);
-    process.stdout.write(`[v] Grimoire Vault    : data/shadow-vault.db (Terenkripsi AES-256-GCM)\n`);
-    process.stdout.write(`[v] MCP Server        : .mcp.json terkonfigurasi\n`);
+    process.stdout.write(`[v] Instance Location : ${result.root}${isGlobal ? " (Global User Home)" : " (Local Workspace)"}\n`);
+    process.stdout.write(`[v] Configuration File: .env (permissions secured chmod 600)\n`);
+    process.stdout.write(`[v] Grimoire Vault    : data/hetzer-vault.db (AES-256-GCM Encrypted)\n`);
+    process.stdout.write(`[v] MCP Server        : .mcp.json configured\n`);
     if (isGlobal) {
-        process.stdout.write(`[v] Akses Global      : Anda dapat menjalankan 'shadow' dari direktori mana saja!\n`);
+        process.stdout.write(`[v] Global Access     : You can run 'hetzer' from any directory!\n`);
     }
     process.stdout.write("--------------------------------------------------------------------------------\n");
-    process.stdout.write("  INFORMASI LOGIN & KREDENSIAL AWAL 9ROUTER:\n");
+    process.stdout.write("  9ROUTER INITIAL LOGIN & CREDENTIAL INFORMATION:\n");
     process.stdout.write("--------------------------------------------------------------------------------\n");
-    process.stdout.write("  URL Web UI       : http://127.0.0.1:20140\n");
-    process.stdout.write("  Form Login       : Masukkan password di bawah (9Router hanya meminta Password)\n");
-    process.stdout.write(`  Initial Password : ${result.initialPassword || "(tersimpan di vault)"}\n\n`);
-    process.stdout.write("  CATATAN PENTING INISIALISASI:\n");
-    process.stdout.write("  9Router hanya membaca Initial Password saat database pertama kali dibuat.\n");
-    process.stdout.write("  Jika sebelumnya 9Router sudah pernah dijalankan, jalankan:\n");
-    process.stdout.write("    shadow down -v && shadow up\n");
-    process.stdout.write("  untuk menghapus volume lama agar password baru ini aktif.\n\n");
-    process.stdout.write("  CATATAN KEAMANAN (ZERO-PLAINTEXT):\n");
-    process.stdout.write("  Password ini telah dienkripsi di Grimoire Vault (data/shadow-vault.db).\n");
-    process.stdout.write("  File .env hanya menyimpan referensi aman:\n");
+    process.stdout.write("  Web UI URL       : http://127.0.0.1:20140\n");
+    process.stdout.write("  Login Form       : Enter the password below (9Router requires only Password)\n");
+    process.stdout.write(`  Initial Password : ${result.initialPassword || "(saved in vault)"}\n\n`);
+    process.stdout.write("  IMPORTANT INITIALIZATION NOTE:\n");
+    process.stdout.write("  9Router only reads the Initial Password when its database is first created.\n");
+    process.stdout.write("  If 9Router was previously initialized, run:\n");
+    process.stdout.write("    hetzer down -v && hetzer up\n");
+    process.stdout.write("  to reset existing volumes so the new password takes effect.\n\n");
+    process.stdout.write("  SECURITY CONTRACT (ZERO-PLAINTEXT):\n");
+    process.stdout.write("  This password is encrypted in Grimoire Vault (data/hetzer-vault.db).\n");
+    process.stdout.write("  The .env file only stores an opaque reference:\n");
     process.stdout.write("    NINE_ROUTER_INITIAL_PASSWORD=secretRef:nine-router-initial-password\n");
-    process.stdout.write("  sehingga kredensial Anda aman dari kebocoran teks polos ke git.\n\n");
-    process.stdout.write("  MANAJEMEN KREDENSIAL:\n");
-    process.stdout.write("  - Lihat password kapan saja : shadow creds reveal nine-router-initial-password\n");
-    process.stdout.write("  - Ganti password di vault   : shadow creds set nine-router-initial-password <password-baru>\n");
-    process.stdout.write("  - Cek semua kredensial      : shadow creds list\n");
+    process.stdout.write("  protecting your secrets from accidental git exposure.\n\n");
+    process.stdout.write("  CREDENTIAL MANAGEMENT:\n");
+    process.stdout.write("  - Reveal password anytime   : hetzer creds reveal nine-router-initial-password\n");
+    process.stdout.write("  - Update password in vault  : hetzer creds set nine-router-initial-password <new-password>\n");
+    process.stdout.write("  - Inspect all credentials   : hetzer creds list\n");
     process.stdout.write("--------------------------------------------------------------------------------\n");
-    process.stdout.write("  LANGKAH SELANJUTNYA:\n");
+    process.stdout.write("  NEXT STEPS:\n");
     process.stdout.write("--------------------------------------------------------------------------------\n");
-    process.stdout.write("  1. Nyalakan services   : shadow up\n");
-    process.stdout.write("  2. Buka Web UI         : http://127.0.0.1:20140 (login dengan password di atas)\n");
-    process.stdout.write("  3. Cek live dashboard  : shadow tui\n");
-    process.stdout.write("  4. Cek modul tambahan  : shadow modules\n");
+    process.stdout.write("  1. Start services      : hetzer up\n");
+    process.stdout.write("  2. Open Web UI         : http://127.0.0.1:20140 (login with password above)\n");
+    process.stdout.write("  3. Open live dashboard : hetzer tui\n");
+    process.stdout.write("  4. View extra modules  : hetzer modules\n");
     process.stdout.write("================================================================================\n");
 }
 
 function printModuleGuide(moduleId, action) {
     if (action === "install") {
-        process.stdout.write(`Modul '${moduleId}' berhasil diaktifkan.\n`);
+        process.stdout.write(`Module '${moduleId}' successfully enabled.\n`);
         if (moduleId === "cognee") {
             process.stdout.write("\n================================================================================\n");
-            process.stdout.write("  PANDUAN KONFIGURASI MODUL: cognee\n");
+            process.stdout.write("  MODULE CONFIGURATION GUIDE: cognee\n");
             process.stdout.write("================================================================================\n");
-            process.stdout.write("Modul 'cognee' menyediakan memori graf & vektor persisten via Model Context Protocol (MCP).\n\n");
-            process.stdout.write("KREDENSIAL YANG DIBUTUHKAN:\n");
-            process.stdout.write("  Modul ini memerlukan API key LLM (OpenAI, Anthropic, OpenRouter, dll.).\n\n");
-            process.stdout.write("CARA MENGATUR KREDENSIAL (TANPA EDIT .ENV MANUAL):\n");
-            process.stdout.write("  Jalankan perintah berikut untuk menyimpan API key ke Vault terenkripsi:\n");
-            process.stdout.write("    shadow creds set cognee-llm-api-key <api-key-anda>\n\n");
-            process.stdout.write("CARA MENJALANKAN & MENGHUBUNGKAN:\n");
-            process.stdout.write("  1. Mulai service   : shadow up cognee\n");
-            process.stdout.write("  2. Setup MCP       : shadow mcp configure\n");
-            process.stdout.write("  3. Gunakan MCP     : Buka Claude Desktop / Cursor / Cline, tools berikut akan aktif:\n");
+            process.stdout.write("The 'cognee' module provides persistent graph & vector memory via Model Context Protocol (MCP).\n\n");
+            process.stdout.write("REQUIRED CREDENTIALS:\n");
+            process.stdout.write("  This module requires an LLM API key (OpenAI, Anthropic, OpenRouter, etc.).\n\n");
+            process.stdout.write("HOW TO CONFIGURE CREDENTIALS:\n");
+            process.stdout.write("  Run the following command to store the API key in the encrypted Vault:\n");
+            process.stdout.write("    hetzer creds set cognee-llm-api-key <your-api-key>\n\n");
+            process.stdout.write("HOW TO START & CONNECT:\n");
+            process.stdout.write("  1. Start service   : hetzer up cognee\n");
+            process.stdout.write("  2. Setup MCP       : hetzer mcp configure\n");
+            process.stdout.write("  3. Use MCP         : In Claude Desktop / Cursor / Cline, the following tools activate:\n");
             process.stdout.write("                       - remember, recall, improve, forget_memory\n");
             process.stdout.write("================================================================================\n");
         } else if (moduleId === "9router") {
             process.stdout.write("\n================================================================================\n");
-            process.stdout.write("  PANDUAN MODUL: 9router\n");
+            process.stdout.write("  MODULE GUIDE: 9router\n");
             process.stdout.write("================================================================================\n");
-            process.stdout.write("Modul '9router' adalah AI Gateway lokal untuk routing model cerdas dan fallback.\n\n");
-            process.stdout.write("CARA MENGAKSES & LOGIN:\n");
-            process.stdout.write("  1. Jalankan service : shadow up 9router\n");
-            process.stdout.write("  2. Buka browser     : http://127.0.0.1:20140\n");
-            process.stdout.write("  3. Cek password     : shadow creds reveal nine-router-initial-password\n");
+            process.stdout.write("The '9router' module is a local AI Gateway for smart model routing and fallbacks.\n\n");
+            process.stdout.write("HOW TO ACCESS & LOGIN:\n");
+            process.stdout.write("  1. Start service    : hetzer up 9router\n");
+            process.stdout.write("  2. Open browser     : http://127.0.0.1:20140\n");
+            process.stdout.write("  3. Check password   : hetzer creds reveal nine-router-initial-password\n");
             process.stdout.write("================================================================================\n");
         } else {
-            process.stdout.write(`Jalankan 'shadow up ${moduleId}' untuk memulai modul.\n`);
+            process.stdout.write(`Run 'hetzer up ${moduleId}' to start this module.\n`);
         }
     } else {
-        process.stdout.write(`Modul '${moduleId}' berhasil dinonaktifkan.\n`);
-        process.stdout.write(`[i] Jalankan 'shadow up' untuk menerapkan perubahan profile Compose.\n`);
+        process.stdout.write(`Module '${moduleId}' successfully disabled.\n`);
+        process.stdout.write(`[i] Run 'hetzer up' to apply Compose profile changes.\n`);
     }
 }
 
@@ -288,8 +287,8 @@ export function printModuleHelp(moduleId, root, values) {
     const registry = registryFor(root, values);
     const module = registry.modules.find((m) => m.id === moduleId);
     if (!module) {
-        process.stdout.write(`Modul '${moduleId}' tidak ditemukan.\n`);
-        process.stdout.write("Jalankan 'shadow modules' untuk melihat daftar modul yang tersedia.\n");
+        process.stdout.write(`Module '${moduleId}' not found.\n`);
+        process.stdout.write("Run 'hetzer modules' to view available modules.\n");
         return;
     }
 
@@ -299,13 +298,13 @@ export function printModuleHelp(moduleId, root, values) {
     const composeService = service.composeService || moduleId;
 
     process.stdout.write("================================================================================\n");
-    process.stdout.write(`  PANDUAN LENGKAP MODUL NATIVE: ${module.label || moduleId} (${module.id})\n`);
+    process.stdout.write(`  NATIVE MODULE GUIDE: ${module.label || moduleId} (${module.id})\n`);
     process.stdout.write("================================================================================\n");
-    process.stdout.write(`  Status      : ${isEnabled ? "Aktif (Enabled)" : "Nonaktif (Disabled)"}\n`);
+    process.stdout.write(`  Status      : ${isEnabled ? "Enabled" : "Disabled"}\n`);
     process.stdout.write(`  Lifecycle   : ${module.lifecycle}${isCompose ? " (Docker Compose Container)" : " (Host Process)"}\n`);
     if (module.sourceUrl) process.stdout.write(`  Source Repo : ${module.sourceUrl}\n`);
-    if (service.role) process.stdout.write(`  Peran       : ${service.role}\n`);
-    if (service.lore) process.stdout.write(`  Deskripsi   : ${service.lore}\n`);
+    if (service.role) process.stdout.write(`  Role        : ${service.role}\n`);
+    if (service.lore) process.stdout.write(`  Description : ${service.lore}\n`);
     if (service.portEnv && values[service.portEnv]) {
         process.stdout.write(`  Web UI/Port : http://127.0.0.1:${values[service.portEnv]}\n`);
     } else if (service.fallbackPort) {
@@ -313,20 +312,20 @@ export function printModuleHelp(moduleId, root, values) {
     }
     if (service.mcpServer) {
         process.stdout.write(`  MCP Server  : ${service.mcpServer.name} (${service.mcpServer.transport} at ${service.mcpServer.path})\n`);
-        process.stdout.write(`  Cek Tools   : shadow mcp tools ${service.mcpServer.name}\n`);
-        process.stdout.write(`  Ping Test   : shadow mcp ping ${service.mcpServer.name}\n`);
+        process.stdout.write(`  Tools Check : hetzer mcp tools ${service.mcpServer.name}\n`);
+        process.stdout.write(`  Ping Test   : hetzer mcp ping ${service.mcpServer.name}\n`);
     }
 
     process.stdout.write("--------------------------------------------------------------------------------\n");
-    process.stdout.write("  PERINTAH NATIVE YANG TERSEDIA:\n");
+    process.stdout.write("  AVAILABLE NATIVE COMMANDS:\n");
     process.stdout.write("--------------------------------------------------------------------------------\n");
 
     if (isCompose) {
-        process.stdout.write("1. MANAJEMEN CONTAINER DOCKER:\n");
-        process.stdout.write(`   - Jalankan container        : shadow up ${module.id}\n`);
-        process.stdout.write(`   - Update image ke digest baru: shadow update ${module.id}\n`);
-        process.stdout.write(`   - Lihat live logs           : shadow logs ${composeService}\n`);
-        process.stdout.write(`   - Pantau status container   : shadow status\n\n`);
+        process.stdout.write("1. DOCKER CONTAINER MANAGEMENT:\n");
+        process.stdout.write(`   - Start container           : hetzer up ${module.id}\n`);
+        process.stdout.write(`   - Update image to new digest: hetzer update ${module.id}\n`);
+        process.stdout.write(`   - Stream live logs          : hetzer logs ${composeService}\n`);
+        process.stdout.write(`   - Inspect container status  : hetzer status\n\n`);
     }
 
     const creds = Object.entries(KNOWN_CREDENTIALS)
@@ -334,39 +333,39 @@ export function printModuleHelp(moduleId, root, values) {
         .map(([id, def]) => ({ id, ...def }));
 
     if (creds.length > 0) {
-        process.stdout.write("2. KREDENSIAL & RAHASIA (GRIMOIRE VAULT):\n");
+        process.stdout.write("2. CREDENTIALS & SECRETS (GRIMOIRE VAULT):\n");
         for (const cred of creds) {
-            process.stdout.write(`   - Cek rahasia '${cred.id}':\n`);
-            process.stdout.write(`       shadow creds reveal ${cred.id}\n`);
-            process.stdout.write(`   - Atur rahasia '${cred.id}':\n`);
-            process.stdout.write(`       shadow creds set ${cred.id} <nilai>\n`);
+            process.stdout.write(`   - Reveal secret '${cred.id}':\n`);
+            process.stdout.write(`       hetzer creds reveal ${cred.id}\n`);
+            process.stdout.write(`   - Configure secret '${cred.id}':\n`);
+            process.stdout.write(`       hetzer creds set ${cred.id} <value>\n`);
         }
         process.stdout.write("\n");
     }
 
-    process.stdout.write("3. AKTIVASI & STATUS MODUL:\n");
-    process.stdout.write(`   - Aktifkan modul            : shadow install ${module.id}\n`);
-    process.stdout.write(`   - Nonaktifkan modul         : shadow remove ${module.id}\n`);
+    process.stdout.write("3. MODULE ACTIVATION & STATUS:\n");
+    process.stdout.write(`   - Enable module             : hetzer install ${module.id}\n`);
+    process.stdout.write(`   - Disable module            : hetzer remove ${module.id}\n`);
 
     if (module.runtime?.actions?.length) {
-        process.stdout.write("\n4. ACTION HOST-PROCESS:\n");
+        process.stdout.write("\n4. HOST-PROCESS ACTIONS:\n");
         for (const act of module.runtime.actions) {
-            process.stdout.write(`   - shadow module ${module.id} ${act} [args]\n`);
+            process.stdout.write(`   - hetzer module ${module.id} ${act} [args]\n`);
         }
     }
 
     if (module.id === "9router") {
-        process.stdout.write("\n4. AKSES WEB UI & CATATAN LOGIN:\n");
-        process.stdout.write("   - URL Web UI                : http://127.0.0.1:20140\n");
-        process.stdout.write("   - Form Login                : Masukkan Initial Password (tanpa username)\n");
-        process.stdout.write("   - Reset Volume (Password)   : shadow down -v && shadow up 9router\n");
+        process.stdout.write("\n4. WEB UI ACCESS & LOGIN NOTES:\n");
+        process.stdout.write("   - Web UI URL                : http://127.0.0.1:20140\n");
+        process.stdout.write("   - Login Form                : Enter Initial Password (no username required)\n");
+        process.stdout.write("   - Reset Volume (Password)   : hetzer down -v && hetzer up 9router\n");
     }
 
     if (service.mcpServer) {
-        process.stdout.write(`\n4. INTEGRASI & EKSEKUSI MCP TOOL (${service.mcpServer.name}):\n`);
-        process.stdout.write(`   - Cek daftar & sifat tool   : shadow mcp tools ${service.mcpServer.name}\n`);
-        process.stdout.write(`   - Panggil tool langsung CLI : shadow mcp call ${service.mcpServer.name} <tool> [args]\n`);
-        process.stdout.write(`   - Daftarkan ke AI client    : shadow mcp configure\n`);
+        process.stdout.write(`\n4. MCP TOOL INTEGRATION (${service.mcpServer.name}):\n`);
+        process.stdout.write(`   - List tools & nature       : hetzer mcp tools ${service.mcpServer.name}\n`);
+        process.stdout.write(`   - Call tool directly in CLI : hetzer mcp call ${service.mcpServer.name} <tool> [args]\n`);
+        process.stdout.write(`   - Register to AI clients    : hetzer mcp configure\n`);
     }
 
     process.stdout.write("================================================================================\n");
@@ -376,35 +375,34 @@ function help() {
     const banner = getHetzerAsciiBanner({ colored: Boolean(process.stdout.isTTY) });
     return `${banner}
 
-Penggunaan: hetzer [options] <command> [arguments]
-            shadow [options] <command> [arguments]
+Usage: hetzer [options] <command> [arguments]
 
 Options:
-  --root <path>             Tentukan root direktori instance (default: ~/.shadow)
+  --root <path>             Specify instance root directory (default: ~/.hetzer)
 
 Commands:
-  init [directory]          Inisialisasi instance (default: ~/.shadow)
-  doctor [--fix]            Cek kompatibilitas sistem & Docker (--fix untuk auto-repair izin/direktori)
-  up [module|all] [--wait]  Jalankan container core, 9router, atau modul aktif (--wait menunggu healthcheck)
-  update [target|all]       Tarik dan perbarui digest image modul/service
-  down [-v]                 Hentikan service (gunakan -v untuk menghapus volume data)
-  status                    Lihat status kontainer dan image
-  logs [service]            Lihat log service
-  modules [module]          Daftar modul tersedia atau panduan detail modul
-  install <module>          Aktifkan modul (contoh: 9router, cognee)
-  remove <module>           Nonaktifkan modul tanpa menghapus data
-  module <id> [action|help] Panduan perintah native atau jalankan action host modul
-  module create <id> [--source <repo>] Buat resep modul baru (analisis AI via 9Router)
-  validate [module]         Validasi integritas, keamanan, dan resep Docker modul
-  creds [list|reveal|set]   Kelola rahasia terenkripsi di Grimoire Vault (AES-256-GCM)
-  sniffer [scan|redact] <t> Pindai dan amankan kredensial dari teks secara instan (<2ms)
-  skill [install|status]    Pasang Universal AI Skill ke Hermes, AGY, OpenCode, CommandCode, Cursor, Claude
-  hook [install|uninstall|check] Pasang/kelola Git Pre-Commit Guard untuk cegah commit token bocor
-  mcp configure|serve|ping  Konfigurasi, jalankan bridge, atau diagnostik ping MCP
-  mcp tools <service>       Daftar tools MCP service beserta klasifikasi Offline/LLM
-  mcp call <srv> <tool> [a] Panggil tool MCP service secara langsung tanpa AI client eksternal
-  publish                   Build, validasi, dan publish paket ke npm publik
-  tui                       Buka tampilan operasional terminal interaktif
+  init [directory]          Initialize a new instance (default: ~/.hetzer or current workspace)
+  doctor [--fix]            Check system & Docker compatibility (--fix to auto-repair)
+  up [module|all] [--wait]  Start core, 9router, or active module containers (--wait polls health)
+  update [target|all]       Pull and update module/service image digests
+  down [-v]                 Stop services (use -v to purge persistent data volumes)
+  status                    View container states and image digests
+  logs [service]            Stream service logs
+  modules [module]          List available modules or print detailed module guide
+  install <module>          Enable module (e.g. 9router, cognee)
+  remove <module>           Disable module without deleting persistent data
+  module <id> [action|help] Print native command guide or run host module action
+  module create <id> [--source <repo>] Scaffold new module recipe (AI-assisted via 9Router)
+  validate [module]         Validate module integrity, security, and compose recipe
+  creds [list|reveal|set]   Manage encrypted secrets in Grimoire Vault (AES-256-GCM)
+  sniffer [scan|redact] <t> Intercept and secure credentials from input text in < 2ms
+  skill [install|status]    Deploy Universal AI Skills to Hermes, AGY, OpenCode, Cursor, Claude
+  hook [install|uninstall|check] Manage Git Pre-Commit Guard to prevent accidental token leaks
+  mcp configure|serve|ping  Configure, start bridge, or run MCP diagnostic ping
+  mcp tools <service>       List MCP tools with Offline / Hybrid / LLM classification
+  mcp call <srv> <tool> [a] Call MCP tool directly from CLI without external AI client
+  publish                   Build, verify test suite, and publish package to npm
+  tui                       Launch interactive terminal operations dashboard
 `;
 }
 
@@ -426,7 +424,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
     }
     if (command === "doctor") {
         const fix = args.includes("--fix");
-        const result = runDoctor({ root, defaultHome: defaultShadowHome(), fix });
+        const result = runDoctor({ root, defaultHome: defaultHetzerHome(), fix });
         if (!result.ok) process.exitCode = 1;
         return;
     }
@@ -435,7 +433,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             ? path.resolve(args[0])
             : (rootOption
                 ? path.resolve(rootOption)
-                : (isShadowWorkspace(process.cwd()) ? process.cwd() : defaultShadowHome()));
+                : (isHetzerWorkspace(process.cwd()) ? process.cwd() : defaultHetzerHome()));
         const result = initializeProject(target);
         printInitWizard(result);
         return;
@@ -443,7 +441,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
 
     const { envFile, values } = projectEnvironment(root);
     if (["install", "remove"].includes(command)) {
-        if (!args[0]) throw new Error(`Usage: shadow ${command} <module>`);
+        if (!args[0]) throw new Error(`Usage: hetzer ${command} <module>`);
         const moduleId = args[0];
         if (command === "install") {
             const templateModuleDir = path.join(templatesDir, "modules", moduleId);
@@ -470,36 +468,36 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         if (subCommand === "list") {
             const list = listCredentials({ root, envFile });
             process.stdout.write("================================================================================\n");
-            process.stdout.write("  SHADOW CORE - CREDENTIAL VAULT (GRIMOIRE)\n");
+            process.stdout.write("  HETZER CORE - CREDENTIAL VAULT (GRIMOIRE)\n");
             process.stdout.write("================================================================================\n");
-            process.stdout.write("ID                            MODUL     STATUS      DESKRIPSI\n");
+            process.stdout.write("ID                            MODULE    STATUS      DESCRIPTION\n");
             process.stdout.write("----------------------------  --------  ----------  ----------------------------\n");
             for (const item of list) {
                 const idCol = item.id.padEnd(28);
                 const modCol = item.module.padEnd(8);
-                const statusCol = (item.configured ? "tersimpan" : "belum diset").padEnd(10);
+                const statusCol = (item.configured ? "saved" : "not set").padEnd(10);
                 process.stdout.write(`${idCol}  ${modCol}  ${statusCol}  ${item.description}\n`);
             }
             process.stdout.write("--------------------------------------------------------------------------------\n");
-            process.stdout.write("Perintah:\n");
-            process.stdout.write("  - Lihat nilai rahasia : shadow creds reveal <id>\n");
-            process.stdout.write("  - Simpan/ubah nilai   : shadow creds set <id> <nilai>\n");
+            process.stdout.write("Commands:\n");
+            process.stdout.write("  - View secret value   : hetzer creds reveal <id>\n");
+            process.stdout.write("  - Save/update value   : hetzer creds set <id> <value>\n");
             process.stdout.write("================================================================================\n");
             return;
         }
         if (subCommand === "reveal" || subCommand === "get") {
             const id = args[1];
-            if (!id) throw new Error("Usage: shadow creds reveal <id>");
+            if (!id) throw new Error("Usage: hetzer creds reveal <id>");
             const cred = revealCredential({ root, envFile, id });
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  DETAIL KREDENSIAL: ${cred.id}\n`);
+            process.stdout.write(`  CREDENTIAL DETAIL: ${cred.id}\n`);
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  Nilai Rahasia : ${cred.secret}\n`);
-            process.stdout.write(`  Modul         : ${cred.module}\n`);
-            process.stdout.write(`  Tipe          : ${cred.authType}\n`);
-            process.stdout.write(`  Deskripsi     : ${cred.description}\n`);
+            process.stdout.write(`  Secret Value : ${cred.secret}\n`);
+            process.stdout.write(`  Module       : ${cred.module}\n`);
+            process.stdout.write(`  Type         : ${cred.authType}\n`);
+            process.stdout.write(`  Description  : ${cred.description}\n`);
             if (cred.usage) {
-                process.stdout.write(`  Cara Pakai    : ${cred.usage}\n`);
+                process.stdout.write(`  Usage        : ${cred.usage}\n`);
             }
             process.stdout.write("================================================================================\n");
             return;
@@ -507,49 +505,49 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         if (subCommand === "set") {
             const id = args[1];
             let secret = args[2];
-            if (!id) throw new Error("Usage: shadow creds set <id> [value]");
+            if (!id) throw new Error("Usage: hetzer creds set <id> [value]");
             if (!secret) {
-                secret = await promptSecret(`Masukkan nilai rahasia untuk '${id}': `);
+                secret = await promptSecret(`Enter secret value for '${id}': `);
             }
-            if (!secret) throw new Error("Nilai rahasia (secret) wajib diisi.");
+            if (!secret) throw new Error("Secret value is required.");
             const result = setCredential({ root, envFile, id, secret });
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`[v] Kredensial '${result.id}' berhasil disimpan ke Vault (AES-256-GCM)!\n`);
-            process.stdout.write(`[v] Konfigurasi .env diperbarui: ${result.envVar}=secretRef:${result.id}\n`);
+            process.stdout.write(`[v] Credential '${result.id}' successfully saved to Vault (AES-256-GCM)!\n`);
+            process.stdout.write(`[v] Updated .env configuration: ${result.envVar}=secretRef:${result.id}\n`);
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  Modul     : ${result.module}\n`);
-            process.stdout.write(`  Deskripsi : ${result.description}\n`);
+            process.stdout.write(`  Module      : ${result.module}\n`);
+            process.stdout.write(`  Description : ${result.description}\n`);
             if (result.usage) {
-                process.stdout.write(`  Cara Pakai: ${result.usage}\n`);
+                process.stdout.write(`  Usage       : ${result.usage}\n`);
             }
             if (result.id.startsWith("npm-")) {
-                process.stdout.write("  Terapkan  : Jalankan 'npm run publish-pkg' atau 'node scripts/publish.mjs' untuk publish ke npm.\n");
+                process.stdout.write("  Apply       : Run 'npm run publish-pkg' or 'node scripts/publish.mjs' to publish to npm.\n");
             } else {
-                const upTarget = result.module && result.module !== "core" ? `shadow up ${result.module}` : "shadow up";
-                process.stdout.write(`  Terapkan  : Jalankan '${upTarget}' (atau 'shadow up') untuk memuat ulang ke container.\n`);
+                const upTarget = result.module && result.module !== "core" ? `hetzer up ${result.module}` : "hetzer up";
+                process.stdout.write(`  Apply       : Run '${upTarget}' (or 'hetzer up') to reload containers.\n`);
             }
             process.stdout.write("================================================================================\n");
             return;
         }
-        throw new Error(`Subcommand creds tidak dikenal: '${subCommand}'. Gunakan 'list', 'reveal', atau 'set'.`);
+        throw new Error(`Unknown creds subcommand: '${subCommand}'. Use 'list', 'reveal', or 'set'.`);
     }
     if (["sniffer", "sniff"].includes(command)) {
         const sub = args[0] || "scan";
         const input = args.slice(1).join(" ");
         if (!input) {
-            throw new Error("Usage: shadow sniffer <scan|redact> <text>");
+            throw new Error("Usage: hetzer sniffer <scan|redact> <text>");
         }
         if (sub === "scan") {
             const res = scanText(input);
             process.stdout.write("================================================================================\n");
-            process.stdout.write("  SHADOW CORE - SECRET SNIFFER (SUB-2MS DETECTOR)\n");
+            process.stdout.write("  HETZER - SECRET SNIFFER (SUB-2MS DETECTOR)\n");
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  Status Deteksi : ${res.hasSecrets ? "[!] KREDENSIAL DITEMUKAN" : "[v] AMAN (Tidak ada kredensial terdeteksi)"}\n`);
-            process.stdout.write(`  Waktu Eksekusi : ${res.latencyMs} ms\n`);
+            process.stdout.write(`  Detection Status : ${res.hasSecrets ? "[!] SECRETS DETECTED" : "[v] CLEAN (No secrets detected)"}\n`);
+            process.stdout.write(`  Execution Time   : ${res.latencyMs} ms\n`);
             if (res.hasSecrets) {
                 process.stdout.write("--------------------------------------------------------------------------------\n");
                 for (const m of res.matches) {
-                    process.stdout.write(`  * ${m.label} (${m.type}) di indeks ${m.index}\n`);
+                    process.stdout.write(`  * ${m.label} (${m.type}) at index ${m.index}\n`);
                 }
             }
             process.stdout.write("================================================================================\n");
@@ -558,16 +556,16 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         if (sub === "redact") {
             const res = redactAndVault(input, { root, envFile });
             process.stdout.write("================================================================================\n");
-            process.stdout.write("  SHADOW CORE - SECRET SNIFFER (REDACT & AUTO-VAULT)\n");
+            process.stdout.write("  HETZER - SECRET SNIFFER (REDACT & AUTO-VAULT)\n");
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  Waktu Eksekusi : ${res.latencyMs} ms\n`);
-            process.stdout.write(`  Jumlah Diamankan: ${res.redactedCount}\n`);
+            process.stdout.write(`  Execution Time   : ${res.latencyMs} ms\n`);
+            process.stdout.write(`  Secured Count    : ${res.redactedCount}\n`);
             process.stdout.write("--------------------------------------------------------------------------------\n");
-            process.stdout.write(`  Teks Aman Dikirim ke AI:\n  ${res.text}\n`);
+            process.stdout.write(`  Safe Redacted Text for AI:\n  ${res.text}\n`);
             process.stdout.write("================================================================================\n");
             return;
         }
-        throw new Error(`Subcommand sniffer tidak dikenal: '${sub}'. Gunakan 'scan' atau 'redact'.`);
+        throw new Error(`Unknown sniffer subcommand: '${sub}'. Use 'scan' or 'redact'.`);
     }
     if (["skill", "skills"].includes(command)) {
         const action = args[0] || "install";
@@ -636,7 +634,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             process.stdout.write(`Pinned ${change.serviceId} ${change.version} in ${path.basename(envFile)}.\n`);
         }
         for (const custom of migration.custom) {
-            process.stdout.write(`Keeping custom ${custom.variable}; only known Shadow release pins are migrated.\n`);
+            process.stdout.write(`Keeping custom ${custom.variable}; only known Hetzer release pins are migrated.\n`);
         }
         for (const composeArgs of updateComposeCommands(selection.arguments)) {
             compose(root, envFile, composeArgs);
@@ -677,7 +675,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             }
             if (foundModule) {
                 if (!foundModule.enabled) {
-                    process.stderr.write(`[!] Modul '${foundModule.id}' belum diaktifkan.\n    Jalankan 'shadow install ${foundModule.id} && shadow up ${foundModule.id}' terlebih dahulu.\n`);
+                    process.stderr.write(`[!] Module '${foundModule.id}' is not yet enabled.\n    Run 'hetzer install ${foundModule.id} && hetzer up ${foundModule.id}' first.\n`);
                     return;
                 }
                 mappedArgs.push(foundService?.composeService || arg);
@@ -697,7 +695,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         } else {
             const results = validateAllModules({ root });
             if (!results.length) {
-                process.stdout.write("Tidak ada recipe modul ditemukan di folder 'modules/'.\n");
+                process.stdout.write("No module recipes found in 'modules/' directory.\n");
                 return;
             }
             let hasError = false;
@@ -715,7 +713,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         if (moduleId === "create") {
             const targetId = action;
             if (!targetId || targetId.startsWith("-")) {
-                throw new Error("Penggunaan: shadow module create <id> [--source <repo/url>] [--label <label>] [--port <port>] [--mcp] [--web-ui]");
+                throw new Error("Usage: hetzer module create <id> [--source <repo/url>] [--label <label>] [--port <port>] [--mcp] [--web-ui]");
             }
             let label = "";
             let port = 0;
@@ -738,7 +736,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
 
             let created;
             if (source) {
-                process.stdout.write(`[i] Menganalisis source modul via 9Router AI Engine: ${source}...\n`);
+                process.stdout.write(`[i] Analyzing module source via 9Router AI Engine: ${source}...\n`);
                 created = await createModuleRecipeFromSource({
                     root,
                     moduleId: targetId,
@@ -760,20 +758,20 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             }
 
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  SHADOW CORE - MODULE GENERATOR: ${created.moduleId}\n`);
+            process.stdout.write(`  HETZER - MODULE GENERATOR: ${created.moduleId}\n`);
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  [v] Direktori dibuat    : modules/${created.moduleId}/\n`);
-            process.stdout.write(`  [v] Manifest dibuat     : modules/${created.moduleId}/module.json\n`);
-            process.stdout.write(`  [v] Compose dibuat      : modules/${created.moduleId}/docker-compose.${created.moduleId}.yml\n`);
-            process.stdout.write(`  [v] Dokumentasi dibuat  : modules/${created.moduleId}/README.md\n`);
+            process.stdout.write(`  [v] Directory created   : modules/${created.moduleId}/\n`);
+            process.stdout.write(`  [v] Manifest created    : modules/${created.moduleId}/module.json\n`);
+            process.stdout.write(`  [v] Compose created     : modules/${created.moduleId}/docker-compose.${created.moduleId}.yml\n`);
+            process.stdout.write(`  [v] Documentation       : modules/${created.moduleId}/README.md\n`);
             if (created.sourceUrl) {
                 process.stdout.write(`  [v] Upstream Source     : ${created.sourceUrl}\n`);
             }
             process.stdout.write("--------------------------------------------------------------------------------\n");
-            process.stdout.write("  Langkah selanjutnya:\n");
-            process.stdout.write(`    1. Validasi resep     : shadow validate ${created.moduleId}\n`);
-            process.stdout.write(`    2. Aktifkan modul     : shadow install ${created.moduleId}\n`);
-            process.stdout.write(`    3. Mulai container    : shadow up ${created.moduleId}\n`);
+            process.stdout.write("  Next steps:\n");
+            process.stdout.write(`    1. Validate recipe    : hetzer validate ${created.moduleId}\n`);
+            process.stdout.write(`    2. Enable module      : hetzer install ${created.moduleId}\n`);
+            process.stdout.write(`    3. Start container    : hetzer up ${created.moduleId}\n`);
             process.stdout.write("================================================================================\n");
             return;
         }
@@ -786,7 +784,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             } else {
                 const results = validateAllModules({ root });
                 if (!results.length) {
-                    process.stdout.write("Tidak ada recipe modul ditemukan di folder 'modules/'.\n");
+                    process.stdout.write("No module recipes found in 'modules/' directory.\n");
                     return;
                 }
                 let hasError = false;
@@ -805,14 +803,14 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             return;
         }
         if (!moduleId || ["help", "--help", "-h"].includes(moduleId)) {
-            process.stdout.write("Penggunaan: shadow module <id> [action|help|validate]\n");
-            process.stdout.write("            shadow module create <id> [options]\n\n");
-            process.stdout.write("Panduan perintah native modul bawaan:\n");
-            process.stdout.write("  shadow module 9router help\n");
-            process.stdout.write("  shadow module cognee help\n");
-            process.stdout.write("  shadow module validate [id]     (Validasi standar keamanan & resep modul)\n");
-            process.stdout.write("  shadow module create <id>       (Generate resep boilerplate modul baru)\n\n");
-            process.stdout.write("Jalankan 'shadow modules' untuk melihat daftar seluruh modul.\n");
+            process.stdout.write("Usage: hetzer module <id> [action|help|validate]\n");
+            process.stdout.write("       hetzer module create <id> [options]\n\n");
+            process.stdout.write("Native module guides:\n");
+            process.stdout.write("  hetzer module 9router help\n");
+            process.stdout.write("  hetzer module cognee help\n");
+            process.stdout.write("  hetzer module validate [id]     (Validate module recipes & security standards)\n");
+            process.stdout.write("  hetzer module create <id>       (Generate boilerplate recipe for a new module)\n\n");
+            process.stdout.write("Run 'hetzer modules' to list all available modules.\n");
             return;
         }
         if (!action || ["help", "--help", "-h"].includes(action)) {
@@ -821,7 +819,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         }
         run(process.execPath, [path.join(cliRoot, "modules", "runtime.mjs"), ...args], {
             cwd: root,
-            env: { ...process.env, SHADOW_ROOT: root, SHADOW_ENV_FILE: envFile },
+            env: { ...process.env, HETZER_ROOT: root, HETZER_ENV_FILE: envFile },
         });
         return;
     }
@@ -840,31 +838,31 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         if (action === "tools") {
             const targetService = args[1];
             if (!targetService) {
-                throw new Error("Usage: shadow mcp tools <service>\nContoh: shadow mcp tools cognee");
+                throw new Error("Usage: hetzer mcp tools <service>\nExample: hetzer mcp tools cognee");
             }
             const result = await listMcpTools({ root, targetService });
             process.stdout.write("================================================================================\n");
-            process.stdout.write(`  SHADOW CORE - DAFTAR MCP TOOLS (${result.serviceName})\n`);
+            process.stdout.write(`  HETZER CORE - MCP TOOLS LIST (${result.serviceName})\n`);
             process.stdout.write(`  Endpoint: ${result.endpointUrl}\n`);
             process.stdout.write("================================================================================\n");
             if (result.tools.length === 0) {
-                process.stdout.write("  Tidak ada tools yang diekspos oleh service ini.\n");
+                process.stdout.write("  No tools exposed by this service.\n");
             } else {
                 for (const tool of result.tools) {
                     const tag = tool.classification?.tag || "NATIVE";
                     const note = tool.classification?.note || "";
                     process.stdout.write(`\n* ${tool.name} [${tag}] (${note})\n`);
                     if (tool.description) {
-                        process.stdout.write(`  Deskripsi : ${tool.description}\n`);
+                        process.stdout.write(`  Description : ${tool.description}\n`);
                     }
                     if (tool.inputSchema?.properties && Object.keys(tool.inputSchema.properties).length > 0) {
                         const required = new Set(tool.inputSchema.required || []);
                         const props = Object.entries(tool.inputSchema.properties)
                             .map(([k, v]) => `${k}${required.has(k) ? "*" : ""}: ${v.type || "any"}`)
                             .join(", ");
-                        process.stdout.write(`  Argumen   : { ${props} }\n`);
+                        process.stdout.write(`  Arguments   : { ${props} }\n`);
                     }
-                    process.stdout.write(`  Panggilan : shadow mcp call ${targetService} ${tool.name} '{}'\n`);
+                    process.stdout.write(`  Invocation  : hetzer mcp call ${targetService} ${tool.name} '{}'\n`);
                 }
             }
             process.stdout.write("================================================================================\n");
@@ -875,7 +873,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             const toolName = args[2];
             const argsJson = args[3] || "{}";
             if (!targetService || !toolName) {
-                throw new Error("Usage: shadow mcp call <service> <tool> [argsJson]\nContoh: shadow mcp call cognee search '{\"query\": \"catatan\"}'");
+                throw new Error("Usage: hetzer mcp call <service> <tool> [argsJson]\nExample: hetzer mcp call cognee search '{\"query\": \"notes\"}'");
             }
             const ok = await runMcpToolCommand({
                 root,
@@ -887,7 +885,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             return;
         }
         if (action !== "serve") {
-            throw new Error("Usage: shadow mcp <configure|serve|ping [service]|tools <service>|call <service> <tool> [args]>");
+            throw new Error("Usage: hetzer mcp <configure|serve|ping [service]|tools <service>|call <service> <tool> [args]>");
         }
         run(process.execPath, [
             path.join(cliRoot, "vault", "exec.mjs"),
@@ -908,5 +906,5 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         run(process.execPath, [path.join(cliRoot, "modules", "tui.mjs"), "--root", root], { cwd: root });
         return;
     }
-    throw new Error(`Unknown command '${command}'. Run 'shadow help'.`);
+    throw new Error(`Unknown command '${command}'. Run 'hetzer help'.`);
 }

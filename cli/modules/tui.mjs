@@ -63,7 +63,7 @@ function dockerSnapshot(root, envFile, registry, fileEnv) {
         .filter((file) => fs.existsSync(file));
     if (!composeFiles.length) return { state: "n/a", detail: "no Compose files", rows: [] };
 
-    const args = ["compose", "--project-name", environmentValue(fileEnv, "SHADOW_PROJECT_NAME", "shadow")];
+    const args = ["compose", "--project-name", environmentValue(fileEnv, "HETZER_PROJECT_NAME", "hetzer")];
     if (fs.existsSync(envFile)) args.push("--env-file", envFile);
     for (const file of composeFiles) args.push("-f", file);
     args.push("--profile", "*", "ps", "--all", "--format", "json");
@@ -86,12 +86,12 @@ function dockerSnapshot(root, envFile, registry, fileEnv) {
 }
 
 function vaultSnapshot(root, fileEnv) {
-    const configured = environmentValue(fileEnv, "SHADOW_VAULT_PATH");
+    const configured = environmentValue(fileEnv, "HETZER_VAULT_PATH");
     const dbPath = configured
         ? (path.isAbsolute(configured) ? configured : path.join(root, configured))
-        : path.join(root, "data", "shadow-vault.db");
+        : path.join(root, "data", "hetzer-vault.db");
     const exists = dbPath !== ":memory:" && fs.existsSync(dbPath);
-    const unlocked = Boolean(environmentValue(fileEnv, "SHADOW_GRIMOIRE_KEY"));
+    const unlocked = Boolean(environmentValue(fileEnv, "HETZER_GRIMOIRE_KEY"));
     if (!exists) return { state: "n/a", detail: "not initialized" };
     if (!unlocked) return { state: "locked", detail: "database present; key unavailable" };
     return { state: "ready", detail: "database present; key available" };
@@ -120,15 +120,15 @@ function composeState(row) {
     return { state: state || "unknown", detail: String(row.Status || row.status || "unknown") };
 }
 
-export async function collectStatus({ root = process.env.SHADOW_ROOT || process.cwd() } = {}) {
+export async function collectStatus({ root = process.env.HETZER_ROOT || process.cwd() } = {}) {
     const resolvedRoot = path.resolve(root);
     const envFile = path.join(resolvedRoot, ".env");
     const fileEnv = fs.existsSync(envFile) ? parseEnv(fs.readFileSync(envFile, "utf8")) : {};
     const registry = loadModuleRegistry({
         builtinFile: path.resolve(path.dirname(fileURLToPath(import.meta.url)), "builtin.json"),
         root: resolvedRoot,
-        disabledModules: environmentValue(fileEnv, "SHADOW_DISABLED_MODULES"),
-        enabledModules: environmentValue(fileEnv, "SHADOW_ENABLED_MODULES"),
+        disabledModules: environmentValue(fileEnv, "HETZER_DISABLED_MODULES"),
+        enabledModules: environmentValue(fileEnv, "HETZER_ENABLED_MODULES"),
     });
     const docker = dockerSnapshot(resolvedRoot, envFile, registry, fileEnv);
     const byService = new Map(docker.rows.map((row) => [row.Service || row.service, row]));
@@ -195,7 +195,7 @@ export function renderTui(snapshot, { color = process.stdout.isTTY && !process.e
     const warningLines = snapshot.warnings.length
         ? ["", "WARNINGS", ...snapshot.warnings.map((warning) => `  ${warning}`)]
         : [];
-    const title = color ? `${ANSI.cyan}SHADOW // TACTICAL TERMINAL${ANSI.reset}` : "SHADOW // TACTICAL TERMINAL";
+    const title = color ? `${ANSI.cyan}HETZER // TACTICAL TERMINAL${ANSI.reset}` : "HETZER // TACTICAL TERMINAL";
     return [
         title,
         "Local-first operations view. Values are observed; unavailable values are N/A.",
@@ -223,7 +223,7 @@ export async function drawTui(options = {}) {
         output = renderTui(await collectStatus(options), options);
     } catch (error) {
         output = [
-            "SHADOW // TACTICAL TERMINAL",
+            "HETZER // TACTICAL TERMINAL",
             "-------------------------------------------------------------------------------",
             `STATUS   DEGRADED  ${error.message}`,
             "",
@@ -235,7 +235,7 @@ export async function drawTui(options = {}) {
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
-    const root = option("--root", process.env.SHADOW_ROOT || process.cwd());
+    const root = option("--root", process.env.HETZER_ROOT || process.cwd());
     readline.emitKeypressEvents(process.stdin);
     if (process.stdin.isTTY) process.stdin.setRawMode(true);
     process.stdin.on("keypress", (_input, key) => {

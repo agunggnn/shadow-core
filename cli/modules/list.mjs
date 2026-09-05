@@ -20,14 +20,14 @@ function parseEnv(file) {
 }
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(process.env.SHADOW_ROOT || process.cwd());
+const root = path.resolve(process.env.HETZER_ROOT || process.cwd());
 const fileEnv = parseEnv(path.join(root, ".env"));
 const env = (name) => process.env[name] || fileEnv[name] || "";
 const registry = loadModuleRegistry({
     builtinFile: path.join(here, "builtin.json"),
     root,
-    disabledModules: env("SHADOW_DISABLED_MODULES"),
-    enabledModules: env("SHADOW_ENABLED_MODULES"),
+    disabledModules: env("HETZER_DISABLED_MODULES"),
+    enabledModules: env("HETZER_ENABLED_MODULES"),
 });
 const summary = publicModuleSummary(registry);
 

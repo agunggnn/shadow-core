@@ -1,10 +1,10 @@
-# Contributing to Shadow Core
+# Contributing to Hetzer
 
 ## Development Setup
 
 ```bash
-git clone https://github.com/agunggnn/shadow-core.git
-cd shadow-core
+git clone https://github.com/agunggnn/hetzer.git
+cd hetzer
 npm ci
 ```
 
@@ -34,26 +34,28 @@ This runs `scripts/check.mjs` which validates:
 
 ```
 cli/
-  bin/           # CLI entry point
-  core/          # Core orchestration (env, docker, update, cli)
+  bin/           # CLI entry point (hetzer.js)
+  core/          # Core orchestration (env, docker, update, cli, banner, git-hook)
   modules/       # Module registry, resolution, toggle, TUI
   mcp/           # MCP server, protocol, catalog, synthesis
+  skills/        # Multi-agent skill installation & rule injection
   vault/         # Encrypted credential vault (SQLite + AES-256-GCM)
   templates/     # Project initialization templates
 scripts/
   check.mjs      # Build-time validation
 benchmarks/      # Performance benchmarks
+packaging/       # Homebrew & Chocolatey package manifests
 .github/workflows/ci.yml
 ```
 
 ## Code Conventions
 
-- Node 22 ESM (`"type": "module"` in package.json)
+- Node 20+ ESM (`"type": "module"` in package.json)
 - `node:test` for unit tests (`*.test.mjs`)
 - `node --test "**/*.test.mjs"` runs all tests
-- No external deps in `cli/` — stdlib only
+- Zero external dependencies in runtime `cli/` — Node standard library only
 - Export functions at top level, not default
-- Indonesian error messages where user-facing
+- English error messages and logs for all user-facing output
 
 ## Adding a New Module
 
@@ -63,15 +65,16 @@ benchmarks/      # Performance benchmarks
 
 ## Vault Changes
 
-- Credential encryption: AES-256-GCM via `node:crypto` (see `cli/vault/shadow-vault.mjs`)
-- Master key derived via HKDF-SHA256 with salt `shadow-grimoire-v1`
+- Credential encryption: AES-256-GCM via `node:crypto` (see `cli/vault/hetzer-vault.mjs`)
+- Master key derived via HKDF-SHA256 with salt `hetzer-grimoire-v1`
+- Environment variable: `HETZER_GRIMOIRE_KEY`
 - `.env` files created by `init` get `chmod 600` (Unix)
 - Any `.env` write in `toggle.mjs` also applies `chmod 600`
 
 ## CI Pipeline
 
 - `test` job: Ubuntu/macOS/Windows, Node 22, `npm ci`, `npm run lint`, `npm test`, `npm pack --dry-run`
-- `compose-contract` job: Smoke test `shadow init` + `shadow doctor` on Ubuntu
+- `compose-contract` job: Smoke test `hetzer init` + `hetzer doctor` on Ubuntu
 
 ## Release
 

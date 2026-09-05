@@ -5,10 +5,10 @@ import path from "node:path";
 import test from "node:test";
 
 import { scanText, redactAndVault, restoreSecrets } from "./sniffer.mjs";
-import { Grimoire } from "./shadow-vault.mjs";
+import { Grimoire } from "./hetzer-vault.mjs";
 
 test("sniffer scanText executes in sub-millisecond on clean text", () => {
-    const text = "Tolong analisis struktur database Postgres berikut dan buatkan query SQL.";
+    const text = "Please analyze the following Postgres database structure and generate an SQL query.";
     const result = scanText(text);
     assert.equal(result.hasSecrets, false);
     assert.equal(result.matches.length, 0);
@@ -28,16 +28,16 @@ test("sniffer scanText accurately detects candidate tokens", () => {
 });
 
 test("sniffer redactAndVault replaces raw credentials with secretRef and auto-vaults", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-sniffer-test-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-sniffer-test-"));
     const dataDir = path.join(tempDir, "data");
     fs.mkdirSync(dataDir, { recursive: true });
     const envFile = path.join(tempDir, ".env");
     const masterKey = "11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff";
-    fs.writeFileSync(envFile, `SHADOW_GRIMOIRE_KEY=${masterKey}\n`);
+    fs.writeFileSync(envFile, `HETZER_GRIMOIRE_KEY=${masterKey}\n`);
 
     try {
         const fakeNpm = ["npm_", "x1y2z3a4b5c6d7e8f9g0h1i2j3k4l5m6n7o8"].join("");
-        const prompt = `Kirim publish request dengan token ${fakeNpm} sekarang.`;
+        const prompt = `Send publish request with token ${fakeNpm} now.`;
 
         const res = redactAndVault(prompt, { root: tempDir, envFile, masterKey, autoVault: true });
 
@@ -47,13 +47,13 @@ test("sniffer redactAndVault replaces raw credentials with secretRef and auto-va
         assert.ok(res.latencyMs < 2000.0, `Expected cold-start latency < 2000ms, got ${res.latencyMs}ms`);
 
         // Test warm scan/redact on already initialized DB
-        const warmRes = redactAndVault("Teks bersih tanpa rahasia.");
+        const warmRes = redactAndVault("Clean text without secrets.");
         assert.ok(warmRes.latencyMs < 5.0, `Expected warm latency < 5ms, got ${warmRes.latencyMs}ms`);
 
         // Verify Vault storage
-        const vault = new Grimoire({ dbPath: path.join(dataDir, "shadow-vault.db"), masterKey });
+        const vault = new Grimoire({ dbPath: path.join(dataDir, "hetzer-vault.db"), masterKey });
         const entry = vault.find("npm-token");
-        assert.ok(entry, "Kredensial npm-token harus tersimpan di Vault");
+        assert.ok(entry, "Credential npm-token must be stored in Vault");
         const revealed = vault.reveal("npm-token");
         assert.equal(revealed, fakeNpm);
         vault.close();

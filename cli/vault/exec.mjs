@@ -37,7 +37,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         if (result.error) throw result.error;
         process.exitCode = result.status === null ? 1 : result.status;
     } catch (error) {
-        process.stderr.write(`Shadow process failed: ${error.message}\n`);
+        process.stderr.write(`Hetzer process failed: ${error.message}\n`);
         process.exitCode = 1;
     }
 }

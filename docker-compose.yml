@@ -1,4 +1,4 @@
-name: ${SHADOW_PROJECT_NAME:-shadow}
+name: ${HETZER_PROJECT_NAME:-hetzer}
 
 services:
   nine-router:
@@ -7,12 +7,12 @@ services:
       - sh
       - -c
       - >-
-        node -e 'const fs=require("node:fs"),path=require("node:path");let patched=0;function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory()){walk(file);continue}if(!entry.name.endsWith("_client-reference-manifest.js"))continue;const source=fs.readFileSync(file,"utf8"),encoded=source.replaceAll("%5B","%255B").replaceAll("%5D","%255D");if(encoded!==source){fs.writeFileSync(file,encoded);patched++}}}walk("/app/.next/server");console.log("[shadow] Encoded dynamic route paths in "+patched+" manifest(s)");'
+        node -e 'const fs=require("node:fs"),path=require("node:path");let patched=0;function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory()){walk(file);continue}if(!entry.name.endsWith("_client-reference-manifest.js"))continue;const source=fs.readFileSync(file,"utf8"),encoded=source.replaceAll("%5B","%255B").replaceAll("%5D","%255D");if(encoded!==source){fs.writeFileSync(file,encoded);patched++}}}walk("/app/.next/server");console.log("[hetzer] Encoded dynamic route paths in "+patched+" manifest(s)");'
         && exec node custom-server.js
     profiles: [9router]
     restart: unless-stopped
     ports:
-      - "${SHADOW_BIND_ADDRESS:-127.0.0.1}:${NINE_ROUTER_PORT:-20140}:${NINE_ROUTER_PORT:-20140}"
+      - "${HETZER_BIND_ADDRESS:-127.0.0.1}:${NINE_ROUTER_PORT:-20140}:${NINE_ROUTER_PORT:-20140}"
     environment:
       PORT: ${NINE_ROUTER_PORT:-20140}
       HOSTNAME: 0.0.0.0

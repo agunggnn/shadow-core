@@ -5,7 +5,7 @@ import { renderTui } from "./tui.mjs";
 
 test("terminal view renders observed values without dashboard or invented gauges", () => {
     const output = renderTui({
-        root: "/shadow",
+        root: "/hetzer",
         generatedAt: "2026-08-30T00:00:00.000Z",
         docker: { state: "offline", detail: "Docker not installed" },
         vault: { state: "n/a", detail: "not initialized" },

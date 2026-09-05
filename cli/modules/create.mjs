@@ -27,12 +27,12 @@ export function createModuleRecipe({
     nonRootUid = null,
 }) {
     if (!moduleId || !ID_PATTERN.test(moduleId)) {
-        throw new Error(`ID modul '${moduleId}' tidak valid. Gunakan lowercase kebab-case (contoh: my-service).`);
+        throw new Error(`Module ID '${moduleId}' is invalid. Use lowercase kebab-case (e.g. my-service).`);
     }
 
     const moduleDir = path.resolve(root, "modules", moduleId);
     if (fs.existsSync(moduleDir)) {
-        throw new Error(`Direktori modul sudah ada di: ${path.relative(root, moduleDir)}`);
+        throw new Error(`Module directory already exists at: ${path.relative(root, moduleDir)}`);
     }
 
     const envPrefix = moduleId.toUpperCase().replace(/-/g, "_");
@@ -85,7 +85,7 @@ export function createModuleRecipe({
 
     // 2. Generate docker-compose.<id>.yml
     const envEntries = [
-        `      SHADOW_INSTANCE_ENV: \${SHADOW_INSTANCE_ENV:-development}`,
+        `      HETZER_INSTANCE_ENV: \${HETZER_INSTANCE_ENV:-development}`,
     ];
     for (const ev of envVars) {
         if (ev.name && !ev.name.includes("PORT") && !ev.name.includes("URL")) {
@@ -112,7 +112,7 @@ export function createModuleRecipe({
     environment:
 ${envEntries.join("\n")}
     ports:
-      - "\${SHADOW_BIND_ADDRESS:-127.0.0.1}:\${${envPrefix}_PORT:-${portNum}}:${portNum}"
+      - "\${HETZER_BIND_ADDRESS:-127.0.0.1}:\${${envPrefix}_PORT:-${portNum}}:${portNum}"
     volumes:
 ${volumeMounts.join("\n")}
     extra_hosts:
@@ -139,58 +139,58 @@ ${volumeDefs.join("\n")}
     );
 
     // 3. Generate README.md
-    let readmeContent = `# Modul ${moduleLabel} (${moduleId})\n\n`;
+    let readmeContent = `# Module ${moduleLabel} (${moduleId})\n\n`;
     if (description) {
         readmeContent += `${description}\n\n`;
     }
     if (sourceUrl) {
         readmeContent += `## Upstream Source\n- Repository: [${sourceUrl}](${sourceUrl})\n\n`;
     }
-    readmeContent += `## Konfigurasi Port & Environment
-- Port Binding default: \`127.0.0.1:${portNum}\` (Environment variable: \`${envPrefix}_PORT\`)
-- Resource Limit: RAM 2GB, CPU 1.5 core
+    readmeContent += `## Port & Environment Configuration
+- Default Port Binding: \`127.0.0.1:${portNum}\` (Environment variable: \`${envPrefix}_PORT\`)
+- Resource Limits: RAM 2GB, CPU 1.5 core
 `;
 
     if (mcp) {
-        readmeContent += `\n## Dukungan MCP (Model Context Protocol)
-Modul ini mengekspos endpoint MCP pada path \`/mcp\`.
-- Cek tools yang tersedia:
+        readmeContent += `\n## MCP (Model Context Protocol) Support
+This module exposes an MCP endpoint at \`/mcp\`.
+- Inspect available tools:
   \`\`\`bash
-  shadow mcp tools ${moduleId}
+  hetzer mcp tools ${moduleId}
   \`\`\`
-- Panggil tool langsung secara lokal:
+- Invoke tool locally:
   \`\`\`bash
-  shadow mcp call ${moduleId} <tool_name> '{}'
+  hetzer mcp call ${moduleId} <tool_name> '{}'
   \`\`\`
 `;
     }
 
     const secrets = envVars.filter((e) => e.isSecret);
     if (secrets.length > 0) {
-        readmeContent += `\n## Pengaturan Kredensial Grimoire Vault\n`;
+        readmeContent += `\n## Grimoire Vault Credential Configuration\n`;
         for (const s of secrets) {
             const secretKey = `${moduleId}-${s.name.toLowerCase().replace(/_/g, "-")}`;
-            readmeContent += `- Atur rahasia untuk \`${s.name}\`:\n  \`\`\`bash\n  shadow creds set ${secretKey}\n  \`\`\`\n`;
+            readmeContent += `- Set secret for \`${s.name}\`:\n  \`\`\`bash\n  hetzer creds set ${secretKey}\n  \`\`\`\n`;
         }
     }
 
-    readmeContent += `\n## Cara Menjalankan
-1. Validasi resep modul:
+    readmeContent += `\n## Getting Started
+1. Validate module recipe:
    \`\`\`bash
-   shadow validate ${moduleId}
+   hetzer validate ${moduleId}
    \`\`\`
-2. Aktifkan modul:
+2. Enable module:
    \`\`\`bash
-   shadow install ${moduleId}
+   hetzer install ${moduleId}
    \`\`\`
-3. Jalankan container:
+3. Start container:
    \`\`\`bash
-   shadow up ${moduleId}
+   hetzer up ${moduleId}
    \`\`\`
-4. Lihat log & status:
+4. View logs & status:
    \`\`\`bash
-   shadow logs ${moduleId}
-   shadow status
+   hetzer logs ${moduleId}
+   hetzer status
    \`\`\`
 `;
 

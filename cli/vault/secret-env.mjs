@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { parseEnv } from "../core/env.mjs";
-import { Grimoire, resolveVaultPath } from "./shadow-vault.mjs";
+import { Grimoire, resolveVaultPath } from "./hetzer-vault.mjs";
 
 export function resolveSecretEnvironment({
     root,
@@ -16,16 +16,16 @@ export function resolveSecretEnvironment({
     const bindings = Object.entries(values).filter(([name, value]) =>
         String(value).startsWith("secretRef:") && (allow === null || allow.has(name))
     );
-    const resolved = { ...baseEnv, SHADOW_ROOT: root };
+    const resolved = { ...baseEnv, HETZER_ROOT: root };
     if (!bindings.length) return resolved;
 
-    const masterKey = baseEnv.SHADOW_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "";
+    const masterKey = baseEnv.HETZER_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || "";
     if (!masterKey || String(masterKey).startsWith("secretRef:")) {
-        throw new Error("SHADOW_GRIMOIRE_KEY must be supplied at runtime to resolve secretRef bindings.");
+        throw new Error("HETZER_GRIMOIRE_KEY must be supplied at runtime to resolve secretRef bindings.");
     }
     const envVault = resolveVaultPath(root);
     const vault = new Grimoire({
-        dbPath: envVault || path.join(root, "data", "shadow-vault.db"),
+        dbPath: envVault || path.join(root, "data", "hetzer-vault.db"),
         legacyFile: path.join(root, "data", "vault.json"),
         masterKey,
     });

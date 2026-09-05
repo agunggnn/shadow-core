@@ -12,8 +12,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         const index = args.indexOf(flag);
         return index >= 0 ? args[index + 1] : "";
     };
-    const root = path.resolve(value("--root") || process.env.SHADOW_ROOT || process.cwd());
-    const envFile = path.resolve(value("--env-file") || process.env.SHADOW_ENV_FILE || path.join(root, ".env"));
+    const root = path.resolve(value("--root") || process.env.HETZER_ROOT || process.cwd());
+    const envFile = path.resolve(value("--env-file") || process.env.HETZER_ENV_FILE || path.join(root, ".env"));
     if (!/^[A-Z][A-Z0-9_]*$/.test(name)) {
         process.stderr.write("Usage: read-env <ENV_NAME>\n");
         process.exitCode = 1;

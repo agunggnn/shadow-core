@@ -3,7 +3,7 @@
   "modules": [
     {
       "id": "core",
-      "label": "Shadow Core",
+      "label": "Hetzer Core",
       "version": "1",
       "profile": "core",
       "lifecycle": "compose",
@@ -28,8 +28,8 @@
           "id": "9router",
           "label": "9Router",
           "icon": "9R",
-          "role": "Gerbang Akal",
-          "lore": "Memilih jalur model dan menjaga arus kecerdasan tetap hemat serta tersedia.",
+          "role": "Model Gateway",
+          "lore": "Routes model requests and keeps intelligence traffic economical and resilient.",
           "realm": "core",
           "map": { "x": 49, "y": 17 },
           "profile": "9router",

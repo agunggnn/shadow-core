@@ -3,8 +3,7 @@
   "version": "0.3.0",
   "description": "Zero-Plaintext Armor & Secret Interceptor for AI Agents. Sub-2ms Vault, MCP Proxy & Universal Skill for Hermes, AGY, OpenCode, CommandCode, Cursor, and Claude.",
   "bin": {
-    "hetzer": "cli/bin/hetzer.js",
-    "shadow": "cli/bin/shadow.js"
+    "hetzer": "cli/bin/hetzer.js"
   },
   "files": [
     "assets",

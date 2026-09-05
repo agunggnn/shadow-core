@@ -24,8 +24,8 @@ function resolveServiceEndpoint(root, targetService) {
     const registry = loadModuleRegistry({
         builtinFile: path.resolve(here, "..", "modules", "builtin.json"),
         root,
-        disabledModules: environmentValue(fileEnv, "SHADOW_DISABLED_MODULES"),
-        enabledModules: environmentValue(fileEnv, "SHADOW_ENABLED_MODULES"),
+        disabledModules: environmentValue(fileEnv, "HETZER_DISABLED_MODULES"),
+        enabledModules: environmentValue(fileEnv, "HETZER_ENABLED_MODULES"),
     });
 
     let mcpServices = registry.modules.flatMap((m) =>
@@ -42,8 +42,8 @@ function resolveServiceEndpoint(root, targetService) {
             const fallbackRegistry = loadModuleRegistry({
                 builtinFile: path.resolve(here, "..", "modules", "builtin.json"),
                 root: fallbackDir,
-                disabledModules: environmentValue(fileEnv, "SHADOW_DISABLED_MODULES"),
-                enabledModules: environmentValue(fileEnv, "SHADOW_ENABLED_MODULES"),
+                disabledModules: environmentValue(fileEnv, "HETZER_DISABLED_MODULES"),
+                enabledModules: environmentValue(fileEnv, "HETZER_ENABLED_MODULES"),
             });
             const fallbackMcp = fallbackRegistry.modules.flatMap((m) =>
                 m.services.map((s) => ({ ...s, moduleEnabled: true }))
@@ -58,12 +58,12 @@ function resolveServiceEndpoint(root, targetService) {
     }
 
     if (!found) {
-        throw new Error(`Service MCP '${targetService}' tidak ditemukan. Service tersedia: ${mcpServices.map((s) => s.mcpServer.name).join(", ")}`);
+        throw new Error(`MCP service '${targetService}' not found. Available services: ${mcpServices.map((s) => s.mcpServer.name).join(", ")}`);
     }
 
     const baseUrl = serviceUrl(found, fileEnv);
     if (!baseUrl) {
-        throw new Error(`Service '${found.id}' belum memiliki port atau URL yang valid.`);
+        throw new Error(`Service '${found.id}' does not have a valid port or URL configured.`);
     }
 
     return {
@@ -82,7 +82,7 @@ export function classifyToolNature(toolName, description = "") {
         || lowerName.includes("remove")
         || lowerName.includes("clear")
     ) {
-        return { tag: "OFFLINE", note: "Operasi lokal (tanpa LLM)" };
+        return { tag: "OFFLINE", note: "Local operation (no LLM)" };
     }
 
     if (
@@ -93,7 +93,7 @@ export function classifyToolNature(toolName, description = "") {
         || lowerName.includes("read")
         || lowerName.includes("list")
     ) {
-        return { tag: "HYBRID", note: "Pencarian lokal / vektor" };
+        return { tag: "HYBRID", note: "Local / vector search" };
     }
 
     if (
@@ -103,10 +103,10 @@ export function classifyToolNature(toolName, description = "") {
         || lowerName.includes("extract")
         || lowerDesc.includes("llm")
     ) {
-        return { tag: "LLM REASONING", note: "Memerlukan 9Router / LLM" };
+        return { tag: "LLM REASONING", note: "Requires 9Router / LLM" };
     }
 
-    return { tag: "NATIVE", note: "Fungsi bawaan modul" };
+    return { tag: "NATIVE", note: "Module native function" };
 }
 
 async function parseMcpResponse(res) {
@@ -167,7 +167,7 @@ async function ensureMcpSession({ endpointUrl, fetchFn }) {
             params: {
                 protocolVersion: "2024-11-05",
                 capabilities: {},
-                clientInfo: { name: "shadow-cli", version: "0.2.1" },
+                clientInfo: { name: "hetzer-cli", version: "0.3.0" },
             },
         };
         const { data, sessionId } = await sendMcpRequest({
@@ -236,8 +236,8 @@ export async function callMcpTool({
     fetchFn = globalThis.fetch,
     timeoutMs = 30000,
 }) {
-    if (!targetService) throw new Error("Nama service MCP wajib diisi.");
-    if (!toolName) throw new Error("Nama tool MCP wajib diisi.");
+    if (!targetService) throw new Error("MCP service name is required.");
+    if (!toolName) throw new Error("MCP tool name is required.");
 
     const { endpointUrl, service } = resolveServiceEndpoint(root, targetService);
 
@@ -294,7 +294,7 @@ export async function runMcpToolCommand({
     fetchFn = globalThis.fetch,
 }) {
     try {
-        out.write(`Memanggil tool '${toolName}' pada service '${targetService}'...\n`);
+        out.write(`Invoking tool '${toolName}' on service '${targetService}'...\n`);
         const result = await callMcpTool({
             root,
             targetService,
@@ -304,7 +304,7 @@ export async function runMcpToolCommand({
         });
 
         out.write("================================================================================\n");
-        out.write(`  HASIL EKSEKUSI MCP TOOL: ${toolName} (${targetService})\n`);
+        out.write(`  MCP TOOL EXECUTION RESULT: ${toolName} (${targetService})\n`);
         out.write("================================================================================\n");
         if (result.ok) {
             out.write(result.content + "\n");
@@ -314,7 +314,7 @@ export async function runMcpToolCommand({
         out.write("================================================================================\n");
         return result.ok;
     } catch (err) {
-        out.write(`[x] Gagal mengeksekusi tool: ${err.message}\n`);
+        out.write(`[x] Failed to execute tool: ${err.message}\n`);
         return false;
     }
 }

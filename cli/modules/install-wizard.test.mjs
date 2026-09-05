@@ -7,10 +7,10 @@ import test from "node:test";
 import { runInstallWizard } from "./install-wizard.mjs";
 
 test("runInstallWizard applies 9Router default automatically when nonInteractive", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-wizard-test-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-wizard-test-"));
     try {
         const envFile = path.join(tempDir, ".env");
-        fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=\n");
+        fs.writeFileSync(envFile, "HETZER_ENABLED_MODULES=\n");
 
         const result = await runInstallWizard({
             root: tempDir,
@@ -24,7 +24,7 @@ test("runInstallWizard applies 9Router default automatically when nonInteractive
 
         const envContent = fs.readFileSync(envFile, "utf8");
         assert.match(envContent, /COGNEE_LLM_ENDPOINT=http:\/\/host\.docker\.internal:20140\/v1/);
-        assert.match(envContent, /COGNEE_LLM_API_KEY=shadow-default/);
+        assert.match(envContent, /COGNEE_LLM_API_KEY=hetzer-default/);
     } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
     }

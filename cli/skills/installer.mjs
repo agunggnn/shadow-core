@@ -19,7 +19,7 @@ import {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const cliRoot = path.resolve(here, "..");
-const shadowBin = path.join(cliRoot, "bin", "shadow.js");
+const hetzerBin = path.join(cliRoot, "bin", "hetzer.js");
 
 export const SUPPORTED_AGENTS = [
     { id: "antigravity", label: "Antigravity (AGY)", skillDir: ".agents/skills/hetzer", entryFile: "AGENTS.md" },
@@ -166,8 +166,8 @@ export function installToHermes() {
     if (fs.existsSync(hermesConfig)) {
         try {
             let content = fs.readFileSync(hermesConfig, "utf8");
-            if (!content.includes("shadow-vault") && !content.includes("hetzer")) {
-                const snippet = `\nmcp_servers:\n  hetzer:\n    command: "node"\n    args: ["${shadowBin.replace(/\\/g, "/")}", "mcp", "serve"]\n`;
+            if (!content.includes("hetzer")) {
+                const snippet = `\nmcp_servers:\n  hetzer:\n    command: "node"\n    args: ["${hetzerBin.replace(/\\/g, "/")}", "mcp", "serve"]\n`;
                 fs.appendFileSync(hermesConfig, snippet, "utf8");
                 created.push(hermesConfig);
             }
@@ -208,17 +208,12 @@ export function installToCommandCode(root = process.cwd()) {
 export function installToCursor(root = process.cwd()) {
     const created = [];
 
-    // 1. Modern .cursor/rules/hetzer.mdc & shadow-vault.mdc
+    // 1. Modern .cursor/rules/hetzer.mdc
     const rulesDir = path.join(root, ".cursor", "rules");
     fs.mkdirSync(rulesDir, { recursive: true });
     const mdcPath = path.join(rulesDir, "hetzer.mdc");
     fs.writeFileSync(mdcPath, CURSOR_MDC_CONTENT, "utf8");
     created.push(mdcPath);
-
-    // Keep legacy alias for seamless compatibility
-    const legacyMdc = path.join(rulesDir, "shadow-vault.mdc");
-    fs.writeFileSync(legacyMdc, CURSOR_MDC_CONTENT, "utf8");
-    created.push(legacyMdc);
 
     // 2. Cursor skills folder
     const skillDir = path.join(root, ".cursor", "skills", "hetzer");
@@ -259,9 +254,8 @@ export function installToClaudeDesktop(root = process.cwd()) {
 
     config.mcpServers["hetzer-vault"] = {
         command: "node",
-        args: [shadowBin, "mcp", "serve"],
+        args: [hetzerBin, "mcp", "serve"],
     };
-    config.mcpServers["shadow-vault"] = config.mcpServers["hetzer-vault"];
 
     fs.writeFileSync(configFile, JSON.stringify(config, null, 2), "utf8");
     created.push(configFile);
@@ -303,11 +297,10 @@ export function installToCline(root = process.cwd()) {
             }
             settings.mcpServers["hetzer-vault"] = {
                 command: "node",
-                args: [shadowBin, "mcp", "serve"],
+                args: [hetzerBin, "mcp", "serve"],
                 disabled: false,
-                autoApprove: ["shadow_vault_list", "shadow_vault_has", "shadow_sniffer_scan"],
+                autoApprove: ["hetzer_vault_list", "hetzer_vault_has", "hetzer_sniffer_scan"],
             };
-            settings.mcpServers["shadow-vault"] = settings.mcpServers["hetzer-vault"];
             fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), "utf8");
             created.push(settingsPath);
         }
@@ -388,33 +381,33 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (action === "status" || action === "list") {
         const detected = detectPlatforms(root);
         process.stdout.write("================================================================================\n");
-        process.stdout.write("  HETZER / SHADOW - AI AGENT SKILL INTEGRATION STATUS\n");
+        process.stdout.write("  HETZER - AI AGENT SKILL INTEGRATION STATUS\n");
         process.stdout.write("================================================================================\n");
         for (const p of detected) {
-            const status = p.detected ? "[v] Terdeteksi" : "[ ] Tidak terdeteksi";
+            const status = p.detected ? "[v] Detected" : "[ ] Not detected";
             process.stdout.write(`  ${p.name.padEnd(26)} : ${status}\n`);
         }
         process.stdout.write("================================================================================\n");
-        process.stdout.write("Jalankan 'hetzer skill install' untuk memasang ke seluruh agent.\n");
+        process.stdout.write("Run 'hetzer skill install' to configure across all detected agents.\n");
         process.exit(0);
     }
 
     if (action === "install") {
         process.stdout.write("================================================================================\n");
-        process.stdout.write("  HETZER / SHADOW - UNIVERSAL AI AGENT SKILL INSTALLER\n");
+        process.stdout.write("  HETZER - UNIVERSAL AI AGENT SKILL INSTALLER\n");
         process.stdout.write("================================================================================\n");
         const results = installSkill({ root, target });
         for (const file of results) {
             const rel = path.relative(root, file);
-            process.stdout.write(`  [v] Dikonfigurasi: ${rel.startsWith("..") ? file : rel}\n`);
+            process.stdout.write(`  [v] Configured: ${rel.startsWith("..") ? file : rel}\n`);
         }
         process.stdout.write("--------------------------------------------------------------------------------\n");
-        process.stdout.write("  [v] Selesai! Seluruh Agen AI (Hermes, AGY, OpenCode, CommandCode, Cursor,\n");
-        process.stdout.write("      Claude, Cline, Codex, Gemini) terlindungi oleh Zero-Plaintext Armor.\n");
+        process.stdout.write("  [v] Complete! All AI Agents (Hermes, AGY, OpenCode, CommandCode, Cursor,\n");
+        process.stdout.write("      Claude, Cline, Codex, Gemini) are now protected by Zero-Plaintext Armor.\n");
         process.stdout.write("================================================================================\n");
         process.exit(0);
     }
 
-    process.stderr.write(`Aksi tidak dikenal: '${action}'. Gunakan 'install' atau 'status'.\n`);
+    process.stderr.write(`Unknown action: '${action}'. Use 'install' or 'status'.\n`);
     process.exit(1);
 }

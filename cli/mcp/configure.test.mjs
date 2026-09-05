@@ -6,19 +6,19 @@ import test from "node:test";
 
 import { configureMcp } from "./configure.mjs";
 
-test("MCP configure preserves other servers and registers Shadow", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-mcp-config-"));
+test("MCP configure preserves other servers and registers Hetzer", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-mcp-config-"));
     fs.writeFileSync(path.join(root, ".mcp.json"), JSON.stringify({ mcpServers: { existing: { command: "existing" } } }));
     configureMcp(root);
     const config = JSON.parse(fs.readFileSync(path.join(root, ".mcp.json"), "utf8"));
     assert.equal(config.mcpServers.existing.command, "existing");
-    assert.deepEqual(config.mcpServers.shadow.args, ["mcp", "serve"]);
-    assert.equal(config.mcpServers.shadow.env.SHADOW_ROOT, root);
+    assert.deepEqual(config.mcpServers.hetzer.args, ["mcp", "serve"]);
+    assert.equal(config.mcpServers.hetzer.env.HETZER_ROOT, root);
     fs.rmSync(root, { recursive: true, force: true });
 });
 
 test("MCP configure registers enabled module HTTP servers", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-mcp-module-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-mcp-module-"));
     const recipe = path.join(root, "modules", "cognee");
     fs.mkdirSync(recipe, { recursive: true });
     fs.writeFileSync(path.join(recipe, "docker-compose.cognee.yml"), "services: {}\n");
@@ -38,7 +38,7 @@ test("MCP configure registers enabled module HTTP servers", () => {
             mcpServer: { name: "cognee", transport: "http", path: "/mcp" },
         }],
     }));
-    fs.writeFileSync(path.join(root, ".env"), "SHADOW_ENABLED_MODULES=cognee\nCOGNEE_MCP_PORT=8111\n");
+    fs.writeFileSync(path.join(root, ".env"), "HETZER_ENABLED_MODULES=cognee\nCOGNEE_MCP_PORT=8111\n");
 
     configureMcp(root);
     const config = JSON.parse(fs.readFileSync(path.join(root, ".mcp.json"), "utf8"));

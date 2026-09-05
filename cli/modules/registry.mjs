@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { SECRET_REF_PATTERN } from "../vault/shadow-vault.mjs";
+import { SECRET_REF_PATTERN } from "../vault/hetzer-vault.mjs";
 
 const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const ENV_PATTERN = /^[A-Z][A-Z0-9_]*$/;
@@ -118,7 +118,7 @@ function normalizeComposeFiles(module, source, root) {
         const absolute = path.resolve(sourceDir, file);
         const relative = path.relative(root, absolute);
         if (relative.startsWith("..") || path.isAbsolute(relative)) {
-            throw new Error(`Module '${module.id}' Compose file escapes the Shadow root.`);
+            throw new Error(`Module '${module.id}' Compose file escapes the Hetzer root.`);
         }
         return relative.split(path.sep).join("/");
     });
@@ -241,9 +241,9 @@ export function loadModuleRegistry({ builtinFile, root, disabledModules = "", en
         modules.push({ ...module, enabled });
     };
 
-    // Builtin core Compose paths are rooted at the Shadow project, while recipe
+    // Builtin core Compose paths are rooted at the Hetzer project, while recipe
     // Compose paths are rooted beside their module.json.
-    for (const module of builtin.modules) add(module, path.join(root, "shadow-core.module.json"));
+    for (const module of builtin.modules) add(module, path.join(root, "hetzer-core.module.json"));
     for (const file of recipeManifestFiles(root)) {
         try {
             const parsed = loadJson(file);

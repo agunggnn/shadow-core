@@ -39,7 +39,7 @@ export async function checkReasonerStatus({ root, timeoutMs = 3000, fetchFn = gl
 
 export async function askReasoner({
     prompt,
-    systemPrompt = "You are Shadow Core's DevOps AI assistant. Provide concise, accurate technical advice.",
+    systemPrompt = "You are Hetzer Core's DevOps AI assistant. Provide concise, accurate technical advice.",
     root = process.cwd(),
     model = "openai/gpt-4o-mini",
     timeoutMs = 30000,
@@ -66,7 +66,7 @@ export async function askReasoner({
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: "Bearer shadow-default",
+                    Authorization: "Bearer hetzer-default",
                 },
                 body: JSON.stringify(payload),
                 signal: controller.signal,
@@ -108,20 +108,20 @@ export async function analyzeContainerFailure({
     const staticMatches = [];
     if (logs.includes("Permission denied") || logs.includes("PermissionError")) {
         staticMatches.push({
-            cause: "Masalah hak akses izin file / direktori (Permission Denied). Kemungkinan container berjalan sebagai non-root user (UID 1000) dan volume mount berpemilik root.",
-            suggestion: "Pastikan volume mount point mengarah ke direktori yang sudah ada dan di-chown di dalam image, atau gunakan volume bawaan upstream.",
+            cause: "File or directory permission issue (Permission Denied). The container likely runs as a non-root user (UID 1000) while the volume mount is owned by root.",
+            suggestion: "Ensure the volume mount point points to an existing directory with proper ownership in the image, or use upstream named volumes.",
         });
     }
     if (logs.includes("address already in use") || logs.includes("bind: address already in use")) {
         staticMatches.push({
-            cause: "Port bentrok (Port Conflict). Port yang ingin digunakan sudah dipakai proses lain di host.",
-            suggestion: "Ganti port mapping di .env atau docker-compose ke port lain yang masih kosong.",
+            cause: "Port conflict. The requested port is already in use by another process on the host.",
+            suggestion: "Change the port mapping in .env or docker-compose to another available port.",
         });
     }
     if (logs.includes("Set COGNEE_LLM_API_KEY") || logs.includes("API key not set") || logs.includes("KeyError: 'API_KEY'")) {
         staticMatches.push({
-            cause: "API key atau environment variable kredensial belum diset.",
-            suggestion: "Jalankan 'shadow creds set <id>' untuk menyimpan API key yang dibutuhkan ke Vault.",
+            cause: "API key or credential environment variable not configured.",
+            suggestion: "Run 'hetzer creds set <id>' to store the required API key in Grimoire Vault.",
         });
     }
 
@@ -138,32 +138,32 @@ export async function analyzeContainerFailure({
         }
         return {
             ok: false,
-            error: "9Router gateway tidak aktif untuk analisis AI otomatis.",
+            error: "9Router gateway is offline for automatic AI analysis.",
             source: "none",
         };
     }
 
     // 3. Ask 9Router AI Engine
-    const prompt = `Analisis kegagalan container '${serviceId}':
-LOGS TERAKHIR:
+    const prompt = `Analyze container failure for '${serviceId}':
+RECENT LOGS:
 """
 ${logs.slice(-2000)}
 """
 
-KONFIGURASI COMPOSE:
+COMPOSE CONFIGURATION:
 """
 ${composeContent.slice(-1500)}
 """
 
-Berikan analisis dalam format JSON persis seperti ini:
+Provide your analysis in this exact JSON format:
 {
-  "cause": "Penyebab utama dalam 1-2 kalimat (bahasa Indonesia)",
-  "suggestion": "Solusi perbaikan konkret langkah demi langkah (bahasa Indonesia)"
+  "cause": "Primary root cause in 1-2 concise sentences (English)",
+  "suggestion": "Concrete step-by-step resolution advice (English)"
 }`;
 
     const aiRes = await askReasoner({
         prompt,
-        systemPrompt: "You are Shadow Core's autonomous DevOps SRE. Return ONLY a valid JSON object with 'cause' and 'suggestion' keys.",
+        systemPrompt: "You are Hetzer Core's autonomous DevOps SRE. Return ONLY a valid JSON object with 'cause' and 'suggestion' keys.",
         root,
         fetchFn,
     });
@@ -185,7 +185,7 @@ Berikan analisis dalam format JSON persis seperti ini:
             return {
                 ok: true,
                 source: "9router-ai",
-                cause: "Analisis kegagalan terdeteksi.",
+                cause: "Failure analysis detected.",
                 suggestion: aiRes.content,
             };
         }
@@ -202,7 +202,7 @@ Berikan analisis dalam format JSON persis seperti ini:
 
     return {
         ok: false,
-        error: aiRes.error || "Gagal mendapatkan analisis dari AI.",
+        error: aiRes.error || "Failed to retrieve analysis from AI.",
     };
 }
 
@@ -244,7 +244,7 @@ export async function analyzeModuleSource({
         healthPath: "/health",
         nonRootUid: nonRoot,
         sourceUrl: sourceUrl || "",
-        description: "Modul pihak ketiga diintegrasikan ke Shadow Core.",
+        description: "Third-party module integrated into Hetzer Core.",
     };
 
     // 2. Check 9Router availability
@@ -254,23 +254,23 @@ export async function analyzeModuleSource({
     }
 
     // 3. Ask 9Router AI
-    const prompt = `Analisis dokumentasi / source modul baru berikut untuk membuat resep integrasi Shadow Core:
+    const prompt = `Analyze documentation / source for the new module to generate a Hetzer Core recipe:
 SOURCE URL: ${sourceUrl || "N/A"}
-KONTEN REPO / DOKUMENTASI:
+REPOSITORY CONTENT / DOCUMENTATION:
 """
 ${sourceContent.slice(0, 4000)}
 """
 
-Tugas: Ekstrak spesifikasi teknis modul dalam format JSON tunggal persis seperti berikut:
+Task: Extract module technical specifications as a single JSON object matching this schema:
 {
-  "label": "Nama representatif modul (contoh: Mem0, SearXNG, Neo4j)",
+  "label": "Module display name (e.g. Mem0, SearXNG, Neo4j)",
   "port": 8080,
   "webUi": true,
   "mcp": false,
   "mcpPath": "/mcp",
-  "description": "Deskripsi singkat 1 kalimat apa fungsi modul ini",
+  "description": "Short 1-sentence description of what this module does",
   "envVars": [
-    { "name": "SERVICE_API_KEY", "defaultVal": "", "isSecret": true, "description": "API key upstream" }
+    { "name": "SERVICE_API_KEY", "defaultVal": "", "isSecret": true, "description": "Upstream API key" }
   ],
   "volumes": [
     { "containerPath": "/data", "hostVolume": "data" }
@@ -281,7 +281,7 @@ Tugas: Ekstrak spesifikasi teknis modul dalam format JSON tunggal persis seperti
 
     const aiRes = await askReasoner({
         prompt,
-        systemPrompt: "You are Shadow Core's AI Software Architect. Extract precise technical specs for Docker and MCP integration. Return ONLY a valid JSON object.",
+        systemPrompt: "You are Hetzer Core's AI Software Architect. Extract precise technical specs for Docker and MCP integration. Return ONLY a valid JSON object.",
         root,
         fetchFn,
     });

@@ -22,66 +22,66 @@ function setupTempModule(root, moduleId) {
     }, null, 2));
 }
 
-test("setModuleEnabled adds to SHADOW_ENABLED_MODULES", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
+test("setModuleEnabled adds to HETZER_ENABLED_MODULES", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-toggle-"));
     const envFile = path.join(root, ".env");
-    fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+    fs.writeFileSync(envFile, "HETZER_ENABLED_MODULES=\nHETZER_DISABLED_MODULES=\n");
     setupTempModule(root, "cognee");
     setModuleEnabled({ root, envFile, moduleId: "cognee", enabled: true, builtinFile: path.resolve("cli/modules/builtin.json") });
     const updated = fs.readFileSync(envFile, "utf8");
-    assert.ok(updated.includes("SHADOW_ENABLED_MODULES=cognee"));
+    assert.ok(updated.includes("HETZER_ENABLED_MODULES=cognee"));
     fs.rmSync(root, { recursive: true, force: true });
 });
 
-test("setModuleEnabled removes from SHADOW_ENABLED_MODULES", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
+test("setModuleEnabled removes from HETZER_ENABLED_MODULES", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-toggle-"));
     const envFile = path.join(root, ".env");
-    fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=cognee\nSHADOW_DISABLED_MODULES=\n");
+    fs.writeFileSync(envFile, "HETZER_ENABLED_MODULES=cognee\nHETZER_DISABLED_MODULES=\n");
     setupTempModule(root, "cognee");
     setModuleEnabled({ root, envFile, moduleId: "cognee", enabled: false, builtinFile: path.resolve("cli/modules/builtin.json") });
     const updated = fs.readFileSync(envFile, "utf8");
-    assert.ok(updated.includes("SHADOW_DISABLED_MODULES=cognee"));
-    assert.ok(!updated.includes("SHADOW_ENABLED_MODULES=cognee"));
+    assert.ok(updated.includes("HETZER_DISABLED_MODULES=cognee"));
+    assert.ok(!updated.includes("HETZER_ENABLED_MODULES=cognee"));
     fs.rmSync(root, { recursive: true, force: true });
 });
 
 test("setModuleEnabled throws on unknown module", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-toggle-"));
     const envFile = path.join(root, ".env");
-    fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+    fs.writeFileSync(envFile, "HETZER_ENABLED_MODULES=\nHETZER_DISABLED_MODULES=\n");
     setupTempModule(root, "cognee");
     assert.throws(() => setModuleEnabled({ root, envFile, moduleId: "nonexistent", enabled: true, builtinFile: path.resolve("cli/modules/builtin.json") }), /not installed/);
     fs.rmSync(root, { recursive: true, force: true });
 });
 
 test("setModuleEnabled throws when trying to disable core", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-toggle-"));
     const envFile = path.join(root, ".env");
-    fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+    fs.writeFileSync(envFile, "HETZER_ENABLED_MODULES=\nHETZER_DISABLED_MODULES=\n");
     assert.throws(() => setModuleEnabled({ root, envFile, moduleId: "core", enabled: false, builtinFile: path.resolve("cli/modules/builtin.json") }), /cannot be removed/);
     fs.rmSync(root, { recursive: true, force: true });
 });
 
 test("setModuleEnabled allows disabling and enabling 9router module", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-toggle-"));
     const envFile = path.join(root, ".env");
-    fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+    fs.writeFileSync(envFile, "HETZER_ENABLED_MODULES=\nHETZER_DISABLED_MODULES=\n");
     // Disable 9router
     setModuleEnabled({ root, envFile, moduleId: "9router", enabled: false, builtinFile: path.resolve("cli/modules/builtin.json") });
     let updated = fs.readFileSync(envFile, "utf8");
-    assert.ok(updated.includes("SHADOW_DISABLED_MODULES=9router"));
+    assert.ok(updated.includes("HETZER_DISABLED_MODULES=9router"));
     // Re-enable 9router
     setModuleEnabled({ root, envFile, moduleId: "9router", enabled: true, builtinFile: path.resolve("cli/modules/builtin.json") });
     updated = fs.readFileSync(envFile, "utf8");
-    assert.ok(updated.includes("SHADOW_ENABLED_MODULES=9router"));
-    assert.ok(!updated.includes("SHADOW_DISABLED_MODULES=9router"));
+    assert.ok(updated.includes("HETZER_ENABLED_MODULES=9router"));
+    assert.ok(!updated.includes("HETZER_DISABLED_MODULES=9router"));
     fs.rmSync(root, { recursive: true, force: true });
 });
 
 test("setModuleEnabled sets chmod 600 on .env (Unix)", { skip: process.platform === "win32" }, () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-toggle-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-toggle-"));
     const envFile = path.join(root, ".env");
-    fs.writeFileSync(envFile, "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+    fs.writeFileSync(envFile, "HETZER_ENABLED_MODULES=\nHETZER_DISABLED_MODULES=\n");
     setupTempModule(root, "cognee");
     fs.chmodSync(envFile, 0o644); // start with loose perms
     setModuleEnabled({ root, envFile, moduleId: "cognee", enabled: true, builtinFile: path.resolve("cli/modules/builtin.json") });

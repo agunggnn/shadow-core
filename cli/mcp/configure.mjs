@@ -27,8 +27,8 @@ export function configureMcp(root) {
     const registry = loadModuleRegistry({
         builtinFile: path.resolve(here, "..", "modules", "builtin.json"),
         root,
-        disabledModules: environmentValue(fileEnv, "SHADOW_DISABLED_MODULES"),
-        enabledModules: environmentValue(fileEnv, "SHADOW_ENABLED_MODULES"),
+        disabledModules: environmentValue(fileEnv, "HETZER_DISABLED_MODULES"),
+        enabledModules: environmentValue(fileEnv, "HETZER_ENABLED_MODULES"),
     });
     let config = {};
     if (fs.existsSync(file)) {
@@ -38,10 +38,10 @@ export function configureMcp(root) {
     config.mcpServers = config.mcpServers && typeof config.mcpServers === "object"
         ? config.mcpServers
         : {};
-    config.mcpServers.shadow = {
-        command: "shadow",
+    config.mcpServers.hetzer = {
+        command: "hetzer",
         args: ["mcp", "serve"],
-        env: { SHADOW_ROOT: root },
+        env: { HETZER_ROOT: root },
     };
     const managedNames = new Set(registry.modules.flatMap((module) =>
         module.services.map((service) => service.mcpServer?.name).filter(Boolean)
@@ -67,7 +67,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     try {
         const index = process.argv.indexOf("--root");
         const root = path.resolve(index >= 0 ? process.argv[index + 1] : process.cwd());
-        process.stdout.write(`Registered Shadow FastMCP bridge in ${configureMcp(root)}\n`);
+        process.stdout.write(`Registered Hetzer MCP bridge in ${configureMcp(root)}\n`);
     } catch (error) {
         process.stderr.write(`Unable to configure .mcp.json: ${error.message}\n`);
         process.exitCode = 1;

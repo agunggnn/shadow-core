@@ -12,13 +12,13 @@ affected version, operating system, reproduction steps, and likely impact.
 
 ## Deployment boundary
 
-- Shadow binds services to loopback by default. Treat any non-loopback binding
+- Hetzer binds services to loopback by default. Treat any non-loopback binding
   as a separate deployment that needs TLS, firewall policy, and authentication.
 - `.env`, `.mcp.json`, `data/`, logs, backups, and Cognee volumes may contain
   sensitive information and are ignored by Git.
-- Grimoire encrypts application credentials at rest. The
-  `SHADOW_GRIMOIRE_KEY` is the external unlock boundary and must be stored
-  separately from copied Vault databases.
+- Grimoire encrypts application credentials at rest. `HETZER_GRIMOIRE_KEY`
+  is the external unlock boundary and must be stored separately from copied
+  Vault databases.
 - Container images are pinned by digest. Review digest changes as dependency
   upgrades, including upstream release notes and licenses.
 - MCP tools can cause actions in connected services. Review each enabled module

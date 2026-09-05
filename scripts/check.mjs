@@ -42,7 +42,7 @@ const forbidden = [
     ["POSTIZ", "_"].join(""),
     ["PROJECT", "_FORGE_"].join(""),
     ["GUARD", "_API_"].join(""),
-    ["shadow", "-pet"].join(""),
+    ["hetzer", "-pet"].join(""),
 ];
 const publicFiles = filesUnder(root).filter((file) =>
     !file.includes(`${path.sep}.git${path.sep}`)
@@ -68,4 +68,4 @@ for (const file of publicFiles) {
     }
 }
 
-process.stdout.write(`Shadow Core check passed: ${sources.length} source files, ${tests.length} test files.\n`);
+process.stdout.write(`Hetzer check passed: ${sources.length} source files, ${tests.length} test files.\n`);

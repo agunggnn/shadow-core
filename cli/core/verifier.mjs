@@ -88,7 +88,7 @@ export async function verifyModuleDeployment({
     endpointUrl = null,
 }) {
     const target = serviceId || moduleId;
-    out.write(`[i] Memulai healthcheck & smoketest untuk container '${target}'...\n`);
+    out.write(`[i] Starting healthcheck & smoketest for container '${target}'...\n`);
 
     const startTime = Date.now();
     let inspectData = null;
@@ -103,13 +103,13 @@ export async function verifyModuleDeployment({
             const state = inspectData.State || {};
             const containerRef = inspectData.Id || target;
 
-            // 1. Cek apakah container sudah mati dengan exit code != 0
+            // 1. Check if container exited abnormally with exit code != 0
             if (state.Running === false && state.ExitCode !== 0) {
-                out.write(`[x] Container '${target}' berhenti secara tidak normal (Exit code: ${state.ExitCode}).\n`);
+                out.write(`[x] Container '${target}' stopped abnormally (Exit code: ${state.ExitCode}).\n`);
                 break;
             }
 
-            // 2. Cek apakah HTTP smoketest sudah responsif
+            // 2. Check if HTTP smoketest is responsive
             if (endpointUrl && typeof fetchFn === "function") {
                 try {
                     const controller = new AbortController();
@@ -117,33 +117,33 @@ export async function verifyModuleDeployment({
                     const res = await fetchFn(endpointUrl, { signal: controller.signal });
                     clearTimeout(timer);
                     if (res.ok || res.status === 404 || res.status === 400) {
-                        out.write(`[v] Smoketest endpoint HTTP '${endpointUrl}' berhasil merespons (HTTP ${res.status}).\n`);
+                        out.write(`[v] Smoketest for HTTP endpoint '${endpointUrl}' responded successfully (HTTP ${res.status}).\n`);
                         return { ok: true, healthStatus: state.Health?.Status || "running", smoketest: true, target };
                     }
                 } catch {
-                    // Endpoint belum binding, lanjutkan loop
+                    // Endpoint not yet binding, continue loop
                 }
             }
 
-            // 3. Cek Docker Healthcheck jika didefinisikan
+            // 3. Check Docker Healthcheck if defined
             const healthStatus = state.Health?.Status;
             if (healthStatus) {
                 if (healthStatus === "healthy") {
-                    out.write(`[v] Healthcheck Docker sukses: '${target}' berstatus HEALTHY.\n`);
+                    out.write(`[v] Docker healthcheck passed: '${target}' is HEALTHY.\n`);
                     return { ok: true, healthStatus: "healthy", target };
                 }
 
                 if (healthStatus === "unhealthy") {
-                    out.write(`[x] Healthcheck Docker melaporkan status UNHEALTHY pada '${target}'.\n`);
+                    out.write(`[x] Docker healthcheck reported UNHEALTHY status for '${target}'.\n`);
                     break;
                 }
 
                 if (healthStatus !== lastHealthStatus) {
                     lastHealthStatus = healthStatus;
-                    out.write(`[.] Status healthcheck container: ${healthStatus}... menunggu probe selesai.\n`);
+                    out.write(`[.] Container healthcheck status: ${healthStatus}... waiting for probe completion.\n`);
                 }
             } else if (state.Running === true) {
-                // Container tidak memiliki healthcheck bawaan docker
+                // Container does not have built-in docker healthcheck
                 const currentLogs = getContainerLogs(containerRef, exec, 20);
                 const hasFatalLog = currentLogs.includes("Permission denied")
                     || currentLogs.includes("PermissionError")
@@ -151,38 +151,38 @@ export async function verifyModuleDeployment({
                     || currentLogs.includes("CrashLoop");
 
                 if (hasFatalLog) {
-                    out.write(`[x] Terdeteksi pesan fatal pada log container '${target}'.\n`);
+                    out.write(`[x] Detected fatal message in container logs for '${target}'.\n`);
                     break;
                 }
 
                 if (iteration >= 2 || timeoutMs <= 5000) {
-                    out.write(`[v] Container '${target}' berjalan stabil dalam status RUNNING.\n`);
+                    out.write(`[v] Container '${target}' is running stably with status RUNNING.\n`);
                     return { ok: true, healthStatus: "running", target };
                 }
             }
         }
 
-        // Tunggu sebelum iterasi berikutnya
+        // Wait before next iteration
         const remaining = timeoutMs - (Date.now() - startTime);
         if (remaining > 0) {
             await new Promise((r) => setTimeout(r, Math.min(pollIntervalMs, remaining)));
         }
     }
 
-    // Jika sampai di sini, container mengalami kegagalan atau timeout
+    // If reached here, container suffered failure or timeout
     const containerRef = inspectData?.Id || target;
     const logs = getContainerLogs(containerRef, exec, 50);
     const state = inspectData?.State;
 
     out.write("\n================================================================================\n");
-    out.write(`  SHADOW CORE - DIAGNOSIS KEGAGALAN DEPLOYMENT: ${target}\n`);
+    out.write(`  HETZER CORE - DEPLOYMENT FAILURE DIAGNOSIS: ${target}\n`);
     out.write("================================================================================\n");
-    out.write(`[!] Container '${target}' tidak mencapai status sehat dalam batas waktu ${Math.round(timeoutMs / 1000)} detik.\n`);
+    out.write(`[!] Container '${target}' did not reach a healthy state within ${Math.round(timeoutMs / 1000)} seconds.\n`);
     if (state) {
         out.write(`    Status: ${state.Status} (ExitCode: ${state.ExitCode || 0}, Health: ${state.Health?.Status || "none"})\n`);
     }
     out.write("--------------------------------------------------------------------------------\n");
-    out.write("  Menganalisis log kegagalan via 9Router Engine...\n");
+    out.write("  Analyzing failure logs via 9Router Engine...\n");
 
     let composeText = "";
     if (composeFile && fs.existsSync(composeFile)) {
@@ -201,13 +201,13 @@ export async function verifyModuleDeployment({
     });
 
     if (diagnosis.ok) {
-        out.write(`\n  [x] Analisis Masalah : ${diagnosis.cause}\n`);
-        out.write(`  [v] Rekomendasi Solusi:\n`);
+        out.write(`\n  [x] Problem Analysis    : ${diagnosis.cause}\n`);
+        out.write(`  [v] Recommended Solution:\n`);
         for (const line of diagnosis.suggestion.split("\n")) {
             out.write(`      ${line}\n`);
         }
     } else {
-        out.write(`\n  Cuplikan log terakhir:\n`);
+        out.write(`\n  Recent log snippet:\n`);
         const logLines = logs.trim().split("\n").slice(-8);
         for (const l of logLines) {
             out.write(`      ${l}\n`);

@@ -29,10 +29,10 @@ Your environment enforces strict **Zero-Plaintext** credential handling:
 
 ## 4. Autonomous MCP Defense Tools
 If connected via MCP, you have access to Hetzer's native defense tools:
-- `shadow_sniffer_scan(text)`: Inspect whether user input, code, or logs contain candidate credentials.
-- `shadow_sniffer_redact(text)`: Sanitize text by automatically replacing raw credentials with `secretRef:<id>`.
-- `shadow_vault_has(id)`: Verify if a required secret exists in Vault without exposing its plaintext value.
-- `shadow_vault_list()`: Inspect configured credential references safely.
+- `hetzer_sniffer_scan(text)`: Inspect whether user input, code, or logs contain candidate credentials.
+- `hetzer_sniffer_redact(text)`: Sanitize text by automatically replacing raw credentials with `secretRef:<id>`.
+- `hetzer_vault_has(id)`: Verify if a required secret exists in Vault without exposing its plaintext value.
+- `hetzer_vault_list()`: Inspect configured credential references safely.
 
 ## 5. User Credential Management
 - If a required credential is not configured, instruct the user to run:

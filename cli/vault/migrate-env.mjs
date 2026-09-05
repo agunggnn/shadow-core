@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseEnv } from "../core/env.mjs";
-import { Grimoire, resolveVaultPath } from "./shadow-vault.mjs";
+import { Grimoire, resolveVaultPath } from "./hetzer-vault.mjs";
 
 const BINDINGS = {
     NINE_ROUTER_JWT_SECRET: ["nine-router-jwt-secret", "nine-router", "jwt_secret"],
@@ -26,13 +26,13 @@ export function autoIngestPlaintextEnv({ root, envFile, masterKey }) {
     if (!fs.existsSync(envFile)) return [];
     let text = fs.readFileSync(envFile, "utf8");
     const values = parseEnv(text);
-    const resolvedMasterKey = masterKey || process.env.SHADOW_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "";
+    const resolvedMasterKey = masterKey || process.env.HETZER_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || "";
     if (!resolvedMasterKey || String(resolvedMasterKey).startsWith("secretRef:")) {
         return [];
     }
 
     const envVault = resolveVaultPath(root);
-    const vault = new Grimoire({ dbPath: envVault || path.join(root, "data", "shadow-vault.db"), masterKey: resolvedMasterKey });
+    const vault = new Grimoire({ dbPath: envVault || path.join(root, "data", "hetzer-vault.db"), masterKey: resolvedMasterKey });
     const migrated = [];
 
     try {
@@ -41,7 +41,7 @@ export function autoIngestPlaintextEnv({ root, envFile, masterKey }) {
             if (!value || value.startsWith("replace-") || value.startsWith("secretRef:")) {
                 continue;
             }
-            vault.upsertTarget({ id: targetId, name: targetId, target_type: "shadow-module" });
+            vault.upsertTarget({ id: targetId, name: targetId, target_type: "hetzer-module" });
             const allowedActions = ["compose.start", "process.start"];
             const canonicalExisting = vault.find(id);
             const input = {
@@ -64,7 +64,7 @@ export function autoIngestPlaintextEnv({ root, envFile, masterKey }) {
 
         for (const [name, rawVal] of Object.entries(values)) {
             if (BINDINGS[name] || !rawVal || typeof rawVal !== "string") continue;
-            if (rawVal.startsWith("secretRef:") || rawVal.startsWith("replace-") || name === "SHADOW_GRIMOIRE_KEY") continue;
+            if (rawVal.startsWith("secretRef:") || rawVal.startsWith("replace-") || name === "HETZER_GRIMOIRE_KEY") continue;
 
             const isSensitiveKey = /(?:_KEY|_SECRET|_TOKEN|_PASSWORD|_AUTH)$/i.test(name) || name === "NODE_AUTH_TOKEN";
             if (isSensitiveKey) {
@@ -109,7 +109,7 @@ export function migrateEnvCredentials({ root, envFile, masterKey, authorizationR
     let text = fs.readFileSync(envFile, "utf8");
     const values = parseEnv(text);
     const envVault = resolveVaultPath(root);
-    const vault = new Grimoire({ dbPath: envVault || path.join(root, "data", "shadow-vault.db"), masterKey });
+    const vault = new Grimoire({ dbPath: envVault || path.join(root, "data", "hetzer-vault.db"), masterKey });
     const migrated = [];
     const tightened = [];
     try {
@@ -132,7 +132,7 @@ export function migrateEnvCredentials({ root, envFile, masterKey, authorizationR
                 }
                 continue;
             }
-            vault.upsertTarget({ id: targetId, name: targetId, target_type: "shadow-module" });
+            vault.upsertTarget({ id: targetId, name: targetId, target_type: "hetzer-module" });
             const input = {
                 id,
                 projectId: targetId,
@@ -155,7 +155,7 @@ export function migrateEnvCredentials({ root, envFile, masterKey, authorizationR
             try { fs.chmodSync(envFile, 0o600); } catch { /* Windows ACLs are managed by the host. */ }
         }
         vault.recordAudit({
-            actor: "shadow-cli",
+            actor: "hetzer-cli",
             action: "vault.import-explicit-env",
             reason: authorizationRef,
             outcome: "allowed",
@@ -174,13 +174,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             const index = args.indexOf(name);
             return index >= 0 ? args[index + 1] : "";
         };
-        const root = path.resolve(option("--root") || process.env.SHADOW_ROOT || process.cwd());
-        const envFile = path.resolve(option("--env-file") || process.env.SHADOW_ENV_FILE || path.join(root, ".env"));
+        const root = path.resolve(option("--root") || process.env.HETZER_ROOT || process.cwd());
+        const envFile = path.resolve(option("--env-file") || process.env.HETZER_ENV_FILE || path.join(root, ".env"));
         const values = parseEnv(fs.readFileSync(envFile, "utf8"));
         const migrated = migrateEnvCredentials({
             root,
             envFile,
-            masterKey: process.env.SHADOW_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "",
+            masterKey: process.env.HETZER_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || "",
             authorizationRef: option("--authorization-ref"),
         });
         process.stdout.write(`Secured ${migrated.length} environment credential(s) as secretRef bindings.\n`);

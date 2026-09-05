@@ -5,9 +5,9 @@ import path from "node:path";
 import test from "node:test";
 
 import {
-    defaultShadowHome,
+    defaultHetzerHome,
     initializeProject,
-    isShadowWorkspace,
+    isHetzerWorkspace,
     main,
     printModuleHelp,
     resolveProjectRoot,
@@ -15,14 +15,14 @@ import {
 import { parseEnv } from "./env.mjs";
 
 test("initializeProject creates a secured, repeatable project contract", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-core-init-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-core-init-"));
     const initResult = initializeProject(root);
     assert.ok(initResult.initialPassword && initResult.initialPassword.length > 0);
     const first = fs.readFileSync(path.join(root, ".env"), "utf8");
     const values = parseEnv(first);
     assert.match(values.NINE_ROUTER_JWT_SECRET, /^secretRef:/);
-    assert.ok(values.SHADOW_GRIMOIRE_KEY.length >= 32);
-    assert.equal(fs.existsSync(path.join(root, "data", "shadow-vault.db")), true);
+    assert.ok(values.HETZER_GRIMOIRE_KEY.length >= 32);
+    assert.equal(fs.existsSync(path.join(root, "data", "hetzer-vault.db")), true);
     assert.equal(fs.existsSync(path.join(root, "modules", "cognee", "module.json")), true);
 
     initializeProject(root);
@@ -37,32 +37,32 @@ test("Compose startup encodes dynamic route chunks before 9Router starts", () =>
     assert.ok(template.indexOf("Encoded dynamic route paths") < template.indexOf("exec node custom-server.js"));
 });
 
-test("defaultShadowHome resolves ~/.shadow or SHADOW_HOME", () => {
-    const home = defaultShadowHome();
-    assert.ok(home.endsWith(".shadow"));
+test("defaultHetzerHome resolves ~/.hetzer or HETZER_HOME", () => {
+    const home = defaultHetzerHome();
+    assert.ok(home.endsWith(".hetzer"));
 
-    const prev = process.env.SHADOW_HOME;
+    const prev = process.env.HETZER_HOME;
     try {
-        process.env.SHADOW_HOME = "/custom/shadow/home";
-        assert.equal(defaultShadowHome(), path.resolve("/custom/shadow/home"));
+        process.env.HETZER_HOME = "/custom/hetzer/home";
+        assert.equal(defaultHetzerHome(), path.resolve("/custom/hetzer/home"));
     } finally {
-        if (prev === undefined) delete process.env.SHADOW_HOME;
-        else process.env.SHADOW_HOME = prev;
+        if (prev === undefined) delete process.env.HETZER_HOME;
+        else process.env.HETZER_HOME = prev;
     }
 });
 
-test("isShadowWorkspace and resolveProjectRoot identify local workspace vs global fallback", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-resolve-test-"));
+test("isHetzerWorkspace and resolveProjectRoot identify local workspace vs global fallback", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-resolve-test-"));
     try {
-        assert.equal(isShadowWorkspace(tempDir), false);
+        assert.equal(isHetzerWorkspace(tempDir), false);
 
         const customRoot = resolveProjectRoot({ root: tempDir });
         assert.equal(customRoot, tempDir);
 
-        // Fake shadow workspace
+        // Fake hetzer workspace
         fs.writeFileSync(path.join(tempDir, "docker-compose.yml"), "services:\n  nine-router:\n    image: test\n");
-        fs.writeFileSync(path.join(tempDir, ".env"), "SHADOW_PROJECT_NAME=test\n");
-        assert.equal(isShadowWorkspace(tempDir), true);
+        fs.writeFileSync(path.join(tempDir, ".env"), "HETZER_PROJECT_NAME=test\n");
+        assert.equal(isHetzerWorkspace(tempDir), true);
     } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
     }
@@ -77,8 +77,8 @@ test("printModuleHelp renders native module guide for 9router and cognee", () =>
     };
     try {
         printModuleHelp("9router", ".", { NINE_ROUTER_PORT: "20140" });
-        assert.match(output, /PANDUAN LENGKAP MODUL NATIVE: 9Router/);
-        assert.match(output, /shadow up 9router/);
+        assert.match(output, /NATIVE MODULE GUIDE: 9Router/);
+        assert.match(output, /hetzer up 9router/);
         assert.match(output, /nine-router-initial-password/);
     } finally {
         process.stdout.write = originalWrite;
@@ -86,19 +86,19 @@ test("printModuleHelp renders native module guide for 9router and cognee", () =>
 });
 
 test("install auto-scaffolds module directory from templates if missing in workspace", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-install-test-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-install-test-"));
     const originalStdout = process.stdout.write;
     process.stdout.write = () => true;
     try {
         fs.writeFileSync(path.join(tempDir, "docker-compose.yml"), "services:\n");
-        fs.writeFileSync(path.join(tempDir, ".env"), "SHADOW_ENABLED_MODULES=\nSHADOW_DISABLED_MODULES=\n");
+        fs.writeFileSync(path.join(tempDir, ".env"), "HETZER_ENABLED_MODULES=\nHETZER_DISABLED_MODULES=\n");
         assert.equal(fs.existsSync(path.join(tempDir, "modules", "cognee", "module.json")), false);
 
         await main(["install", "cognee"], { root: tempDir });
 
         assert.equal(fs.existsSync(path.join(tempDir, "modules", "cognee", "module.json")), true);
         const envContent = fs.readFileSync(path.join(tempDir, ".env"), "utf8");
-        assert.match(envContent, /SHADOW_ENABLED_MODULES=.*cognee/);
+        assert.match(envContent, /HETZER_ENABLED_MODULES=.*cognee/);
     } finally {
         process.stdout.write = originalStdout;
         fs.rmSync(tempDir, { recursive: true, force: true });
@@ -114,8 +114,8 @@ test("validate CLI command validates modules successfully", async () => {
     };
     try {
         await main(["validate", "cognee"], { root: "." });
-        assert.match(output, /VALIDASI MODUL: cognee/);
-        assert.match(output, /Status: Modul 'cognee' VALID/);
+        assert.match(output, /MODULE VALIDATION: cognee/);
+        assert.match(output, /Status: Module 'cognee' VALID/);
     } finally {
         process.stdout.write = originalStdout;
     }

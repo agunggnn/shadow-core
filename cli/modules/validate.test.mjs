@@ -11,11 +11,11 @@ test("validateModuleRecipe detects valid recipe in existing cognee module", () =
     assert.equal(result.errors.length, 0);
     assert.ok(result.passed.length >= 8);
     const text = formatValidationReport(result);
-    assert.match(text, /Status: Modul 'cognee' VALID/);
+    assert.match(text, /Status: Module 'cognee' VALID/);
 });
 
 test("validateModuleRecipe catches invalid JSON and missing files", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-val-test-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-val-test-"));
     try {
         const modDir = path.join(tempDir, "modules", "bad-mod");
         fs.mkdirSync(modDir, { recursive: true });
@@ -23,20 +23,20 @@ test("validateModuleRecipe catches invalid JSON and missing files", () => {
         // Missing module.json
         const resMissing = validateModuleRecipe({ root: tempDir, moduleId: "bad-mod" });
         assert.equal(resMissing.valid, false);
-        assert.match(resMissing.errors[0], /module.json' tidak ditemukan/);
+        assert.match(resMissing.errors[0], /module.json' not found/);
 
         // Corrupted module.json
         fs.writeFileSync(path.join(modDir, "module.json"), "{ invalid json");
         const resCorrupt = validateModuleRecipe({ root: tempDir, moduleId: "bad-mod" });
         assert.equal(resCorrupt.valid, false);
-        assert.match(resCorrupt.errors[0], /gagal diparsing/);
+        assert.match(resCorrupt.errors[0], /Failed to parse/);
     } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
     }
 });
 
 test("validateModuleRecipe flags insecure 0.0.0.0 ports and missing compose profile", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shadow-val-test2-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-val-test2-"));
     try {
         const modDir = path.join(tempDir, "modules", "insecure-mod");
         fs.mkdirSync(modDir, { recursive: true });
@@ -65,7 +65,7 @@ test("validateModuleRecipe flags insecure 0.0.0.0 ports and missing compose prof
         const res = validateModuleRecipe({ root: tempDir, moduleId: "insecure-mod" });
         assert.equal(res.valid, true); // It's valid schema-wise but has security warnings
         assert.ok(res.warnings.some((w) => w.includes("profiles: [insecure-mod]")));
-        assert.ok(res.warnings.some((w) => w.includes("terbuka ke semua interface")));
+        assert.ok(res.warnings.some((w) => w.includes("exposed to all interfaces")));
     } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
     }
