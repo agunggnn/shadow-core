@@ -38,6 +38,9 @@
     "command-plane"
   ],
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/agunggnn/shadow-core.git"
@@ -52,7 +55,8 @@
   "scripts": {
     "check": "node scripts/check.mjs",
     "test": "node --test \"**/*.test.mjs\"",
-    "lint": "node scripts/check.mjs"
+    "lint": "node scripts/check.mjs",
+    "publish-pkg": "node scripts/publish.mjs"
   },
   "preferGlobal": true
 }

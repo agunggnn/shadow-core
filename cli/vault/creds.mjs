@@ -68,6 +68,26 @@ export const KNOWN_CREDENTIALS = Object.freeze({
         description: "API key opsional khusus model embedding (jika terpisah dari LLM key).",
         usage: "Digunakan oleh Cognee saat menggunakan model embedding pihak ketiga terpisah.",
     }),
+    "npm-token": Object.freeze({
+        envVar: "NODE_AUTH_TOKEN",
+        moduleId: "core",
+        targetId: "npm",
+        keyName: "auth_token",
+        authType: "api-key",
+        label: "NPM Registry Auth Token",
+        description: "Token otentikasi npm untuk publish paket @agunggnn/shadow-core ke npm registry.",
+        usage: "Digunakan saat publish ke https://registry.npmjs.org/. Jalankan 'npm run publish-pkg' untuk publish.",
+    }),
+    "npm-auth-token": Object.freeze({
+        envVar: "NODE_AUTH_TOKEN",
+        moduleId: "core",
+        targetId: "npm",
+        keyName: "auth_token",
+        authType: "api-key",
+        label: "NPM Auth Token (Alias)",
+        description: "Token otentikasi npm untuk publish paket @agunggnn/shadow-core ke npm registry.",
+        usage: "Digunakan saat publish ke https://registry.npmjs.org/. Jalankan 'npm run publish-pkg' untuk publish.",
+    }),
 });
 
 function replaceEnvValue(text, name, value) {
@@ -325,8 +345,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             if (result.usage) {
                 process.stdout.write(`  Cara Pakai: ${result.usage}\n`);
             }
-            const upTarget = result.module && result.module !== "core" ? `shadow up ${result.module}` : "shadow up";
-            process.stdout.write(`  Terapkan  : Jalankan '${upTarget}' (atau 'shadow up') untuk memuat ulang ke container.\n`);
+            if (result.id.startsWith("npm-")) {
+                process.stdout.write("  Terapkan  : Jalankan 'node scripts/publish.mjs' atau 'npm run publish-pkg' untuk publish ke npm.\n");
+            } else {
+                const upTarget = result.module && result.module !== "core" ? `shadow up ${result.module}` : "shadow up";
+                process.stdout.write(`  Terapkan  : Jalankan '${upTarget}' (atau 'shadow up') untuk memuat ulang ke container.\n`);
+            }
             process.stdout.write("================================================================================\n");
         } else {
             throw new Error(`Perintah creds tidak dikenal: '${action}'. Gunakan 'list', 'reveal', atau 'set'.`);

@@ -391,6 +391,7 @@ Commands:
   mcp configure|serve|ping  Konfigurasi, jalankan bridge, atau diagnostik ping Shadow MCP
   mcp tools <service>       Daftar tools MCP service beserta klasifikasi Offline/LLM
   mcp call <srv> <tool> [a] Panggil tool MCP service secara langsung tanpa AI client eksternal
+  publish                   Build, validasi, dan publish paket @agunggnn/shadow-core ke npm
   tui                       Buka tampilan operasional terminal interaktif
 `;
 }
@@ -509,8 +510,12 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             if (result.usage) {
                 process.stdout.write(`  Cara Pakai: ${result.usage}\n`);
             }
-            const upTarget = result.module && result.module !== "core" ? `shadow up ${result.module}` : "shadow up";
-            process.stdout.write(`  Terapkan  : Jalankan '${upTarget}' (atau 'shadow up') untuk memuat ulang ke container.\n`);
+            if (result.id.startsWith("npm-")) {
+                process.stdout.write("  Terapkan  : Jalankan 'npm run publish-pkg' atau 'node scripts/publish.mjs' untuk publish ke npm.\n");
+            } else {
+                const upTarget = result.module && result.module !== "core" ? `shadow up ${result.module}` : "shadow up";
+                process.stdout.write(`  Terapkan  : Jalankan '${upTarget}' (atau 'shadow up') untuk memuat ulang ke container.\n`);
+            }
             process.stdout.write("================================================================================\n");
             return;
         }
@@ -825,6 +830,11 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             process.execPath,
             path.join(cliRoot, "mcp", "server.mjs"),
         ], { cwd: root });
+        return;
+    }
+    if (command === "publish") {
+        const publishScript = path.join(cliRoot, "..", "scripts", "publish.mjs");
+        run(process.execPath, [publishScript], { cwd: root });
         return;
     }
     if (command === "tui") {
