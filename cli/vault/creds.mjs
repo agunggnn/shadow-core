@@ -139,6 +139,8 @@ export async function promptSecret(promptText = "Enter secret value: ", { input 
         function cleanup() {
             input.removeListener("data", onData);
             if (input.setRawMode) input.setRawMode(wasRaw || false);
+            if (typeof input.pause === "function") input.pause();
+            if (typeof input.unref === "function") input.unref();
         }
 
         input.on("data", onData);
