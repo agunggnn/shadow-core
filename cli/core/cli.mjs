@@ -214,7 +214,7 @@ Usage: shadow <command> [arguments]
   doctor                    Validate Docker and Compose configuration
   up [module|all]           Pull and start core, 9router, or enabled modules
   update [target|all]       Pull, recreate, and verify a module or service
-  down                      Stop the project without deleting volumes
+  down [-v]                 Stop services (use -v to remove data volumes)
   status                    Show container and image state
   logs [service]            Follow project logs
   modules                   List available and enabled modules
@@ -357,7 +357,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         return;
     }
     if (command === "down") {
-        compose(root, envFile, [...profileArguments(root, values, "*").arguments, "down"]);
+        compose(root, envFile, [...profileArguments(root, values, "*").arguments, "down", ...args]);
         return;
     }
     if (command === "status") {

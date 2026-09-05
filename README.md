@@ -196,7 +196,7 @@ Cognee adalah modul memori graf dan vektor persisten yang terhubung melalui Mode
 | `shadow doctor` | Validasi instalasi Docker dan kontrak Docker Compose |
 | `shadow up [target\|all]` | Unduh dan jalankan service (default menjalankan semua modul aktif) |
 | `shadow update [target\|all]` | Migrasikan image pin digest, buat ulang container, dan verifikasi health |
-| `shadow down` | Hentikan container tanpa menghapus volume data |
+| `shadow down [-v]` | Hentikan container (gunakan `-v` untuk menghapus volume data) |
 | `shadow status` | Tampilkan status container dan image |
 | `shadow logs [service]` | Pantau log container secara real-time |
 | `shadow modules` | Tampilkan daftar modul yang tersedia dan statusnya (enabled/disabled) |
@@ -208,6 +208,48 @@ Cognee adalah modul memori graf dan vektor persisten yang terhubung melalui Mode
 | `shadow mcp configure` | Daftarkan endpoint MCP modul aktif ke `.mcp.json` |
 | `shadow mcp serve` | Jalankan MCP bridge server |
 | `shadow tui` | Buka terminal dashboard live operations view |
+
+---
+
+## 🗑️ Cara Uninstall & Pembersihan Total (Teardown Guide)
+
+Jika Anda ingin mereset atau menghapus instalasi Shadow Core dari awal secara menyeluruh:
+
+### 1. Hentikan Layanan & Hapus Data Proyek
+Di dalam folder proyek Anda:
+```bash
+# Menghentikan container dan menghapus seluruh volume Docker (database, memori, logs)
+shadow down -v
+```
+
+### 2. Hapus Folder Proyek
+Keluar dari direktori proyek dan hapus foldernya:
+```bash
+cd ..
+
+# Linux / macOS:
+rm -rf my-ai-plane
+
+# Windows (PowerShell):
+Remove-Item -Recurse -Force my-ai-plane
+```
+
+### 3. Hapus CLI `shadow` dari Sistem (Uninstall CLI)
+- **Jika diinstal secara global via npm**:
+  ```bash
+  npm uninstall -g @agunggnn/shadow-core
+  ```
+- **Jika menggunakan `npm link` (dari Git clone)**:
+  ```bash
+  cd shadow-core
+  npm unlink -g @agunggnn/shadow-core
+  ```
+
+### 4. (Opsional) Hapus Image Docker dari Sistem
+Untuk membersihkan sisa container image yang telah di-download ke sistem Anda:
+```bash
+docker image prune -a
+```
 
 ---
 
