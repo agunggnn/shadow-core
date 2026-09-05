@@ -109,23 +109,39 @@ export function classifyToolNature(toolName, description = "") {
     return { tag: "NATIVE", note: "Fungsi bawaan modul" };
 }
 
-export async function listMcpTools({ root = process.cwd(), targetService, fetchFn = globalThis.fetch, timeoutMs = 5000 }) {
-    const { endpointUrl, service } = resolveServiceEndpoint(root, targetService);
+async function parseMcpResponse(res) {
+    const contentType = res.headers?.get ? (res.headers.get("content-type") || "") : "";
+    if (contentType.includes("text/event-stream")) {
+        const text = await res.text();
+        const lines = text.split("\n")
+            .filter((l) => l.startsWith("data:"))
+            .map((l) => l.replace(/^data:\s*/, "").trim())
+            .filter(Boolean);
+        const lastLine = lines[lines.length - 1] || "{}";
+        return JSON.parse(lastLine);
+    }
+    if (typeof res.json === "function") {
+        return await res.json();
+    }
+    const text = await res.text();
+    return JSON.parse(text);
+}
 
+async function sendMcpRequest({ endpointUrl, payload, fetchFn, timeoutMs = 15000, sessionId = null }) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
-
     try {
-        const payload = {
-            jsonrpc: "2.0",
-            id: 1,
-            method: "tools/list",
-            params: {},
+        const headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream, */*",
         };
+        if (sessionId) {
+            headers["mcp-session-id"] = sessionId;
+        }
 
         const res = await fetchFn(endpointUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify(payload),
             signal: controller.signal,
         });
@@ -134,21 +150,82 @@ export async function listMcpTools({ root = process.cwd(), targetService, fetchF
             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
 
-        const data = await res.json();
-        const tools = (data.result?.tools || []).map((t) => ({
-            ...t,
-            classification: classifyToolNature(t.name, t.description),
-        }));
-
-        return {
-            ok: true,
-            serviceName: service.mcpServer.name,
-            endpointUrl,
-            tools,
-        };
+        const newSessionId = res.headers?.get ? res.headers.get("mcp-session-id") : null;
+        const data = await parseMcpResponse(res);
+        return { data, sessionId: newSessionId || sessionId };
     } finally {
         clearTimeout(timer);
     }
+}
+
+async function ensureMcpSession({ endpointUrl, fetchFn }) {
+    try {
+        const initPayload = {
+            jsonrpc: "2.0",
+            id: 1,
+            method: "initialize",
+            params: {
+                protocolVersion: "2024-11-05",
+                capabilities: {},
+                clientInfo: { name: "shadow-cli", version: "0.2.1" },
+            },
+        };
+        const { data, sessionId } = await sendMcpRequest({
+            endpointUrl,
+            payload: initPayload,
+            fetchFn,
+            timeoutMs: 5000,
+        });
+
+        try {
+            await sendMcpRequest({
+                endpointUrl,
+                payload: { jsonrpc: "2.0", method: "notifications/initialized", params: {} },
+                fetchFn,
+                timeoutMs: 3000,
+                sessionId,
+            });
+        } catch {
+            // notifications are non-blocking
+        }
+
+        return sessionId;
+    } catch {
+        return null;
+    }
+}
+
+export async function listMcpTools({ root = process.cwd(), targetService, fetchFn = globalThis.fetch, timeoutMs = 10000 }) {
+    const { endpointUrl, service } = resolveServiceEndpoint(root, targetService);
+
+    const payload = {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/list",
+        params: {},
+    };
+
+    let data;
+    try {
+        const result = await sendMcpRequest({ endpointUrl, payload, fetchFn, timeoutMs });
+        data = result.data;
+    } catch {
+        const sessionId = await ensureMcpSession({ endpointUrl, fetchFn });
+        const result = await sendMcpRequest({ endpointUrl, payload, fetchFn, timeoutMs, sessionId });
+        data = result.data;
+    }
+
+    const tools = (data.result?.tools || []).map((t) => ({
+        ...t,
+        classification: classifyToolNature(t.name, t.description),
+    }));
+
+    return {
+        ok: true,
+        serviceName: service.mcpServer.name,
+        endpointUrl,
+        tools,
+    };
 }
 
 export async function callMcpTool({
@@ -174,48 +251,38 @@ export async function callMcpTool({
         },
     };
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-
+    let data;
     try {
-        const res = await fetchFn(endpointUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-            signal: controller.signal,
-        });
-
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-
-        const data = await res.json();
-
-        if (data.error) {
-            return {
-                ok: false,
-                isError: true,
-                error: data.error.message || JSON.stringify(data.error),
-                endpointUrl,
-            };
-        }
-
-        const result = data.result || {};
-        const contentText = (result.content || [])
-            .map((item) => item.text || JSON.stringify(item))
-            .join("\n") || JSON.stringify(result, null, 2);
-
-        return {
-            ok: !result.isError,
-            isError: result.isError || false,
-            content: contentText,
-            rawResult: result,
-            endpointUrl,
-            serviceName: service.mcpServer.name,
-        };
-    } finally {
-        clearTimeout(timer);
+        const result = await sendMcpRequest({ endpointUrl, payload, fetchFn, timeoutMs });
+        data = result.data;
+    } catch {
+        const sessionId = await ensureMcpSession({ endpointUrl, fetchFn });
+        const result = await sendMcpRequest({ endpointUrl, payload, fetchFn, timeoutMs, sessionId });
+        data = result.data;
     }
+
+    if (data.error) {
+        return {
+            ok: false,
+            isError: true,
+            error: data.error.message || JSON.stringify(data.error),
+            endpointUrl,
+        };
+    }
+
+    const result = data.result || {};
+    const contentText = (result.content || [])
+        .map((item) => item.text || JSON.stringify(item))
+        .join("\n") || JSON.stringify(result, null, 2);
+
+    return {
+        ok: !result.isError,
+        isError: result.isError || false,
+        content: contentText,
+        rawResult: result,
+        endpointUrl,
+        serviceName: service.mcpServer.name,
+    };
 }
 
 export async function runMcpToolCommand({

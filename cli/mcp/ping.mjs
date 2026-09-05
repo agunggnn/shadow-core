@@ -37,7 +37,10 @@ export async function pingMcpServer({ url, timeoutMs = 5000, fetchFn = globalThi
         try {
             response = await fetchFn(url, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream, */*",
+                },
                 body: JSON.stringify(initPayload),
                 signal: controller.signal,
             });
@@ -66,7 +69,14 @@ export async function pingMcpServer({ url, timeoutMs = 5000, fetchFn = globalThi
 
     let initData;
     try {
-        initData = await response.json();
+        const ct = response.headers?.get ? (response.headers.get("content-type") || "") : "";
+        if (ct.includes("text/event-stream")) {
+            const rawText = await response.text();
+            const lines = rawText.split("\n").filter((l) => l.startsWith("data:")).map((l) => l.replace(/^data:\s*/, "").trim());
+            initData = JSON.parse(lines[lines.length - 1] || "{}");
+        } else {
+            initData = await response.json();
+        }
     } catch (err) {
         return {
             ok: false,
@@ -89,12 +99,23 @@ export async function pingMcpServer({ url, timeoutMs = 5000, fetchFn = globalThi
         try {
             const toolsRes = await fetchFn(url, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream, */*",
+                },
                 body: JSON.stringify(toolsPayload),
                 signal: controller.signal,
             });
             if (toolsRes.ok) {
-                const toolsData = await toolsRes.json();
+                const ct2 = toolsRes.headers?.get ? (toolsRes.headers.get("content-type") || "") : "";
+                let toolsData;
+                if (ct2.includes("text/event-stream")) {
+                    const rawText = await toolsRes.text();
+                    const lines = rawText.split("\n").filter((l) => l.startsWith("data:")).map((l) => l.replace(/^data:\s*/, "").trim());
+                    toolsData = JSON.parse(lines[lines.length - 1] || "{}");
+                } else {
+                    toolsData = await toolsRes.json();
+                }
                 tools = toolsData.result?.tools || [];
             }
         } finally {
