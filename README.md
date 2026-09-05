@@ -28,10 +28,14 @@ Ketika menjalankan berbagai layanan AI lokal (model router, server MCP, memori g
 
 ## 🚀 Panduan Instalasi Default CLI
 
-### Metode 1: Instalasi Global via NPM (Direkomendasikan untuk Pengguna)
+### Metode 1: Instalasi Global CLI (Direkomendasikan)
 
-Instal `shadow` CLI secara global ke sistem Anda:
+**A. Langsung dari GitHub Repository (Langsung Tersedia):**
+```bash
+npm install -g github:agunggnn/shadow-core
+```
 
+**B. Dari NPM Registry:**
 ```bash
 npm install -g @agunggnn/shadow-core
 ```
