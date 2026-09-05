@@ -1,6 +1,6 @@
 # Hetzer: System Architecture & Technical Specifications
 
-> **Version**: 0.3.0  
+> **Version**: 0.3.1  
 > **Status**: Stable / Production Architecture  
 > **Author**: Agung & The Hetzer Core Team  
 > **License**: Apache-2.0
