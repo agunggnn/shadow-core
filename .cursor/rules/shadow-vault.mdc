@@ -26,9 +26,15 @@ Your environment enforces strict **Zero-Plaintext** credential handling:
   ```bash
   hetzer exec -- <command> [args]
   ```
-- Or call the local vault MCP tools (`shadow_vault_has`, `shadow_vault_list`) if configured.
 
-## 4. User Credential Management
+## 4. Autonomous MCP Defense Tools
+If connected via MCP, you have access to Hetzer's native defense tools:
+- `shadow_sniffer_scan(text)`: Inspect whether user input, code, or logs contain candidate credentials.
+- `shadow_sniffer_redact(text)`: Sanitize text by automatically replacing raw credentials with `secretRef:<id>`.
+- `shadow_vault_has(id)`: Verify if a required secret exists in Vault without exposing its plaintext value.
+- `shadow_vault_list()`: Inspect configured credential references safely.
+
+## 5. User Credential Management
 - If a required credential is not configured, instruct the user to run:
   ```bash
   hetzer creds set <credential-id>

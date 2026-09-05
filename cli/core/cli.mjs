@@ -17,7 +17,7 @@ import { formatValidationReport, validateAllModules, validateModuleRecipe } from
 import { KNOWN_CREDENTIALS, listCredentials, promptSecret, revealCredential, setCredential } from "../vault/creds.mjs";
 import { autoIngestPlaintextEnv, migrateEnvCredentials } from "../vault/migrate-env.mjs";
 import { redactAndVault, scanText, restoreSecrets } from "../vault/sniffer.mjs";
-import { printHetzerBanner } from "./banner.mjs";
+import { getHetzerAsciiBanner, printHetzerBanner } from "./banner.mjs";
 import { runDoctor } from "./doctor.mjs";
 import { parseEnv } from "./env.mjs";
 import {
@@ -373,15 +373,17 @@ export function printModuleHelp(moduleId, root, values) {
 }
 
 function help() {
-    return `Shadow Core
+    const banner = getHetzerAsciiBanner({ colored: Boolean(process.stdout.isTTY) });
+    return `${banner}
 
-Usage: shadow [options] <command> [arguments]
+Penggunaan: hetzer [options] <command> [arguments]
+            shadow [options] <command> [arguments]
 
 Options:
-  --root <path>             Tentukan root direktori Shadow instance (default: ~/.shadow)
+  --root <path>             Tentukan root direktori instance (default: ~/.shadow)
 
 Commands:
-  init [directory]          Inisialisasi Shadow Core (default: ~/.shadow)
+  init [directory]          Inisialisasi instance (default: ~/.shadow)
   doctor [--fix]            Cek kompatibilitas sistem & Docker (--fix untuk auto-repair izin/direktori)
   up [module|all] [--wait]  Jalankan container core, 9router, atau modul aktif (--wait menunggu healthcheck)
   update [target|all]       Tarik dan perbarui digest image modul/service
@@ -394,13 +396,14 @@ Commands:
   module <id> [action|help] Panduan perintah native atau jalankan action host modul
   module create <id> [--source <repo>] Buat resep modul baru (analisis AI via 9Router)
   validate [module]         Validasi integritas, keamanan, dan resep Docker modul
-  creds [list|reveal|set]   Kelola rahasia terenkripsi di Shadow Vault
+  creds [list|reveal|set]   Kelola rahasia terenkripsi di Grimoire Vault (AES-256-GCM)
   sniffer [scan|redact] <t> Pindai dan amankan kredensial dari teks secara instan (<2ms)
-  skill [install|status]    Pasang Universal AI Skill ke Cursor, Claude, Cline (0 Docker, 0 RAM)
-  mcp configure|serve|ping  Konfigurasi, jalankan bridge, atau diagnostik ping Shadow MCP
+  skill [install|status]    Pasang Universal AI Skill ke Hermes, AGY, OpenCode, CommandCode, Cursor, Claude
+  hook [install|uninstall|check] Pasang/kelola Git Pre-Commit Guard untuk cegah commit token bocor
+  mcp configure|serve|ping  Konfigurasi, jalankan bridge, atau diagnostik ping MCP
   mcp tools <service>       Daftar tools MCP service beserta klasifikasi Offline/LLM
   mcp call <srv> <tool> [a] Panggil tool MCP service secara langsung tanpa AI client eksternal
-  publish                   Build, validasi, dan publish paket @agunggnn/shadow-core ke npm
+  publish                   Build, validasi, dan publish paket ke npm publik
   tui                       Buka tampilan operasional terminal interaktif
 `;
 }
@@ -573,6 +576,14 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             path.join(cliRoot, "skills", "installer.mjs"),
             action,
             target,
+        ], { cwd: root });
+        return;
+    }
+    if (["hook", "hooks"].includes(command)) {
+        const action = args[0] || "check";
+        run(process.execPath, [
+            path.join(cliRoot, "core", "git-hook.mjs"),
+            action,
         ], { cwd: root });
         return;
     }
