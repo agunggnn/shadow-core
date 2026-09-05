@@ -36,6 +36,14 @@ npx hetzer creds set openai-api-key
 
 ### Permanent Installation Options:
 
+- **One-Line Script (Linux & macOS)**:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/agunggnn/hetzer/main/install.sh | bash
+  ```
+- **One-Line Script (Windows PowerShell)**:
+  ```powershell
+  irm https://raw.githubusercontent.com/agunggnn/hetzer/main/install.ps1 | iex
+  ```
 - **Via NPM (Multi-Platform - Recommended)**:
   ```bash
   npm install -g hetzer
@@ -44,10 +52,6 @@ npx hetzer creds set openai-api-key
   ```bash
   brew install agunggnn/tap/hetzer
   # or install directly from formula: brew install packaging/brew/hetzer.rb
-  ```
-- **Via Chocolatey (Windows)**:
-  ```powershell
-  choco install hetzer
   ```
 
 ---

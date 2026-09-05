@@ -44,7 +44,7 @@ cli/
 scripts/
   check.mjs      # Build-time validation
 benchmarks/      # Performance benchmarks
-packaging/       # Homebrew & Chocolatey package manifests
+packaging/       # Homebrew package manifests
 .github/workflows/ci.yml
 ```
 

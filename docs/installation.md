@@ -19,10 +19,10 @@
    - [macOS (Apple Silicon & Intel)](#34-macos-apple-silicon--intel)
    - [Cloud VPS (Hetzner, DigitalOcean, AWS EC2)](#35-cloud-vps-hetzner-digitalocean-aws-ec2)
 4. [Installation Methods](#4-installation-methods)
-   - [Method A: Zero-Install via npx (Fastest)](#method-a-zero-install-via-npx-fastest)
-   - [Method B: Global CLI via npm (Recommended)](#method-b-global-cli-via-npm-recommended)
-   - [Method C: Homebrew (macOS & Linux)](#method-c-homebrew-macos--linux)
-   - [Method D: Chocolatey (Windows)](#method-d-chocolatey-windows)
+   - [Method A: One-Line Script via curl / PowerShell (Fastest)](#method-a-one-line-script-via-curl--powershell-fastest)
+   - [Method B: Zero-Install via npx](#method-b-zero-install-via-npx)
+   - [Method C: Global CLI via npm (Recommended)](#method-c-global-cli-via-npm-recommended)
+   - [Method D: Homebrew (macOS & Linux)](#method-d-homebrew-macos--linux)
    - [Method E: Clone from Source](#method-e-clone-from-source)
 5. [Pre-flight Diagnostics (`hetzer doctor`)](#5-pre-flight-diagnostics-hetzer-doctor)
 6. [Project Initialization & Secret Setup](#6-project-initialization--secret-setup)
@@ -167,9 +167,23 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
 ## 4. Installation Methods
 
-### Method A: Zero-Install via npx (Fastest)
+### Method A: One-Line Script via curl / PowerShell (Fastest)
 
-Run any command on-demand:
+**Linux & macOS (curl / bash):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/agunggnn/hetzer/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/agunggnn/hetzer/main/install.ps1 | iex
+```
+
+---
+
+### Method B: Zero-Install via npx
+
+Run any command on-demand without installing globally:
 ```bash
 npx hetzer skill install
 npx hetzer hook install
@@ -178,7 +192,7 @@ npx hetzer creds list
 
 ---
 
-### Method B: Global CLI via npm (Recommended)
+### Method C: Global CLI via npm (Recommended)
 
 ```bash
 npm install -g hetzer
@@ -191,20 +205,12 @@ hetzer --version
 
 ---
 
-### Method C: Homebrew (macOS & Linux)
+### Method D: Homebrew (macOS & Linux)
 
 ```bash
 brew install agunggnn/tap/hetzer
 # or use local formula:
 brew install packaging/brew/hetzer.rb
-```
-
----
-
-### Method D: Chocolatey (Windows)
-
-```powershell
-choco install hetzer
 ```
 
 ---
