@@ -1,23 +1,54 @@
-# Shadow Core
+# Hetzer 🛡️
 
 <p align="center">
   <img src="assets/hetzer-banner.jpg" alt="Hetzer Zero-Plaintext Armor" width="100%" />
 </p>
 
 <p align="center">
-  <strong>The Local-First Autonomous AI Command Plane</strong><br>
-  <em>Zero npm dependencies. Zero-plaintext security. Intelligent AI model routing, tri-layer persistent memory, and universal MCP orchestration in ~1.4 GiB RAM.</em>
+  <strong>Zero-Plaintext Armor & Secret Interceptor for AI Agents</strong><br>
+  <em>Sub-2ms DFA Secret Sniffer • AES-256-GCM Grimoire Vault • Git Pre-Commit Guard • 0 Docker Overhead Universal Skills for Hermes, AGY, OpenCode, Cursor, and Claude.</em>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@agunggnn/shadow-core"><img src="https://img.shields.io/npm/v/@agunggnn/shadow-core.svg?style=flat-square&color=blue" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/hetzer"><img src="https://img.shields.io/npm/v/hetzer.svg?style=flat-square&color=blue" alt="npm version" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D22.5.0-brightgreen.svg?style=flat-square" alt="Node.js version" /></a>
-  <a href="https://docs.docker.com/compose/"><img src="https://img.shields.io/badge/docker--compose-v2-blue.svg?style=flat-square" alt="Docker Compose v2" /></a>
   <a href="package.json"><img src="https://img.shields.io/badge/dependencies-0%20(pure%20Node%20stdlib)-success.svg?style=flat-square" alt="Zero External Dependencies" /></a>
   <a href="SECURITY.md"><img src="https://img.shields.io/badge/security-AES--256--GCM%20Vault-orange.svg?style=flat-square" alt="AES-256-GCM Vault" /></a>
-  <a href="docs/architecture.md"><img src="https://img.shields.io/badge/memory%20footprint-~1.4%20GiB%20RAM-purple.svg?style=flat-square" alt="Memory Footprint" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=flat-square" alt="License" /></a>
 </p>
+
+---
+
+## ⚡ Quickstart (Tanpa Install via `npx`)
+
+Hetzer dapat dijalankan langsung di mesin mana pun yang memiliki Node.js:
+
+```bash
+# 1. Pasang pelindung ke Agen AI Anda (Hermes, AGY, OpenCode, Cursor, Claude, Cline)
+npx hetzer skill install
+
+# 2. Pasang Git Pre-Commit Guard (blokir kebocoran token ke GitHub dalam < 2ms)
+npx hetzer hook install
+
+# 3. Simpan kredensial/token secara terenkripsi (bebas teks polos di .env)
+npx hetzer creds set openai-api-key
+```
+
+### Opsi Instalasi Permanen:
+
+- **Via NPM (Multi-Platform - Rekomendasi)**:
+  ```bash
+  npm install -g hetzer
+  ```
+- **Via Homebrew (macOS & Linux)**:
+  ```bash
+  brew install agunggnn/tap/hetzer
+  # atau gunakan formula lokal: brew install packaging/brew/hetzer.rb
+  ```
+- **Via Chocolatey (Windows)**:
+  ```powershell
+  choco install hetzer
+  ```
 
 ---
 

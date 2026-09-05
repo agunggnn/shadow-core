@@ -13,7 +13,7 @@ const envFile = path.resolve(process.env.SHADOW_ENV_FILE || path.join(root, ".en
 
 async function main() {
     process.stdout.write("================================================================================\n");
-    process.stdout.write("  SHADOW CORE - BUILD & SECURE NPM PUBLISH (@agunggnn/shadow-core)\n");
+    process.stdout.write("  HETZER - BUILD & SECURE NPM PUBLISH\n");
     process.stdout.write("================================================================================\n");
 
     if (!fs.existsSync(envFile)) {
