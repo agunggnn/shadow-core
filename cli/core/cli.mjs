@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { listMcpTools, runMcpToolCommand } from "../mcp/call.mjs";
 import { configureMcp } from "../mcp/configure.mjs";
 import { diagnoseMcpService } from "../mcp/ping.mjs";
 import { createModuleRecipe } from "../modules/create.mjs";
@@ -371,7 +372,7 @@ Options:
 Commands:
   init [directory]          Inisialisasi Shadow Core (default: ~/.shadow)
   doctor [--fix]            Cek kompatibilitas sistem & Docker (--fix untuk auto-repair izin/direktori)
-  up [module|all]           Jalankan container core, 9router, atau modul aktif
+  up [module|all] [--wait]  Jalankan container core, 9router, atau modul aktif (--wait menunggu healthcheck)
   update [target|all]       Tarik dan perbarui digest image modul/service
   down [-v]                 Hentikan service (gunakan -v untuk menghapus volume data)
   status                    Lihat status kontainer dan image
@@ -384,6 +385,8 @@ Commands:
   validate [module]         Validasi integritas, keamanan, dan resep Docker modul
   creds [list|reveal|set]   Kelola rahasia terenkripsi di Shadow Vault
   mcp configure|serve|ping  Konfigurasi, jalankan bridge, atau diagnostik ping Shadow MCP
+  mcp tools <service>       Daftar tools MCP service beserta klasifikasi Offline/LLM
+  mcp call <srv> <tool> [a] Panggil tool MCP service secara langsung tanpa AI client eksternal
   tui                       Buka tampilan operasional terminal interaktif
 `;
 }
@@ -518,8 +521,8 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         return;
     }
     if (command === "up") {
-        const hasVerify = args.includes("--verify");
-        const filteredArgs = args.filter((a) => a !== "--verify");
+        const hasVerify = args.includes("--verify") || args.includes("--wait");
+        const filteredArgs = args.filter((a) => a !== "--verify" && a !== "--wait");
         const target = filteredArgs[0] === "all" ? "*" : (filteredArgs[0] || "*");
         const selection = profileArguments(root, values, target);
         compose(root, envFile, [...selection.arguments, "pull", "--policy", "always", "--ignore-buildable"]);
@@ -718,7 +721,58 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             if (!pingResult.ok) process.exitCode = 1;
             return;
         }
-        if (action !== "serve") throw new Error("Usage: shadow mcp <configure|serve|ping [service]>");
+        if (action === "tools") {
+            const targetService = args[1];
+            if (!targetService) {
+                throw new Error("Usage: shadow mcp tools <service>\nContoh: shadow mcp tools cognee");
+            }
+            const result = await listMcpTools({ root, targetService });
+            process.stdout.write("================================================================================\n");
+            process.stdout.write(`  SHADOW CORE - DAFTAR MCP TOOLS (${result.serviceName})\n`);
+            process.stdout.write(`  Endpoint: ${result.endpointUrl}\n`);
+            process.stdout.write("================================================================================\n");
+            if (result.tools.length === 0) {
+                process.stdout.write("  Tidak ada tools yang diekspos oleh service ini.\n");
+            } else {
+                for (const tool of result.tools) {
+                    const tag = tool.classification?.tag || "NATIVE";
+                    const note = tool.classification?.note || "";
+                    process.stdout.write(`\n* ${tool.name} [${tag}] (${note})\n`);
+                    if (tool.description) {
+                        process.stdout.write(`  Deskripsi : ${tool.description}\n`);
+                    }
+                    if (tool.inputSchema?.properties && Object.keys(tool.inputSchema.properties).length > 0) {
+                        const required = new Set(tool.inputSchema.required || []);
+                        const props = Object.entries(tool.inputSchema.properties)
+                            .map(([k, v]) => `${k}${required.has(k) ? "*" : ""}: ${v.type || "any"}`)
+                            .join(", ");
+                        process.stdout.write(`  Argumen   : { ${props} }\n`);
+                    }
+                    process.stdout.write(`  Panggilan : shadow mcp call ${targetService} ${tool.name} '{}'\n`);
+                }
+            }
+            process.stdout.write("================================================================================\n");
+            return;
+        }
+        if (action === "call") {
+            const targetService = args[1];
+            const toolName = args[2];
+            const argsJson = args[3] || "{}";
+            if (!targetService || !toolName) {
+                throw new Error("Usage: shadow mcp call <service> <tool> [argsJson]\nContoh: shadow mcp call cognee search '{\"query\": \"catatan\"}'");
+            }
+            const ok = await runMcpToolCommand({
+                root,
+                targetService,
+                toolName,
+                argsJson,
+            });
+            if (!ok) process.exitCode = 1;
+            return;
+        }
+        if (action !== "serve") {
+            throw new Error("Usage: shadow mcp <configure|serve|ping [service]|tools <service>|call <service> <tool> [args]>");
+        }
         run(process.execPath, [
             path.join(cliRoot, "vault", "exec.mjs"),
             "--root", root,

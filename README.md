@@ -211,20 +211,25 @@ Cognee adalah modul memori graf dan vektor persisten yang terhubung melalui Mode
 
 | Perintah | Deskripsi |
 |---|---|
-| `shadow init [dir]` | Inisialisasi proyek baru, amankan `.env`, dan buat Grimoire Vault |
-| `shadow doctor` | Validasi instalasi Docker dan kontrak Docker Compose |
-| `shadow up [target\|all]` | Unduh dan jalankan service (default menjalankan semua modul aktif) |
+| `shadow init [dir]` | Inisialisasi instance baru, amankan `.env`, dan buat Grimoire Vault |
+| `shadow doctor [--fix]` | Validasi lingkungan sistem & Docker (`--fix` untuk auto-repair izin/direktori) |
+| `shadow up [target\|all] [--wait]` | Jalankan container (`--wait` menunggu polling healthcheck & smoketest) |
 | `shadow update [target\|all]` | Migrasikan image pin digest, buat ulang container, dan verifikasi health |
 | `shadow down [-v]` | Hentikan container (gunakan `-v` untuk menghapus volume data) |
 | `shadow status` | Tampilkan status container dan image |
 | `shadow logs [service]` | Pantau log container secara real-time |
-| `shadow modules` | Tampilkan daftar modul yang tersedia dan statusnya (enabled/disabled) |
-| `shadow install <module>` | Aktifkan modul (contoh: `shadow install cognee`) |
+| `shadow modules [id]` | Tampilkan daftar modul yang tersedia atau panduan detail modul |
+| `shadow install <module>` | Aktifkan modul via interactive wizard (otomatis terhubung ke 9Router) |
 | `shadow remove <module>` | Nonaktifkan modul tanpa menghapus data |
+| `shadow module create <id>` | Scaffold resep modul baru yang aman & siap jalan |
+| `shadow validate [module]` | Validasi integritas, kepatuhan keamanan, dan compose modul |
 | `shadow creds [list]` | Tampilkan daftar kredensial dalam Grimoire Vault |
-| `shadow creds reveal <id>` | Tampilkan nilai rahasia dan petunjuk penggunaannya |
-| `shadow creds set <id> <val>`| Simpan atau perbarui nilai rahasia di dalam Vault terenkripsi |
+| `shadow creds reveal <id>` | Tampilkan nilai rahasia terenkripsi dan petunjuk penggunaannya |
+| `shadow creds set <id> [val]` | Simpan rahasia di Grimoire Vault (input masked prompt jika nilai dikosongkan) |
 | `shadow mcp configure` | Daftarkan endpoint MCP modul aktif ke `.mcp.json` |
+| `shadow mcp ping [service]` | Diagnostik koneksi dan latency live endpoint MCP |
+| `shadow mcp tools <service>` | Daftar tools MCP beserta klasifikasi [OFFLINE] / [HYBRID] / [LLM REASONING] |
+| `shadow mcp call <srv> <tool> [args]` | Panggil tool MCP langsung via CLI tanpa memerlukan AI client eksternal |
 | `shadow mcp serve` | Jalankan MCP bridge server |
 | `shadow tui` | Buka terminal dashboard live operations view |
 
