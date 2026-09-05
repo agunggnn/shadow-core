@@ -310,6 +310,49 @@ shadow module create my-custom-service --source https://github.com/user/my-repo
 
 ---
 
+## ❓ Pertanyaan yang Sering Diajukan (FAQ)
+
+### 1. Apakah kredensial yang tersimpan di Vault bisa dilihat kembali oleh saya?
+**Ya, tentu saja.** Selama Anda memiliki akses ke terminal mesin tersebut, Anda adalah pemilik sah (*administrator*). Anda dapat melihat daftar seluruh rahasia dan membuka nilai aslinya kapan saja:
+```bash
+# Melihat daftar kredensial tersimpan
+shadow creds list
+
+# Membuka nilai asli kredensial (terdekripsi dari AES-256-GCM)
+shadow creds reveal npm-token
+shadow creds reveal nine-router-initial-password
+```
+
+### 2. Apakah Agen AI (Claude, Cursor, Cline, GPT) bisa melihat kredensial tersebut?
+**Tidak bisa sama sekali.** Di sinilah garansi utama arsitektur *Zero-Plaintext*:
+- Tool MCP yang diekspos ke AI (`shadow_vault_has` dan `shadow_vault_list`) **hanya mengembalikan metadata** dan format referensi `secretRef:<id>`.
+- **Tidak ada tool `reveal` yang diekspos ke AI**. AI tidak memiliki izin ataupun fungsi untuk membaca string plaintext dari Grimoire Vault.
+- AI tetap bisa menjalankan tugas (misalnya memanggil API atau publish paket) karena kredensial disuntikkan secara *out-of-band* langsung ke memori subproses oleh host OS tanpa pernah melewati jendela obrolan (*context window*) AI.
+- Kebal terhadap serangan *Prompt Injection* dan *Jailbreak*: bahkan jika AI diperintahkan untuk membocorkan database vault, AI tidak memiliki akses untuk melakukannya.
+
+### 3. Skenario kredensial apa saja yang didukung oleh Shadow Core?
+Grimoire Vault dan Secret Sniffer mendukung seluruh spektrum kredensial modern:
+- **API Keys & Bearer Tokens**: OpenAI (`sk-...`), Anthropic (`sk-ant-...`), Google Gemini (`AIza...`), Groq, DeepSeek, Stripe, dll.
+- **Developer Registry Tokens**: NPM Token (`npm_...`), GitHub PAT (`ghp_...`), GitLab, HuggingFace, Docker Hub.
+- **Password Layanan & Database**: Password admin 9Router, PostgreSQL, Redis, MySQL.
+- **Kredensial Multi-Baris**: Kunci privat SSH/RSA (`-----BEGIN PRIVATE KEY-----`), Sertifikat SSL PEM, dan Google Cloud Service Account JSON (`cat key.json | shadow creds set gcp-key`).
+- **Database Connection URIs**: `postgresql://user:pass@host:5432/db`, `mongodb+srv://...`, `redis://...`.
+- **Cloud Multi-Key Pairs**: AWS (`AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY`), Azure Client Secret.
+
+### 4. Siapa saja yang sebenarnya dicegah dan dilindungi oleh sistem ini?
+- 🛡️ **Vendor AI Pihak Ketiga**: Token/password Anda tidak pernah terkirim ke server OpenAI, Anthropic, atau Google, tidak masuk ke log chat, dan tidak dijadikan data pelatihan (*training data*).
+- 🛡️ **Pencegahan Kebocoran Git**: File `.env` hanya menyimpan referensi abstrak `secretRef:<id>`. Jika file `.env` tidak sengaja ter-commit ke GitHub, penyerang tidak mendapatkan kredensial asli.
+- 🛡️ **Pengguna Lain di Komputer yang Sama**: File `.env` secara otomatis diamankan dengan izin akses ketat `chmod 600` (hanya akun OS Anda yang berhak membaca/menulis).
+
+### 5. Bagaimana jika saya ingin tingkat keamanan lebih tinggi di server produksi?
+Jika Anda tidak ingin menyimpan `SHADOW_GRIMOIRE_KEY` di file `.env` sama sekali, Anda dapat menghapus baris tersebut dari file `.env` dan mengekspornya hanya di sesi memori terminal:
+```bash
+export SHADOW_GRIMOIRE_KEY="kunci-master-pribadi-anda"
+```
+Dengan cara ini, di harddisk sama sekali tidak ada kunci pembuka. Siapa pun yang menyalin file `.env` atau database SQLite tidak akan bisa mendekripsi isinya tanpa master key yang Anda miliki di memori.
+
+---
+
 ## 🗑️ Panduan Uninstall & Pembersihan Total
 
 Untuk menghapus Shadow Core secara menyeluruh dari mesin Anda:
