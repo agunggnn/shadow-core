@@ -1,308 +1,268 @@
 # Shadow Core
 
-[![npm version](https://img.shields.io/npm/v/@agunggnn/shadow-core.svg)](https://www.npmjs.com/package/@agunggnn/shadow-core)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D22.5.0-brightgreen.svg)](https://nodejs.org/)
-[![Docker Compose](https://img.shields.io/badge/docker--compose-v2-blue.svg)](https://docs.docker.com/compose/)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Zero External Dependencies](https://img.shields.io/badge/dependencies-0%20(pure%20Node%20stdlib)-success.svg)](package.json)
+<p align="center">
+  <strong>The Local-First Autonomous AI Command Plane</strong><br>
+  <em>Zero npm dependencies. Zero-plaintext security. Intelligent AI model routing, tri-layer persistent memory, and universal MCP orchestration in ~1.4 GiB RAM.</em>
+</p>
 
-**Shadow Core** adalah *local-first AI command plane & orchestrator* untuk mengelola gateway model AI (seperti **9Router**), memori persisten (**Cognee**), kredensial terenkripsi (*Zero-Plaintext Vault*), dan protokol **Model Context Protocol (MCP)** dengan satu CLI mandiri tanpa dependensi eksternal.
-
----
-
-## ⚡ Mengapa Shadow Core?
-
-Ketika menjalankan berbagai layanan AI lokal (model router, server MCP, memori graf/vektor), developer biasanya menghadapi masalah:
-- ❌ **Kebocoran Kredensial**: API key dan password tersimpan dalam teks polos di file `.env` yang rentan ter-commit ke Git.
-- ❌ **Konfigurasi Docker yang Rumit**: Mengelola banyak file `docker-compose` secara manual menyulitkan update digest dan aktivasi modul.
-- ❌ **Kurangnya Wizard & Visibilitas**: Sulit mengetahui status health container dan kredensial awal yang dihasilkan.
-
-**Shadow Core memecahkan masalah ini dengan:**
-1. 🛡️ **Grimoire Vault (AES-256-GCM + SQLite)**: Menyimpan semua rahasia terenkripsi di database lokal. File `.env` hanya menyimpan referensi `secretRef:<id>` (*Zero-Plaintext*).
-2. 🧩 **Arsitektur Modul**: Modul seperti **9Router** dan **Cognee** dapat diaktifkan (`install`), dinonaktifkan (`remove`), atau diperbarui (`update`) secara independen dengan satu perintah.
-3. 🔑 **Manajemen Kredensial Interaktif (`shadow creds`)**: Periksa, simpan, atau ubah kredensial langsung dari CLI tanpa perlu menyentuh file `.env`.
-4. 🌐 **Bridge MCP Universal**: Hubungkan seluruh layanan AI lokal langsung ke **Claude Desktop**, **Cursor**, **Cline**, dan agen AI lainnya.
-5. 📊 **Terminal Operations TUI**: Monitor real-time status container, memory, dan port tanpa rekayasa metrik.
+<p align="center">
+  <a href="https://www.npmjs.com/package/@agunggnn/shadow-core"><img src="https://img.shields.io/npm/v/@agunggnn/shadow-core.svg?style=flat-square&color=blue" alt="npm version" /></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D22.5.0-brightgreen.svg?style=flat-square" alt="Node.js version" /></a>
+  <a href="https://docs.docker.com/compose/"><img src="https://img.shields.io/badge/docker--compose-v2-blue.svg?style=flat-square" alt="Docker Compose v2" /></a>
+  <a href="package.json"><img src="https://img.shields.io/badge/dependencies-0%20(pure%20Node%20stdlib)-success.svg?style=flat-square" alt="Zero External Dependencies" /></a>
+  <a href="SECURITY.md"><img src="https://img.shields.io/badge/security-AES--256--GCM%20Vault-orange.svg?style=flat-square" alt="AES-256-GCM Vault" /></a>
+  <a href="docs/architecture.md"><img src="https://img.shields.io/badge/memory%20footprint-~1.4%20GiB%20RAM-purple.svg?style=flat-square" alt="Memory Footprint" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=flat-square" alt="License" /></a>
+</p>
 
 ---
 
-## 🚀 Panduan Instalasi Default CLI
+## 📑 Dokumentasi Modular
 
-### Metode 1: Instalasi Global CLI (Direkomendasikan)
+Untuk kenyamanan developer dan optimasi pencarian (SEO), dokumentasi Shadow Core dipecah menjadi modul-modul independen:
 
-**A. Langsung dari GitHub Repository (Langsung Tersedia):**
-```bash
-npm install -g github:agunggnn/shadow-core
+| Modul Dokumentasi | Deskripsi & Isi |
+|---|---|
+| 🚀 **[Panduan Instalasi Lengkap (`docs/installation.md`)](docs/installation.md)** | Panduan instalasi multi-OS (Ubuntu, Debian, CentOS, Windows WSL2, macOS, VPS), prasyarat Docker & Node.js, dan troubleshooting. |
+| 🏛️ **[Arsitektur Sistem & Spesifikasi Teknis (`docs/architecture.md`)](docs/architecture.md)** | Penjelasan mendalam tentang Grimoire Vault (AES-256-GCM), 9Router Gateway, Cognee Tri-layer Memory, diagram Mermaid, dan model isolasi jaringan. |
+| 🌐 **[Panduan Integrasi Model Context Protocol (`docs/mcp-guide.md`)](docs/mcp-guide.md)** | Cara menghubungkan Shadow Core ke Claude Desktop, Cursor, Cline, OpenCode, klasifikasi tools `[OFFLINE]`/`[HYBRID]`/`[LLM]`, dan CLI testing. |
+| 🧠 **[Modul Memori Persisten Cognee (`docs/modules/cognee.md`)](docs/modules/cognee.md)** | Konfigurasi memori graf dan vektor persisten, integrasi Ollama lokal, dan skema tools memori. |
+
+---
+
+## ⚡ Apa itu Shadow Core?
+
+**Shadow Core** adalah *local-first AI command plane & orchestrator* mandiri yang dirancang untuk mengoperasikan infrastruktur AI lokal secara aman, hemat sumber daya, dan terotomatisasi. 
+
+Dengan Shadow Core, Anda dapat menjalankan:
+1. **9Router Engine**: Gateway perutean multi-provider (OpenAI, Anthropic, Gemini, Groq, DeepSeek, Ollama) dengan fallback otomatis dan antarmuka web mandiri.
+2. **Cognee Memory Engine**: Memori graf dan vektor persisten yang menggabungkan **SQLite WAL** (relasional), **LanceDB** (vektor), dan **Kùzu** (knowledge graph).
+3. **Grimoire Vault**: Brankas kredensial terenkripsi **AES-256-GCM** berbasis SQLite lokal (*Zero-Plaintext Contract*). Kredensial tidak pernah tersimpan dalam teks polos di file `.env`.
+4. **Universal MCP Bridge**: Menghubungkan seluruh tools dan memori lokal ke agen AI modern seperti **Claude Desktop**, **Cursor IDE**, dan **Cline**.
+
+Semua ini berjalan dalam **satu CLI mandiri** dengan **0 npm external dependencies** (hanya memanfaatkan pustaka standar Node.js) dan menggunakan total memori hanya **~1.4 GiB RAM**.
+
+---
+
+## 🥊 Perbandingan: Shadow Core vs Solusi Lain
+
+Bagaimana Shadow Core dibandingkan dengan tools AI populer lainnya di GitHub?
+
+| Fitur / Dimensi | Shadow Core | LiteLLM / One-API | Mem0 / Letta (MemGPT) | Dify.ai / Flowise | Ollama / LocalAI |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Fokus Utama** | Local AI Command Plane | Model Gateway & Proxy | Agent Memory Layer | Low-Code App Platform | Model Inference Runtime |
+| **Zero External NPM Deps** | ✅ **Ya (0 dependencies)** | ❌ (Banyak deps Python/Go) | ❌ (Python deps besar) | ❌ (10+ service containers) | ✅ (Binary Go/C++) |
+| **Zero-Plaintext Vault** | ✅ **AES-256-GCM SQLite** | ❌ (Plaintext .env/DB) | ❌ (Plaintext API keys) | ❌ (Standard DB credentials)| ❌ (Plaintext CLI env) |
+| **Model Gateway (Routing & Fallback)** | ✅ **Terintegrasi (9Router)** | ✅ Ya (Sangat lengkap) | ❌ Tidak ada | ⚠️ Terbatas | ❌ Tidak ada |
+| **Tri-Layer Memory (Relational + Vector + Graph)**| ✅ **Terintegrasi (Cognee)** | ❌ Tidak ada | ⚠️ Vector / Basic Graph | ⚠️ Basic Vector DB | ❌ Tidak ada |
+| **Universal MCP Orchestrator** | ✅ **Built-in CLI & Bridge** | ❌ Tidak ada | ⚠️ Client only | ❌ Tidak ada | ❌ Tidak ada |
+| **Konsumsi RAM (Full Stack)** | 🟢 **~1.4 GiB RAM** | 🟡 ~300 MiB - 800 MiB | 🟡 ~800 MiB - 1.5 GiB | 🔴 4 GiB - 8 GiB+ | 🟡 Tergantung bobot model |
+| **Bisa Jalan di VPS $5 / 2GB RAM** | ✅ **Sangat Stabil** | ✅ Ya | ⚠️ Butuh swap | ❌ Sering OOM Crash | ⚠️ Terbatas model kecil |
+
+---
+
+## 🏛️ Topologi Arsitektur
+
+```mermaid
+flowchart TB
+    subgraph Clients["AI Clients & Antarmuka Pengembang"]
+        CLI["Shadow Core CLI\n(shadow up / creds / mcp)"]
+        TUI["Terminal Live Monitor\n(shadow tui)"]
+        Claude["Claude Desktop"]
+        Cursor["Cursor / Windsurf IDE"]
+        Cline["Cline / Roo Code Agents"]
+        Browser["Web Browser\n(9Router UI :20140)"]
+    end
+
+    subgraph HostPlane["Shadow Core Command Plane (Host Process)"]
+        GrimoireVault[("Grimoire Vault\nSQLite WAL + AES-256-GCM\ndata/shadow-vault.db")]
+        MCPBridge["Universal MCP Bridge\n(JSON-RPC / SSE Client)"]
+        ModuleResolver["Module & Profile Resolver\n(Docker Compose Merger)"]
+        HealthVerifier["Active Healthcheck & Probe Engine"]
+    end
+
+    subgraph DockerPlane["Jaringan Terisolasi Docker (127.0.0.1 Loopback)"]
+        subgraph NineRouter["9Router AI Gateway (:20140)"]
+            RouterProxy["Multi-Provider Model Router & Fallback"]
+        end
+
+        subgraph CogneeSvc["Cognee Memory Engine (:8001)"]
+            MCPEndpoint["MCP Server (:8001/mcp)"]
+            RelationalDB[("SQLite WAL\nRelational Metadata")]
+            VectorDB[("LanceDB\nVector Embeddings")]
+            GraphDB[("Kùzu Graph DB\nKnowledge Graph")]
+        end
+    end
+
+    CLI --> GrimoireVault
+    CLI --> ModuleResolver
+    CLI --> MCPBridge
+    TUI --> HealthVerifier
+    Claude -.->|"JSON-RPC / SSE"| MCPEndpoint
+    Cursor -.->|"JSON-RPC / SSE"| MCPEndpoint
+    Cline -.->|"JSON-RPC / SSE"| MCPEndpoint
+    Browser -->|"HTTP Web UI"| RouterProxy
+
+    ModuleResolver -->|"docker compose up\n(Injeksi Kredensial Efemeral)"| DockerPlane
+    MCPBridge -->|"Direct Probe & Call"| MCPEndpoint
 ```
 
-**B. Dari NPM Registry:**
+---
+
+## 🚀 Panduan Cepat 60 Detik (Quickstart)
+
+### 1. Instalasi Global CLI
 ```bash
+# Instal langsung dari GitHub (tanpa perlu clone manual):
+npm install -g github:agunggnn/shadow-core
+
+# Atau melalui npm registry:
 npm install -g @agunggnn/shadow-core
 ```
 
-Setelah terinstal secara global, verifikasi kesiapan sistem Anda:
-
+### 2. Validasi Sistem & Auto-Repair
 ```bash
-shadow doctor
+shadow doctor --fix
 ```
-> **Catatan Linux / Ubuntu**: Perintah `shadow doctor` akan mendeteksi apakah Docker Engine berjalan dan apakah user Anda memiliki izin socket Docker (`docker` group).
+*Perintah ini memastikan engine Docker aktif, socket Docker dapat diakses oleh user non-root, dan versi Node.js memenuhi syarat (`>= 22.5.0`).*
 
-Jalankan inisialisasi awal (otomatis menggunakan direktori global `~/.shadow` atau `%USERPROFILE%\.shadow`):
-
-```bash
-shadow init
-shadow up
-shadow tui
-```
-*Anda dapat menjalankan perintah `shadow` dari direktori mana saja di terminal Anda tanpa perlu berpindah folder!*
-
-### Metode 2: Mode Direktori Lokal / Kustom
-
-Jika Anda ingin membuat instance yang terisolasi di folder tertentu:
-
-```bash
-shadow init ./my-ai-plane
-cd my-ai-plane
-shadow up
-```
-Atau gunakan flag `--root`: `shadow --root ./my-ai-plane up`
-
-### Metode 3: Dari Source Git (Untuk Developer & Kontributor)
-
-```bash
-git clone https://github.com/agunggnn/shadow-core.git
-cd shadow-core
-npm install
-npm link
-shadow doctor
-shadow init
-shadow up
-```
-
----
-
-## 🧙‍♂️ Tutorial Awal & Alur Kredensial (Wizard)
-
-### 1. Inisialisasi Proyek (`shadow init`)
-
-Jalankan perintah inisialisasi pada direktori proyek Anda:
-
+### 3. Inisialisasi Proyek
 ```bash
 shadow init
 ```
+*Membuat Grimoire Vault lokal, mengunci izin file `.env` ke `chmod 600`, dan menghasilkan password login 9Router secara acak.*
 
-CLI akan membuat struktur proyek, mengamankan file `.env` (izin akses `600`), menginisialisasi **Grimoire Vault** (`data/shadow-vault.db`), dan menampilkan wizard:
-
-```text
-================================================================================
-  SHADOW CORE - INISIALISASI PROYEK BERHASIL
-================================================================================
-[v] Direktori Proyek  : /path/to/my-ai-plane
-[v] File Konfigurasi  : .env (izin akses diamankan chmod 600)
-[v] Grimoire Vault    : data/shadow-vault.db (Terenkripsi AES-256-GCM)
-[v] MCP Server        : .mcp.json terkonfigurasi
---------------------------------------------------------------------------------
-  INFORMASI LOGIN & KREDENSIAL AWAL 9ROUTER:
---------------------------------------------------------------------------------
-  URL Web UI       : http://127.0.0.1:20140
-  Form Login       : Masukkan password di bawah (9Router hanya meminta Password)
-  Initial Password : 9f8a7b6c5d4e3f21
-
-  CATATAN PENTING INISIALISASI:
-  9Router hanya membaca Initial Password saat database pertama kali dibuat.
-  Jika sebelumnya 9Router sudah pernah dijalankan, jalankan:
-    shadow down -v && shadow up
-  untuk menghapus volume lama agar password baru ini aktif.
-
-  CATATAN KEAMANAN (ZERO-PLAINTEXT):
-  Password ini telah dienkripsi di Grimoire Vault (data/shadow-vault.db).
-  File .env hanya menyimpan referensi aman:
-    NINE_ROUTER_INITIAL_PASSWORD=secretRef:nine-router-initial-password
-================================================================================
-```
-
-### 2. Mengapa file `.env` menggunakan `secretRef:`?
-
-Shadow Core dirancang dengan prinsip **Zero-Plaintext**. Password atau API key tidak disimpan dalam teks polos di `.env`. Sebagai gantinya:
-- Nilai rahasia dienkripsi dengan **AES-256-GCM** menggunakan kunci master `SHADOW_GRIMOIRE_KEY` dan disimpan di database SQLite `data/shadow-vault.db`.
-- File `.env` hanya menyimpan referensi seperti `secretRef:nine-router-initial-password`.
-- Saat Docker Compose dijalankan (`shadow up`), CLI secara otomatis membaca vault dan menginjeksi rahasia ke memori container secara aman.
-
-### 3. Mengelola Kredensial dengan `shadow creds`
-
-Anda **tidak perlu** mengedit file `.env` secara manual jika ingin melihat atau mengganti password.
-
-#### A. Melihat Daftar Kredensial
+### 4. Jalankan Service & Pantau Healthcheck
 ```bash
-shadow creds list
+shadow up --wait
 ```
-Menampilkan semua kredensial aktif beserta modul yang menggunakannya.
 
-#### B. Melihat Nilai Rahasia (Password / Token)
-Lupa password awal 9Router? Buka kapan saja:
+Buka **`http://127.0.0.1:20140`** di browser. Masukkan password yang dihasilkan. Lupa password? Tampilkan kapan saja:
 ```bash
 shadow creds reveal nine-router-initial-password
 ```
 
-#### C. Mengganti Password atau Menyetel API Key
-Ingin mengganti password 9Router atau menyetel API key baru?
+---
+
+## 🔐 Keamanan Zero-Plaintext (Grimoire Vault)
+
+Kebanyakan developer menyimpan API key OpenAI, Anthropic, dan password database dalam bentuk teks polos di file `.env` yang berisiko ter-push ke repository publik. 
+
+**Shadow Core mengeliminasi risiko ini:**
+- Rahasia dienkripsi dengan algoritma **AES-256-GCM** menggunakan kunci master `SHADOW_GRIMOIRE_KEY` dan disimpan di database lokal SQLite `data/shadow-vault.db`.
+- File `.env` hanya menyimpan referensi abstrak:
+  ```dotenv
+  NINE_ROUTER_INITIAL_PASSWORD=secretRef:nine-router-initial-password
+  COGNEE_LLM_API_KEY=secretRef:cognee-llm-api-key
+  ```
+- Saat `shadow up` dieksekusi, CLI membaca vault dan menyuntikkan rahasia ke memori proses container secara efemeral. **Teks polos tidak pernah ditulis ke disk.**
+
+### Mengelola Kredensial via CLI:
 ```bash
-shadow creds set nine-router-initial-password PasswordBaruAnda123!
-```
-Perintah ini akan mengenkripsi password baru ke dalam vault dan memperbarui `.env` tanpa merusak format `secretRef:`. Setelah itu, terapkan dengan:
-```bash
-shadow up
+# Lihat daftar rahasia tersimpan
+shadow creds list
+
+# Tampilkan nilai rahasia tertentu
+shadow creds reveal cognee-llm-api-key
+
+# Simpan rahasia baru (akan meminta input masked jika nilai tidak disertakan)
+shadow creds set cognee-llm-api-key
 ```
 
 ---
 
-## 🧩 Manajemen Modul
+## 🧠 Mengaktifkan Memori Persisten (Modul Cognee)
 
-Shadow Core mendukung modularitas penuh. Modul bawaan adalah `core` (headless command plane) dan `9router` (AI gateway).
+Cognee menyediakan memori graf dan vektor untuk agen AI Anda melalui protokol Model Context Protocol (MCP).
 
-Lihat status semua modul:
 ```bash
-shadow modules
+# 1. Aktifkan modul Cognee
+shadow install cognee
+
+# 2. Masukkan API Key LLM untuk ekstraksi entitas graf
+shadow creds set cognee-llm-api-key "sk-proj-anda..."
+
+# 3. Jalankan container Cognee dengan verifikasi healthcheck
+shadow up --wait cognee
+
+# 4. Daftarkan tools ke Claude Desktop / Cursor
+shadow mcp configure
 ```
 
-### Modul 9Router (AI Gateway)
-9Router bertugas sebagai gateway model AI cerdas untuk merutekan request ke provider (OpenAI, Anthropic, Gemini, Groq, Ollama, dll.) secara hemat dan dengan fallback otomatis.
-- **Akses Web UI**: Buka `http://127.0.0.1:20140` di browser.
-- **Login**: Masukkan password awal yang didapat dari `shadow creds reveal nine-router-initial-password`.
-- **Update 9Router**:
-  ```bash
-  shadow update 9router
-  ```
-- **Menonaktifkan 9Router** (jika hanya ingin menggunakan command plane):
-  ```bash
-  shadow remove 9router
-  shadow up
-  ```
-- **Mengaktifkan kembali 9Router**:
-  ```bash
-  shadow install 9router
-  shadow up
-  ```
+### Memanggil Tools MCP Langsung dari Terminal
+Anda dapat menguji fungsi memori tanpa perlu membuka IDE:
+```bash
+# Cek latency endpoint MCP
+shadow mcp ping cognee
 
-### Modul Cognee (Persistent Memory)
-Cognee adalah modul memori graf dan vektor persisten yang terhubung melalui Model Context Protocol (MCP).
+# Lihat daftar tools dengan status [OFFLINE], [HYBRID], atau [LLM REASONING]
+shadow mcp tools cognee
 
-1. **Aktifkan modul**:
-   ```bash
-   shadow install cognee
-   ```
-2. **Atur API Key LLM ke dalam Vault**:
-   ```bash
-   shadow creds set cognee-llm-api-key <api-key-llm-anda>
-   ```
-3. **Mulai service Cognee**:
-   ```bash
-   shadow up cognee
-   ```
-4. **Daftarkan endpoint MCP**:
-   ```bash
-   shadow mcp configure
-   ```
-   Tools berikut akan otomatis tersedia bagi agen MCP: `remember`, `recall`, `improve`, dan `forget_memory`.
+# Simpan konteks ke memori jangka panjang
+shadow mcp call cognee remember '{"text": "Arsitektur database produksi menggunakan Postgres 16 di port 5432"}'
+
+# Lakukan semantic search memori
+shadow mcp call cognee recall '{"query": "database produksi port berapa?"}'
+```
 
 ---
 
-## 🛠️ Ringkasan Perintah CLI
+## 🤖 Pembuat Resep Modul Otomatis (AI Synthesizer)
 
-| Perintah | Deskripsi |
+Ingin menambahkan service atau container baru ke dalam ekosistem Shadow Core? Gunakan AI module synthesizer:
+
+```bash
+shadow module create my-custom-service --source https://github.com/user/my-repo
+```
+9Router akan menganalisis repository atau file compose sumber, mendeteksi port dan volume yang dibutuhkan, mengamankan binding ke `127.0.0.1`, dan menghasilkan resep `recipe.json` yang tervalidasi secara otomatis.
+
+---
+
+## 🛠️ Ringkasan Perintah CLI (Cheat Sheet)
+
+| Perintah | Fungsi & Kegunaan |
 |---|---|
-| `shadow init [dir]` | Inisialisasi instance baru, amankan `.env`, dan buat Grimoire Vault |
-| `shadow doctor [--fix]` | Validasi lingkungan sistem & Docker (`--fix` untuk auto-repair izin/direktori) |
-| `shadow up [target\|all] [--wait]` | Jalankan container (`--wait` menunggu polling healthcheck & smoketest) |
-| `shadow update [target\|all]` | Migrasikan image pin digest, buat ulang container, dan verifikasi health |
-| `shadow down [-v]` | Hentikan container (gunakan `-v` untuk menghapus volume data) |
-| `shadow status` | Tampilkan status container dan image |
-| `shadow logs [service]` | Pantau log container secara real-time |
-| `shadow modules [id]` | Tampilkan daftar modul yang tersedia atau panduan detail modul |
-| `shadow install <module>` | Aktifkan modul via interactive wizard (otomatis terhubung ke 9Router) |
-| `shadow remove <module>` | Nonaktifkan modul tanpa menghapus data |
-| `shadow module create <id> [--source <repo>]` | Buat resep modul baru secara otonom (analisis spesifikasi AI via 9Router) |
-| `shadow validate [module]` | Validasi integritas, kepatuhan keamanan, dan compose modul |
-| `shadow creds [list]` | Tampilkan daftar kredensial dalam Grimoire Vault |
-| `shadow creds reveal <id>` | Tampilkan nilai rahasia terenkripsi dan petunjuk penggunaannya |
-| `shadow creds set <id> [val]` | Simpan rahasia di Grimoire Vault (input masked prompt jika nilai dikosongkan) |
-| `shadow mcp configure` | Daftarkan endpoint MCP modul aktif ke `.mcp.json` |
-| `shadow mcp ping [service]` | Diagnostik koneksi dan latency live endpoint MCP |
-| `shadow mcp tools <service>` | Daftar tools MCP beserta klasifikasi [OFFLINE] / [HYBRID] / [LLM REASONING] |
-| `shadow mcp call <srv> <tool> [args]` | Panggil tool MCP langsung via CLI tanpa memerlukan AI client eksternal |
-| `shadow mcp serve` | Jalankan MCP bridge server |
-| `shadow tui` | Buka terminal dashboard live operations view |
+| `shadow doctor [--fix]` | Memeriksa kesiapan sistem, Node.js, socket Docker, dan memperbaiki permission |
+| `shadow init [dir]` | Menginisialisasi instance baru, membuat Grimoire Vault, dan mengamankan `.env` |
+| `shadow up [srv\|all] [--wait]` | Menjalankan container dengan polling healthcheck dan HTTP smoketest aktif |
+| `shadow down [-v]` | Menghentikan container (`-v` menghapus volume data jika ingin reset total) |
+| `shadow status` | Menampilkan ringkasan status container, ports, dan image digests |
+| `shadow logs [service]` | Streaming log container secara real-time |
+| `shadow tui` | Membuka dashboard operations real-time di terminal |
+| `shadow creds [list]` | Menampilkan seluruh kunci rahasia yang tersimpan di Grimoire Vault |
+| `shadow creds reveal <id>` | Menampilkan nilai asli rahasia terenkripsi |
+| `shadow creds set <id> [val]` | Menyimpan rahasia baru dengan enkripsi AES-256-GCM (masked prompt) |
+| `shadow modules` | Menampilkan daftar modul yang terinstal dan tersedia |
+| `shadow install <module>` | Mengaktifkan modul baru melalui interactive wizard |
+| `shadow remove <module>` | Menonaktifkan modul tanpa menghapus data persisten |
+| `shadow module create <id>` | Membuat resep modul baru dengan bantuan analisis AI 9Router |
+| `shadow mcp ping [service]` | Menguji handshake JSON-RPC dan latency endpoint MCP |
+| `shadow mcp tools [service]` | Melihat daftar tools MCP dan klasifikasi `[OFFLINE]`/`[HYBRID]`/`[LLM]` |
+| `shadow mcp call <srv> <tool>`| Mengeksekusi tool MCP secara langsung via CLI |
+| `shadow mcp configure` | Mendaftarkan endpoint MCP aktif ke konfigurasi `.mcp.json` |
 
 ---
 
-## 🗑️ Cara Uninstall & Pembersihan Total (Teardown Guide)
+## 🗑️ Panduan Uninstall & Pembersihan Total
 
-Jika Anda ingin mereset atau menghapus instalasi Shadow Core dari awal secara menyeluruh:
+Untuk menghapus Shadow Core secara menyeluruh dari mesin Anda:
 
-### 1. Hentikan Layanan & Hapus Data Proyek
-Di dalam folder proyek Anda:
 ```bash
-# Menghentikan container dan menghapus seluruh volume Docker (database, memori, logs)
+# 1. Hentikan container dan hapus volume persistent
 shadow down -v
-```
 
-### 2. Hapus Folder Proyek
-Keluar dari direktori proyek dan hapus foldernya:
-```bash
-cd ..
+# 2. Hapus direktori proyek
+cd .. && rm -rf shadow-core
 
-# Linux / macOS:
-rm -rf my-ai-plane
+# 3. Hapus binary CLI global
+npm uninstall -g @agunggnn/shadow-core
 
-# Windows (PowerShell):
-Remove-Item -Recurse -Force my-ai-plane
-```
-
-### 3. Hapus CLI `shadow` dari Sistem (Uninstall CLI)
-- **Jika diinstal secara global via npm**:
-  ```bash
-  npm uninstall -g @agunggnn/shadow-core
-  ```
-- **Jika menggunakan `npm link` (dari Git clone)**:
-  ```bash
-  cd shadow-core
-  npm unlink -g @agunggnn/shadow-core
-  ```
-
-### 4. (Opsional) Hapus Image Docker dari Sistem
-Untuk membersihkan sisa container image yang telah di-download ke sistem Anda:
-```bash
+# 4. (Opsional) Bersihkan image Docker yang tidak terpakai
 docker image prune -a
 ```
 
 ---
 
-## 🔒 Keamanan & Batasan Jaringan
-
-- **Loopback Binding**: Seluruh port layanan (misalnya port `20140` untuk 9Router dan `8001` untuk Cognee) secara default hanya di-bind ke `127.0.0.1`.
-- **Master Key**: Jangan pernah membagikan atau meng-commit `SHADOW_GRIMOIRE_KEY` ke Git repository publik.
-- **File Permissions**: File `.env` secara otomatis diberi izin akses ketat `chmod 600` pada sistem operasi berbasis Unix/POSIX.
-- Lihat panduan lengkap di [`SECURITY.md`](SECURITY.md).
-
----
-
-## 💻 Pengembangan & Kontribusi
-
-```bash
-# Menjalankan seluruh unit test
-npm test
-
-# Menjalankan static check & linting
-npm run lint
-
-# Menjalankan validasi paket
-npm pack --dry-run
-```
-
-Lihat panduan lengkap kontribusi di [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
----
-
 ## 📄 Lisensi
 
-Didistribusikan di bawah lisensi **Apache-2.0**. Lihat file [`LICENSE`](LICENSE) dan [`NOTICE`](NOTICE) untuk informasi selengkapnya.
+Didistribusikan di bawah lisensi resmi **Apache-2.0**. Lihat file [`LICENSE`](LICENSE) dan [`NOTICE`](NOTICE) untuk detail selengkapnya.
