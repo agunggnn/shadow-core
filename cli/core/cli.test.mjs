@@ -8,6 +8,7 @@ import {
     defaultShadowHome,
     initializeProject,
     isShadowWorkspace,
+    printModuleHelp,
     resolveProjectRoot,
 } from "./cli.mjs";
 import { parseEnv } from "./env.mjs";
@@ -63,6 +64,23 @@ test("isShadowWorkspace and resolveProjectRoot identify local workspace vs globa
         assert.equal(isShadowWorkspace(tempDir), true);
     } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+});
+
+test("printModuleHelp renders native module guide for 9router and cognee", () => {
+    let output = "";
+    const originalWrite = process.stdout.write;
+    process.stdout.write = (chunk) => {
+        output += chunk;
+        return true;
+    };
+    try {
+        printModuleHelp("9router", ".", { NINE_ROUTER_PORT: "20140" });
+        assert.match(output, /PANDUAN LENGKAP MODUL NATIVE: 9Router/);
+        assert.match(output, /shadow up 9router/);
+        assert.match(output, /nine-router-initial-password/);
+    } finally {
+        process.stdout.write = originalWrite;
     }
 });
 

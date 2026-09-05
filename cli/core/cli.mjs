@@ -9,7 +9,7 @@ import { configureMcp } from "../mcp/configure.mjs";
 import { loadModuleRegistry } from "../modules/registry.mjs";
 import { resolveModuleProfiles } from "../modules/resolve.mjs";
 import { setModuleEnabled } from "../modules/toggle.mjs";
-import { listCredentials, revealCredential, setCredential } from "../vault/creds.mjs";
+import { KNOWN_CREDENTIALS, listCredentials, revealCredential, setCredential } from "../vault/creds.mjs";
 import { migrateEnvCredentials } from "../vault/migrate-env.mjs";
 import { runDoctor } from "./doctor.mjs";
 import { parseEnv } from "./env.mjs";
@@ -266,6 +266,90 @@ function printModuleGuide(moduleId, action) {
     }
 }
 
+export function printModuleHelp(moduleId, root, values) {
+    const registry = registryFor(root, values);
+    const module = registry.modules.find((m) => m.id === moduleId);
+    if (!module) {
+        process.stdout.write(`Modul '${moduleId}' tidak ditemukan.\n`);
+        process.stdout.write("Jalankan 'shadow modules' untuk melihat daftar modul yang tersedia.\n");
+        return;
+    }
+
+    const isEnabled = module.enabled;
+    const isCompose = module.lifecycle === "compose";
+    const service = module.services[0] || {};
+    const composeService = service.composeService || moduleId;
+
+    process.stdout.write("================================================================================\n");
+    process.stdout.write(`  PANDUAN LENGKAP MODUL NATIVE: ${module.label || moduleId} (${module.id})\n`);
+    process.stdout.write("================================================================================\n");
+    process.stdout.write(`  Status      : ${isEnabled ? "Aktif (Enabled)" : "Nonaktif (Disabled)"}\n`);
+    process.stdout.write(`  Lifecycle   : ${module.lifecycle}${isCompose ? " (Docker Compose Container)" : " (Host Process)"}\n`);
+    if (service.role) process.stdout.write(`  Peran       : ${service.role}\n`);
+    if (service.lore) process.stdout.write(`  Deskripsi   : ${service.lore}\n`);
+    if (service.portEnv && values[service.portEnv]) {
+        process.stdout.write(`  Web UI/Port : http://127.0.0.1:${values[service.portEnv]}\n`);
+    } else if (service.fallbackPort) {
+        process.stdout.write(`  Web UI/Port : http://127.0.0.1:${service.fallbackPort}\n`);
+    }
+    if (service.mcpServer) {
+        process.stdout.write(`  MCP Server  : ${service.mcpServer.name} (${service.mcpServer.transport} at ${service.mcpServer.path})\n`);
+    }
+
+    process.stdout.write("--------------------------------------------------------------------------------\n");
+    process.stdout.write("  PERINTAH NATIVE YANG TERSEDIA:\n");
+    process.stdout.write("--------------------------------------------------------------------------------\n");
+
+    if (isCompose) {
+        process.stdout.write("1. MANAJEMEN CONTAINER DOCKER:\n");
+        process.stdout.write(`   - Jalankan container        : shadow up ${module.id}\n`);
+        process.stdout.write(`   - Update image ke digest baru: shadow update ${module.id}\n`);
+        process.stdout.write(`   - Lihat live logs           : shadow logs ${composeService}\n`);
+        process.stdout.write(`   - Pantau status container   : shadow status\n\n`);
+    }
+
+    const creds = Object.entries(KNOWN_CREDENTIALS)
+        .filter(([_, def]) => def.moduleId === module.id)
+        .map(([id, def]) => ({ id, ...def }));
+
+    if (creds.length > 0) {
+        process.stdout.write("2. KREDENSIAL & RAHASIA (GRIMOIRE VAULT):\n");
+        for (const cred of creds) {
+            process.stdout.write(`   - Cek rahasia '${cred.id}':\n`);
+            process.stdout.write(`       shadow creds reveal ${cred.id}\n`);
+            process.stdout.write(`   - Atur rahasia '${cred.id}':\n`);
+            process.stdout.write(`       shadow creds set ${cred.id} <nilai>\n`);
+        }
+        process.stdout.write("\n");
+    }
+
+    process.stdout.write("3. AKTIVASI & STATUS MODUL:\n");
+    process.stdout.write(`   - Aktifkan modul            : shadow install ${module.id}\n`);
+    process.stdout.write(`   - Nonaktifkan modul         : shadow remove ${module.id}\n`);
+
+    if (module.runtime?.actions?.length) {
+        process.stdout.write("\n4. ACTION HOST-PROCESS:\n");
+        for (const act of module.runtime.actions) {
+            process.stdout.write(`   - shadow module ${module.id} ${act} [args]\n`);
+        }
+    }
+
+    if (module.id === "9router") {
+        process.stdout.write("\n4. AKSES WEB UI & CATATAN LOGIN:\n");
+        process.stdout.write("   - URL Web UI                : http://127.0.0.1:20140\n");
+        process.stdout.write("   - Form Login                : Masukkan Initial Password (tanpa username)\n");
+        process.stdout.write("   - Reset Volume (Password)   : shadow down -v && shadow up 9router\n");
+    }
+
+    if (module.id === "cognee") {
+        process.stdout.write("\n4. INTEGRASI MCP CLIENT:\n");
+        process.stdout.write("   - Daftarkan ke editor/client: shadow mcp configure\n");
+        process.stdout.write("   - Tools yang disediakan     : remember, recall, improve, forget_memory\n");
+    }
+
+    process.stdout.write("================================================================================\n");
+}
+
 function help() {
     return `Shadow Core
 
@@ -282,11 +366,11 @@ Commands:
   down [-v]                 Hentikan service (gunakan -v untuk menghapus volume data)
   status                    Lihat status kontainer dan image
   logs [service]            Lihat log service
-  modules                   Daftar modul yang tersedia dan aktif
+  modules [module]          Daftar modul tersedia atau panduan detail modul
   install <module>          Aktifkan modul (contoh: 9router, cognee)
   remove <module>           Nonaktifkan modul tanpa menghapus data
+  module <id> [action|help] Panduan perintah native atau jalankan action host modul
   creds [list|reveal|set]   Kelola rahasia terenkripsi di Shadow Vault
-  module <id> <action>      Jalankan action modul host-process
   mcp configure|serve       Konfigurasi atau jalankan bridge Shadow MCP
   tui                       Buka tampilan operasional terminal interaktif
 `;
@@ -399,7 +483,11 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         throw new Error(`Subcommand creds tidak dikenal: '${subCommand}'. Gunakan 'list', 'reveal', atau 'set'.`);
     }
     if (command === "modules") {
-        run(process.execPath, [path.join(cliRoot, "modules", "list.mjs"), "--root", root], { cwd: root });
+        if (args[0] && !args[0].startsWith("-")) {
+            printModuleHelp(args[0], root, values);
+            return;
+        }
+        run(process.execPath, [path.join(cliRoot, "modules", "list.mjs"), "--root", root, ...args], { cwd: root });
         return;
     }
     if (command === "up") {
@@ -445,7 +533,20 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         return;
     }
     if (command === "module") {
-        if (args.length < 2) throw new Error("Usage: shadow module <module> <action> [args]");
+        const moduleId = args[0];
+        const action = args[1];
+        if (!moduleId || ["help", "--help", "-h"].includes(moduleId)) {
+            process.stdout.write("Penggunaan: shadow module <id> [action|help]\n\n");
+            process.stdout.write("Panduan perintah native modul bawaan:\n");
+            process.stdout.write("  shadow module 9router help\n");
+            process.stdout.write("  shadow module cognee help\n\n");
+            process.stdout.write("Jalankan 'shadow modules' untuk melihat daftar seluruh modul.\n");
+            return;
+        }
+        if (!action || ["help", "--help", "-h"].includes(action)) {
+            printModuleHelp(moduleId, root, values);
+            return;
+        }
         run(process.execPath, [path.join(cliRoot, "modules", "runtime.mjs"), ...args], {
             cwd: root,
             env: { ...process.env, SHADOW_ROOT: root, SHADOW_ENV_FILE: envFile },
