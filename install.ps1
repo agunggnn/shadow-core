@@ -30,14 +30,21 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# 3. Auto-deploy Universal Skills
+Write-Host "[i] Auto-deploying Universal AI Agent Skills..." -ForegroundColor Cyan
+try {
+    & hetzer skill install
+} catch {
+    Write-Host "[!] Note: run 'hetzer skill install' inside your workspace." -ForegroundColor Yellow
+}
+
 Write-Host ""
 Write-Host "================================================================================" -ForegroundColor Green
-Write-Host "  🎉 HETZER CLI INSTALLED SUCCESSFULLY!" -ForegroundColor Green
+Write-Host "  🎉 HETZER CLI & AGENT SKILLS INSTALLED SUCCESSFULLY!" -ForegroundColor Green
 Write-Host "================================================================================" -ForegroundColor Green
 Write-Host "Quickstart Commands:"
-Write-Host "  1. Initialize Workspace  : hetzer init"
-Write-Host "  2. Protect AI Agents     : hetzer skill install"
-Write-Host "  3. Pre-commit Git Guard  : hetzer hook install"
-Write-Host "  4. Store a Secret        : hetzer creds set <id> <value>"
-Write-Host "  5. Doctor Diagnostic     : hetzer doctor"
+Write-Host "  1. Pre-commit Git Guard  : hetzer hook install"
+Write-Host "  2. Initialize Workspace  : hetzer init"
+Write-Host "  3. Store a Secret        : hetzer creds set <id> <value>"
+Write-Host "  4. Doctor Diagnostic     : hetzer doctor"
 Write-Host ""

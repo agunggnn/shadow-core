@@ -439,6 +439,50 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         return;
     }
 
+    if (["skill", "skills"].includes(command)) {
+        const action = args[0] || "install";
+        const target = args[1] || "all";
+        const skillRoot = rootOption ? path.resolve(rootOption) : process.cwd();
+        run(process.execPath, [
+            path.join(cliRoot, "skills", "installer.mjs"),
+            action,
+            target,
+        ], { cwd: skillRoot });
+        return;
+    }
+    if (["hook", "hooks"].includes(command)) {
+        const action = args[0] || "check";
+        const hookRoot = rootOption ? path.resolve(rootOption) : process.cwd();
+        run(process.execPath, [
+            path.join(cliRoot, "core", "git-hook.mjs"),
+            action,
+        ], { cwd: hookRoot });
+        return;
+    }
+    if (["sniffer", "sniff"].includes(command)) {
+        const sub = args[0] || "scan";
+        const input = args.slice(1).join(" ");
+        if (!input) {
+            throw new Error("Usage: hetzer sniffer <scan|redact> <text>");
+        }
+        if (sub === "scan") {
+            const res = scanText(input);
+            process.stdout.write("================================================================================\n");
+            process.stdout.write("  HETZER - SECRET SNIFFER (SUB-2MS DETECTOR)\n");
+            process.stdout.write("================================================================================\n");
+            process.stdout.write(`  Detection Status : ${res.hasSecrets ? "[!] SECRETS DETECTED" : "[v] CLEAN (No secrets detected)"}\n`);
+            process.stdout.write(`  Execution Time   : ${res.latencyMs} ms\n`);
+            if (res.hasSecrets) {
+                process.stdout.write("--------------------------------------------------------------------------------\n");
+                for (const m of res.matches) {
+                    process.stdout.write(`  * ${m.label} (${m.type}) at index ${m.index}\n`);
+                }
+            }
+            process.stdout.write("================================================================================\n");
+            return;
+        }
+    }
+
     const { envFile, values } = projectEnvironment(root);
     if (["install", "remove"].includes(command)) {
         if (!args[0]) throw new Error(`Usage: hetzer ${command} <module>`);
@@ -537,22 +581,6 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         if (!input) {
             throw new Error("Usage: hetzer sniffer <scan|redact> <text>");
         }
-        if (sub === "scan") {
-            const res = scanText(input);
-            process.stdout.write("================================================================================\n");
-            process.stdout.write("  HETZER - SECRET SNIFFER (SUB-2MS DETECTOR)\n");
-            process.stdout.write("================================================================================\n");
-            process.stdout.write(`  Detection Status : ${res.hasSecrets ? "[!] SECRETS DETECTED" : "[v] CLEAN (No secrets detected)"}\n`);
-            process.stdout.write(`  Execution Time   : ${res.latencyMs} ms\n`);
-            if (res.hasSecrets) {
-                process.stdout.write("--------------------------------------------------------------------------------\n");
-                for (const m of res.matches) {
-                    process.stdout.write(`  * ${m.label} (${m.type}) at index ${m.index}\n`);
-                }
-            }
-            process.stdout.write("================================================================================\n");
-            return;
-        }
         if (sub === "redact") {
             const res = redactAndVault(input, { root, envFile });
             process.stdout.write("================================================================================\n");
@@ -566,24 +594,6 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             return;
         }
         throw new Error(`Unknown sniffer subcommand: '${sub}'. Use 'scan' or 'redact'.`);
-    }
-    if (["skill", "skills"].includes(command)) {
-        const action = args[0] || "install";
-        const target = args[1] || "all";
-        run(process.execPath, [
-            path.join(cliRoot, "skills", "installer.mjs"),
-            action,
-            target,
-        ], { cwd: root });
-        return;
-    }
-    if (["hook", "hooks"].includes(command)) {
-        const action = args[0] || "check";
-        run(process.execPath, [
-            path.join(cliRoot, "core", "git-hook.mjs"),
-            action,
-        ], { cwd: root });
-        return;
     }
     if (command === "modules") {
         if (args[0] && !args[0].startsWith("-")) {

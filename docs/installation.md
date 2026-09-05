@@ -22,8 +22,7 @@
    - [Method A: One-Line Script via curl / PowerShell (Fastest)](#method-a-one-line-script-via-curl--powershell-fastest)
    - [Method B: Zero-Install via npx](#method-b-zero-install-via-npx)
    - [Method C: Global CLI via npm (Recommended)](#method-c-global-cli-via-npm-recommended)
-   - [Method D: Homebrew (macOS & Linux)](#method-d-homebrew-macos--linux)
-   - [Method E: Clone from Source](#method-e-clone-from-source)
+   - [Method D: Clone from Source](#method-d-clone-from-source)
 5. [Pre-flight Diagnostics (`hetzer doctor`)](#5-pre-flight-diagnostics-hetzer-doctor)
 6. [Project Initialization & Secret Setup](#6-project-initialization--secret-setup)
 7. [Starting Services & Active Healthchecks](#7-starting-services--active-healthchecks)
@@ -205,17 +204,7 @@ hetzer --version
 
 ---
 
-### Method D: Homebrew (macOS & Linux)
-
-```bash
-brew install agunggnn/tap/hetzer
-# or use local formula:
-brew install packaging/brew/hetzer.rb
-```
-
----
-
-### Method E: Clone from Source (Contributors)
+### Method D: Clone from Source (Contributors)
 
 ```bash
 git clone https://github.com/agunggnn/hetzer.git

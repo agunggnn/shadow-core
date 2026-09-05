@@ -63,21 +63,24 @@ else
     fi
 fi
 
-# 4. Verify installation
+# 4. Verify installation & Auto-deploy Universal Skills
 if command -v hetzer >/dev/null 2>&1; then
     HETZER_BIN=$(command -v hetzer)
     echo -e "\n${GREEN}${BOLD}[v] Hetzer installed successfully at: ${HETZER_BIN}${NC}\n"
-    echo -e "${GREEN}"
+    
+    echo -e "${BLUE}[i] Auto-deploying Universal AI Agent Skills...${NC}"
+    hetzer skill install || true
+
+    echo -e "\n${GREEN}"
     echo "================================================================================"
-    echo "  🎉 HETZER CLI IS READY TO PROTECT YOUR AI WORKSPACE!"
+    echo "  🎉 HETZER CLI & AGENT SKILLS ARE READY!"
     echo "================================================================================"
     echo -e "${NC}"
     echo "Quickstart Commands:"
-    echo "  1. Initialize Workspace  : hetzer init"
-    echo "  2. Protect AI Agents     : hetzer skill install"
-    echo "  3. Pre-commit Git Guard  : hetzer hook install"
-    echo "  4. Store a Secret        : hetzer creds set <id> <value>"
-    echo "  5. Doctor Diagnostic     : hetzer doctor"
+    echo "  1. Pre-commit Git Guard  : hetzer hook install"
+    echo "  2. Initialize Workspace  : hetzer init"
+    echo "  3. Store a Secret        : hetzer creds set <id> <value>"
+    echo "  4. Doctor Diagnostic     : hetzer doctor"
     echo ""
 else
     NPM_BIN="$(npm config get prefix 2>/dev/null)/bin"

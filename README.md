@@ -48,11 +48,6 @@ npx hetzer creds set openai-api-key
   ```bash
   npm install -g hetzer
   ```
-- **Via Homebrew (macOS & Linux)**:
-  ```bash
-  brew install agunggnn/tap/hetzer
-  # or install directly from formula: brew install packaging/brew/hetzer.rb
-  ```
 
 ---
 
