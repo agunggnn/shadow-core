@@ -112,11 +112,18 @@ test("validate CLI command validates modules successfully", async () => {
         output += chunk;
         return true;
     };
+    const createdEnv = !fs.existsSync(".env");
+    if (createdEnv) {
+        fs.writeFileSync(".env", "HETZER_ENABLED_MODULES=\n");
+    }
     try {
         await main(["validate", "cognee"], { root: "." });
         assert.match(output, /MODULE VALIDATION: cognee/);
         assert.match(output, /Status: Module 'cognee' VALID/);
     } finally {
+        if (createdEnv) {
+            try { fs.unlinkSync(".env"); } catch { /* ignore */ }
+        }
         process.stdout.write = originalStdout;
     }
 });
