@@ -39,7 +39,7 @@ export function sanitizeStreamOutput(text, secretsToRedact = []) {
 export function parseArguments(argv) {
     const marker = argv.indexOf("--");
     if (marker === -1 || !argv[marker + 1]) {
-        throw new Error("Usage: exec --root <path> --env-file <path> [--allow NAME,NAME] -- <command> [args]");
+        throw new Error("Usage: exec --root <path> --env-file <path> [--allow NAME,NAME] [--strict] -- <command> [args]");
     }
     const options = argv.slice(0, marker);
     const value = (name) => {
@@ -50,6 +50,7 @@ export function parseArguments(argv) {
         root: path.resolve(value("--root") || process.cwd()),
         envFile: path.resolve(value("--env-file")),
         allowNames: value("--allow") ? value("--allow").split(",").map((name) => name.trim()).filter(Boolean) : undefined,
+        strict: options.includes("--strict"),
         command: argv[marker + 1],
         commandArgs: argv.slice(marker + 2),
     };

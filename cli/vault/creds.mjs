@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -158,6 +159,55 @@ export async function promptSecret(promptText = "Enter secret value: ", { input 
 }
 
 
+export function checkProcessAncestors() {
+    try {
+        if (process.platform === "win32") {
+            const res = spawnSync("powershell", [
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                "$p = Get-Process -Id $PID; $p.Parent.ProcessName; $p.Parent.Parent.ProcessName",
+            ], { encoding: "utf8", timeout: 2500, windowsHide: true });
+            if (res.status === 0 && res.stdout) {
+                const names = res.stdout.toLowerCase().split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+                const agentProcessNames = ["agy", "cursor", "electron", "code", "claude", "hermes", "ollama"];
+                for (const name of names) {
+                    if (agentProcessNames.some((target) => name.includes(target))) {
+                        return { isAgent: true, processName: name };
+                    }
+                }
+            }
+        }
+    } catch {
+        // Ancestor check failed or timed out; continue to env and TTY checks
+    }
+    return { isAgent: false };
+}
+
+export function promptNativeOsConfirmation(id, { timeoutMs = 20000 } = {}) {
+    if (process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL === "1") return true;
+    try {
+        if (process.platform === "win32") {
+            const script = `Add-Type -AssemblyName System.Windows.Forms; $r = [System.Windows.Forms.MessageBox]::Show('Hetzer Vault Guard: Reveal raw secret [${id}] to terminal context?','Hetzer Zero-Plaintext Security',[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Warning,[System.Windows.Forms.MessageBoxDefaultButton]::Button2); if ($r -eq [System.Windows.Forms.DialogResult]::Yes) { exit 0 } else { exit 1 }`;
+            const res = spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", script], {
+                timeout: timeoutMs,
+                windowsHide: false,
+                stdio: ["ignore", "ignore", "ignore"],
+            });
+            return res.status === 0;
+        } else if (process.platform === "darwin") {
+            const osa = `display dialog "Hetzer Vault Guard: Reveal raw secret '${id}' to terminal context?" with title "Hetzer Zero-Plaintext Security" buttons {"Deny", "Reveal"} default button "Deny" with icon caution`;
+            const res = spawnSync("osascript", ["-e", osa], { timeout: timeoutMs, stdio: ["ignore", "ignore", "ignore"] });
+            return res.status === 0;
+        } else {
+            const res = spawnSync("zenity", ["--question", "--title=Hetzer Zero-Plaintext Security", `--text=Reveal secret ${id}?`], { timeout: timeoutMs, stdio: ["ignore", "ignore", "ignore"] });
+            return res.status === 0;
+        }
+    } catch {
+        return false;
+    }
+}
+
 export function assertInteractiveHumanSession() {
     if (process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL === "1" || process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL === "true") {
         return;
@@ -186,6 +236,15 @@ export function assertInteractiveHumanSession() {
                 `To execute commands with injected secrets safely, use 'hetzer exec -- <command>'.`
             );
         }
+    }
+    const ancestor = checkProcessAncestors();
+    if (ancestor.isAgent) {
+        throw new Error(
+            `Access Denied: 'hetzer creds reveal' blocked by Zero-Plaintext Agent Guard.\n` +
+            `Reason: Agent runtime '${ancestor.processName}' detected in process tree ancestry.\n` +
+            `Autonomous agents running in YOLO/unrestricted mode cannot extract raw secrets into context.\n` +
+            `To execute commands with injected secrets safely, use 'hetzer exec -- <command>'.`
+        );
     }
 }
 
@@ -377,8 +436,14 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             process.stdout.write("================================================================================\n");
         } else if (action === "reveal" || action === "get") {
             const id = args[1];
-            if (!id) throw new Error("Usage: hetzer creds reveal <id>");
+            if (!id) throw new Error("Usage: hetzer creds reveal <id> [--confirm-ui]");
             assertInteractiveHumanSession();
+            if (process.env.HETZER_REQUIRE_OOB_CONFIRM === "1" || args.includes("--confirm-ui")) {
+                const confirmed = promptNativeOsConfirmation(id);
+                if (!confirmed) {
+                    throw new Error(`Access Denied: Out-of-Band (OOB) OS confirmation for '${id}' was rejected or timed out.`);
+                }
+            }
             const cred = revealCredential({ root, envFile, id });
             process.stdout.write("================================================================================\n");
             process.stdout.write(`  CREDENTIAL DETAIL: ${cred.id}\n`);

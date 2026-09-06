@@ -28,6 +28,24 @@ test("secret environment resolves explicit references without exposing unrelated
     assert.equal(env.UNRELATED_TOKEN, undefined);
     assert.equal(env.PLAIN_SETTING, undefined);
 
+    const envById = resolveSecretEnvironment({
+        root,
+        envFile,
+        baseEnv: { HETZER_GRIMOIRE_KEY: masterKey },
+        allowNames: ["worker-token"],
+    });
+    assert.equal(envById.WORKER_TOKEN, "resolved-value");
+
+    // Strict mode without allowNames throws
+    assert.throws(() => {
+        resolveSecretEnvironment({
+            root,
+            envFile,
+            baseEnv: { HETZER_GRIMOIRE_KEY: masterKey },
+            strict: true,
+        });
+    }, /Strict scoping enabled/);
+
     const empty = resolveSecretEnvironment({ root, envFile, baseEnv: {}, allowNames: [] });
     assert.equal(empty.WORKER_TOKEN, undefined);
     fs.rmSync(root, { recursive: true, force: true });

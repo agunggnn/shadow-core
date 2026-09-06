@@ -10,12 +10,25 @@ export function resolveSecretEnvironment({
     baseEnv = process.env,
     action = "process.start",
     allowNames,
+    strict = false,
 }) {
     const values = fs.existsSync(envFile) ? parseEnv(fs.readFileSync(envFile, "utf8")) : {};
-    const allow = allowNames === undefined ? null : new Set(allowNames);
-    const bindings = Object.entries(values).filter(([name, value]) =>
-        String(value).startsWith("secretRef:") && (allow === null || allow.has(name))
-    );
+    const allow = allowNames === undefined ? null : new Set(allowNames.map((n) => n.toLowerCase()));
+
+    if (strict && (!allow || allow.size === 0)) {
+        throw new Error(
+            "Security violation: Strict scoping enabled (--strict).\n" +
+            "You must explicitly specify which credentials may be resolved via '--allow <id|env-var>'.\n" +
+            "No ungranted secrets are accessible in strict mode."
+        );
+    }
+
+    const bindings = Object.entries(values).filter(([name, value]) => {
+        if (!String(value).startsWith("secretRef:")) return false;
+        if (allow === null) return true;
+        const id = String(value).slice("secretRef:".length).toLowerCase();
+        return allow.has(name.toLowerCase()) || allow.has(id);
+    });
     const resolved = { ...baseEnv, HETZER_ROOT: root };
     if (!bindings.length) return resolved;
 

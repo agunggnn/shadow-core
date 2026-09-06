@@ -106,3 +106,52 @@ test("executeProcess sanitizes stdout stream in real time", async () => {
 
     fs.rmSync(tempDir, { recursive: true, force: true });
 });
+
+test("executeProcess enforces strict scoping when requested", async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-exec-strict-"));
+    const dataDir = path.join(tempDir, "data");
+    fs.mkdirSync(dataDir, { recursive: true });
+    const envFile = path.join(tempDir, ".env");
+    const masterKey = "11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff";
+    fs.writeFileSync(envFile, `HETZER_GRIMOIRE_KEY=${masterKey}\n`);
+
+    setCredential({
+        root: tempDir,
+        envFile,
+        id: "npm-token",
+        secret: "strict-token-value-123456",
+    });
+
+    // Rejects in strict mode when allowNames is not provided
+    await assert.rejects(
+        () => executeProcess({
+            root: tempDir,
+            envFile,
+            strict: true,
+            command: process.execPath,
+            commandArgs: ["-e", "console.log('test')"],
+        }),
+        /Strict scoping enabled/
+    );
+
+    // Permitted in strict mode when explicit credential is provided
+    const script = `process.stdout.write("got: " + process.env.NODE_AUTH_TOKEN);`;
+    const scriptFile = path.join(tempDir, "script.js");
+    fs.writeFileSync(scriptFile, script);
+
+    let captured = "";
+    const mockOut = { write(chunk) { captured += chunk; return true; } };
+    const result = await executeProcess({
+        root: tempDir,
+        envFile,
+        strict: true,
+        allowNames: ["npm-token"],
+        command: process.execPath,
+        commandArgs: [scriptFile],
+    }, { outStream: mockOut });
+
+    assert.equal(result.status, 0);
+    assert.match(captured, /got: secretRef:npm-token/);
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+});

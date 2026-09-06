@@ -5,7 +5,7 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import test from "node:test";
 
-import { assertInteractiveHumanSession, listCredentials, promptSecret, revealCredential, setCredential } from "./creds.mjs";
+import { assertInteractiveHumanSession, checkProcessAncestors, promptNativeOsConfirmation, listCredentials, promptSecret, revealCredential, setCredential } from "./creds.mjs";
 import { Grimoire } from "./hetzer-vault.mjs";
 
 test("creds module can list, set, and reveal credentials in Grimoire Vault", () => {
@@ -94,6 +94,23 @@ test("assertInteractiveHumanSession blocks non-TTY or agent environments", () =>
         else delete process.env.CURSOR_PROJECT_DIR;
         if (origAntigravity !== undefined) process.env.ANTIGRAVITY_AGENT = origAntigravity;
         else delete process.env.ANTIGRAVITY_AGENT;
+    }
+});
+
+test("checkProcessAncestors runs safely and reports inspection result", () => {
+    const result = checkProcessAncestors();
+    assert.equal(typeof result, "object");
+    assert.equal(typeof result.isAgent, "boolean");
+});
+
+test("promptNativeOsConfirmation respects non-interactive bypass", () => {
+    const orig = process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL;
+    try {
+        process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL = "1";
+        assert.equal(promptNativeOsConfirmation("test-id"), true);
+    } finally {
+        if (orig !== undefined) process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL = orig;
+        else delete process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL;
     }
 });
 

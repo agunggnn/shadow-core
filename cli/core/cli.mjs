@@ -14,7 +14,7 @@ import { loadModuleRegistry } from "../modules/registry.mjs";
 import { resolveModuleProfiles } from "../modules/resolve.mjs";
 import { setModuleEnabled } from "../modules/toggle.mjs";
 import { formatValidationReport, validateAllModules, validateModuleRecipe } from "../modules/validate.mjs";
-import { KNOWN_CREDENTIALS, assertInteractiveHumanSession, listCredentials, promptSecret, revealCredential, setCredential } from "../vault/creds.mjs";
+import { KNOWN_CREDENTIALS, assertInteractiveHumanSession, promptNativeOsConfirmation, listCredentials, promptSecret, revealCredential, setCredential } from "../vault/creds.mjs";
 import { autoIngestPlaintextEnv, migrateEnvCredentials } from "../vault/migrate-env.mjs";
 import { redactAndVault, scanText, restoreSecrets } from "../vault/sniffer.mjs";
 import { getHetzerAsciiBanner, printHetzerBanner } from "./banner.mjs";
@@ -395,7 +395,7 @@ Commands:
   module create <id> [--source <repo>] Scaffold new module recipe (AI-assisted via 9Router)
   validate [module]         Validate module integrity, security, and compose recipe
   creds [list|reveal|set]   Manage encrypted secrets in Grimoire Vault (AES-256-GCM)
-  exec [--allow <k>] -- <c> Run command with ephemeral secret injection & real-time stream sanitization
+  exec [--allow <ids>] [--strict] -- <c> Run command with scoped secret injection & real-time stream sanitization
   sniffer [scan|redact] <t> Intercept and secure credentials from input text in < 2ms
   skill [install|status]    Deploy Universal AI Skills to Hermes, AGY, OpenCode, Cursor, Claude
   hook [install|uninstall|check] Manage Git Pre-Commit Guard to prevent accidental token leaks
@@ -532,8 +532,14 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         }
         if (subCommand === "reveal" || subCommand === "get") {
             const id = args[1];
-            if (!id) throw new Error("Usage: hetzer creds reveal <id>");
+            if (!id) throw new Error("Usage: hetzer creds reveal <id> [--confirm-ui]");
             assertInteractiveHumanSession();
+            if (process.env.HETZER_REQUIRE_OOB_CONFIRM === "1" || args.includes("--confirm-ui")) {
+                const confirmed = promptNativeOsConfirmation(id);
+                if (!confirmed) {
+                    throw new Error(`Access Denied: Out-of-Band (OOB) OS confirmation for '${id}' was rejected or timed out.`);
+                }
+            }
             const cred = revealCredential({ root, envFile, id });
             process.stdout.write("================================================================================\n");
             process.stdout.write(`  CREDENTIAL DETAIL: ${cred.id}\n`);
@@ -917,7 +923,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
     if (command === "exec") {
         const marker = args.indexOf("--");
         if (marker === -1 || !args[marker + 1]) {
-            throw new Error("Usage: hetzer exec [--allow NAME,NAME] -- <command> [args]");
+            throw new Error("Usage: hetzer exec [--allow NAME,NAME] [--strict] -- <command> [args]");
         }
         const execOptions = args.slice(0, marker);
         const passArgs = [
