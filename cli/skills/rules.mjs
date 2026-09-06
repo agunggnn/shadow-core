@@ -21,21 +21,37 @@ Your environment enforces strict **Zero-Plaintext** credential handling:
   OPENAI_API_KEY=secretRef:openai-api-key
   \`\`\`
 - Plaintext secrets in \`.env\` are automatically intercepted and vaulted on boot.
+- The master encryption key \`HETZER_GRIMOIRE_KEY\` is isolated outside the repository in secure user home storage (\`~/.hetzer/grimoire.key\`).
 
-## 3. Execution with Secrets
-- To run commands requiring credentials, use out-of-band ephemeral injection:
+## 3. Execution with Secrets (Least Privilege)
+- To run commands, test suites, builds, or scripts requiring credentials, use out-of-band scoped injection:
   \`\`\`bash
-  hetzer exec -- <command> [args]
+  hetzer exec --allow <credential-id> -- <command> [args]
   \`\`\`
+- For strict zero-leakage enforcement, pass \`--strict\`:
+  \`\`\`bash
+  hetzer exec --allow npm-token --strict -- npm run publish-pkg
+  \`\`\`
+- **DO NOT** attempt to run \`hetzer creds reveal\` — programmatic or agent-driven secret extraction is strictly blocked by TTY, environment, and process tree inspection.
+- Environment reflection commands (\`printenv\`, \`env\`, \`export\`, \`set\`, \`/proc/*/environ\`, \`docker inspect\`) are forbidden under Zero-Plaintext policy.
+- Output streams (\`stdout\` / \`stderr\`) and MCP responses are automatically intercepted and sanitized in real time.
 
-## 4. Autonomous MCP Defense Tools
+## 4. Writing & Running Scripts (Python, Bash, Node)
+- When writing scripts that need secrets, write code that reads environment variables normally:
+  \`\`\`python
+  token = os.environ.get("NODE_AUTH_TOKEN") # Available in memory during hetzer exec
+  \`\`\`
+- Run the script through Hetzer: \`hetzer exec --allow <id> -- python my_script.py\`.
+- Legitimate execution works seamlessly in memory. Any accidental or deliberate token output in stdout/stderr will be automatically redacted back to \`secretRef:<id>\`.
+
+## 5. Autonomous MCP Defense Tools
 If connected via MCP, you have access to Hetzer's native defense tools:
-- \`hetzer_sniffer_scan(text)\`: Inspect whether user input, code, or logs contain candidate credentials.
+- \`hetzer_sniffer_scan(text)\`: Inspect whether user input, code, or logs contain candidate credentials in < 2ms.
 - \`hetzer_sniffer_redact(text)\`: Sanitize text by automatically replacing raw credentials with \`secretRef:<id>\`.
 - \`hetzer_vault_has(id)\`: Verify if a required secret exists in Vault without exposing its plaintext value.
 - \`hetzer_vault_list()\`: Inspect configured credential references safely.
 
-## 5. User Credential Management
+## 6. User Credential Management
 - If a required credential is not configured, instruct the user to run:
   \`\`\`bash
   hetzer creds set <credential-id>
@@ -48,7 +64,8 @@ export const ENTRY_POINTER_BLOCK = [
     "## 🛡️ Hetzer: Zero-Plaintext Armor & Secret Vault",
     "- NEVER print secret tokens, passwords, or API keys in plaintext in conversation, code, or logs.",
     "- Always use references: `secretRef:<credential-id>` (e.g. `secretRef:npm-token`, `secretRef:openai-api-key`).",
-    "- Ephemeral injection & sub-2ms Sniffer protects all agent interactions.",
+    "- Execute with scoped injection: `hetzer exec --allow <id> -- <cmd>` (never run `creds reveal` or `printenv`).",
+    "- Ephemeral injection, sub-2ms Sniffer & real-time stream interceptor protect all agent interactions.",
     "- User management command: `hetzer creds set <id>`.",
     POINTER_END,
 ].join("\n");

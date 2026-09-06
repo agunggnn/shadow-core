@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { parseEnv } from "../core/env.mjs";
 import { loadModuleRegistry, publicModuleSummary } from "../modules/registry.mjs";
-import { Grimoire, resolveVaultPath } from "../vault/hetzer-vault.mjs";
+import { Grimoire, resolveMasterKey, resolveVaultPath } from "../vault/hetzer-vault.mjs";
 import { scanText, redactAndVault } from "../vault/sniffer.mjs";
 import { synthesizeServiceTools } from "./synthesis.mjs";
 
@@ -44,7 +44,7 @@ export function createToolCatalog({ root = process.env.HETZER_ROOT || process.cw
             vault = new Grimoire({
                 dbPath: envVault || path.join(root, "data", "hetzer-vault.db"),
                 legacyFile: path.join(root, "data", "vault.json"),
-                masterKey: getEnvironment(fileEnv, "HETZER_GRIMOIRE_KEY"),
+                masterKey: resolveMasterKey({ root, envValues: fileEnv }),
             });
         }
         return vault;

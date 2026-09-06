@@ -1,8 +1,3 @@
----
-name: hetzer
-description: Zero-Plaintext Credential Protection, Sub-2ms Secret Sniffer, and Grimoire Vault integration for autonomous agents.
----
-
 # Hetzer: Zero-Plaintext Security & Credential Protection
 
 You are operating under the protection of the **Hetzer Grimoire Vault**.
@@ -56,4 +51,3 @@ If connected via MCP, you have access to Hetzer's native defense tools:
   hetzer creds set <credential-id>
   ```
   *(The user will be prompted with a hidden, masked prompt and the value will be encrypted with AES-256-GCM).*
-

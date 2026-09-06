@@ -6,7 +6,7 @@ import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
-import { Grimoire, resolveVaultPath } from "./hetzer-vault.mjs";
+import { Grimoire, resolveMasterKey, resolveVaultPath } from "./hetzer-vault.mjs";
 import { parseEnv } from "../core/env.mjs";
 
 export const DETECTION_RULES = [
@@ -129,7 +129,7 @@ export function redactAndVault(text, { root, envFile, masterKey, autoVault = tru
         try {
             const actualEnvFile = envFile || path.join(root, ".env");
             const values = fs.existsSync(actualEnvFile) ? parseEnv(fs.readFileSync(actualEnvFile, "utf8")) : {};
-            const key = masterKey || process.env.HETZER_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || "";
+            const key = masterKey || resolveMasterKey({ root, envValues: values });
             if (key && !String(key).startsWith("secretRef:")) {
                 const envVault = resolveVaultPath(root);
                 vaultInstance = new Grimoire({
@@ -216,7 +216,7 @@ export function restoreSecrets(text, { root, envFile, masterKey } = {}) {
     if (actualEnvFile && fs.existsSync(actualEnvFile)) {
         values = parseEnv(fs.readFileSync(actualEnvFile, "utf8"));
     }
-    const key = masterKey || process.env.HETZER_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || "";
+    const key = masterKey || resolveMasterKey({ root, envValues: values });
     if (!key || String(key).startsWith("secretRef:")) {
         return text;
     }

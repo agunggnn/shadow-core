@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseEnv } from "../core/env.mjs";
-import { Grimoire, resolveVaultPath } from "./hetzer-vault.mjs";
+import { Grimoire, resolveMasterKey, resolveVaultPath } from "./hetzer-vault.mjs";
 
 export const KNOWN_CREDENTIALS = Object.freeze({
     "nine-router-initial-password": Object.freeze({
@@ -250,9 +250,9 @@ export function assertInteractiveHumanSession() {
 
 function openVault(root, envFile) {
     const values = fs.existsSync(envFile) ? parseEnv(fs.readFileSync(envFile, "utf8")) : {};
-    const masterKey = process.env.HETZER_GRIMOIRE_KEY || process.env.SHADOW_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "";
+    const masterKey = resolveMasterKey({ root, envValues: values });
     if (!masterKey || String(masterKey).startsWith("secretRef:")) {
-        throw new Error("HETZER_GRIMOIRE_KEY is not set in .env or environment. Run 'hetzer init' first.");
+        throw new Error("HETZER_GRIMOIRE_KEY is not set in ~/.hetzer/grimoire.key, .env, or environment. Run 'hetzer init' first.");
     }
     const envVault = resolveVaultPath(root);
     const dbPath = envVault || path.join(root, "data", "hetzer-vault.db");

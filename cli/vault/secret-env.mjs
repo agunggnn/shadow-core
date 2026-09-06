@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { parseEnv } from "../core/env.mjs";
-import { Grimoire, resolveVaultPath } from "./hetzer-vault.mjs";
+import { Grimoire, resolveMasterKey, resolveVaultPath } from "./hetzer-vault.mjs";
 
 export function resolveSecretEnvironment({
     root,
@@ -32,9 +32,9 @@ export function resolveSecretEnvironment({
     const resolved = { ...baseEnv, HETZER_ROOT: root };
     if (!bindings.length) return resolved;
 
-    const masterKey = baseEnv.HETZER_GRIMOIRE_KEY || baseEnv.SHADOW_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "";
+    const masterKey = resolveMasterKey({ root, envValues: values, baseEnv });
     if (!masterKey || String(masterKey).startsWith("secretRef:")) {
-        throw new Error("HETZER_GRIMOIRE_KEY must be supplied at runtime to resolve secretRef bindings.");
+        throw new Error("HETZER_GRIMOIRE_KEY must be supplied at runtime (or isolated in ~/.hetzer/grimoire.key) to resolve secretRef bindings.");
     }
     const envVault = resolveVaultPath(root);
     const vault = new Grimoire({

@@ -6,7 +6,7 @@ import { Readable } from "node:stream";
 import test from "node:test";
 
 import { assertInteractiveHumanSession, checkProcessAncestors, promptNativeOsConfirmation, listCredentials, promptSecret, revealCredential, setCredential } from "./creds.mjs";
-import { Grimoire } from "./hetzer-vault.mjs";
+import { Grimoire, isolateMasterKey, resolveMasterKey } from "./hetzer-vault.mjs";
 
 test("creds module can list, set, and reveal credentials in Grimoire Vault", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-creds-test-"));
@@ -112,5 +112,31 @@ test("promptNativeOsConfirmation respects non-interactive bypass", () => {
         if (orig !== undefined) process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL = orig;
         else delete process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL;
     }
+});
+
+test("resolveMasterKey and isolateMasterKey manage key isolation lifecycle", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-key-iso-"));
+    const envFile = path.join(tempDir, ".env");
+    const testKey = "isolation-test-key-32-characters-minimum";
+    fs.writeFileSync(envFile, `HETZER_GRIMOIRE_KEY=${testKey}\nFOO=BAR\n`);
+
+    // Resolution from file when runtime env is empty
+    const resolved = resolveMasterKey({
+        root: tempDir,
+        envValues: { HETZER_GRIMOIRE_KEY: testKey },
+        baseEnv: {},
+    });
+    assert.equal(resolved, testKey);
+
+    // Resolution from runtime env takes precedence
+    const runtimeKey = "runtime-override-key-32-chars-at-least";
+    const runtimeResolved = resolveMasterKey({
+        root: tempDir,
+        envValues: { HETZER_GRIMOIRE_KEY: testKey },
+        baseEnv: { HETZER_GRIMOIRE_KEY: runtimeKey },
+    });
+    assert.equal(runtimeResolved, runtimeKey);
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
 });
 

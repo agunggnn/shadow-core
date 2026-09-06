@@ -15,6 +15,7 @@ import { resolveModuleProfiles } from "../modules/resolve.mjs";
 import { setModuleEnabled } from "../modules/toggle.mjs";
 import { formatValidationReport, validateAllModules, validateModuleRecipe } from "../modules/validate.mjs";
 import { KNOWN_CREDENTIALS, assertInteractiveHumanSession, promptNativeOsConfirmation, listCredentials, promptSecret, revealCredential, setCredential } from "../vault/creds.mjs";
+import { isolateMasterKey, resolveMasterKey } from "../vault/hetzer-vault.mjs";
 import { autoIngestPlaintextEnv, migrateEnvCredentials } from "../vault/migrate-env.mjs";
 import { redactAndVault, scanText, restoreSecrets } from "../vault/sniffer.mjs";
 import { getHetzerAsciiBanner, printHetzerBanner } from "./banner.mjs";
@@ -581,7 +582,20 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             process.stdout.write("================================================================================\n");
             return;
         }
-        throw new Error(`Unknown creds subcommand: '${subCommand}'. Use 'list', 'reveal', or 'set'.`);
+        if (subCommand === "isolate-key" || subCommand === "key-isolate") {
+            const res = isolateMasterKey({ root, envFile });
+            process.stdout.write("================================================================================\n");
+            process.stdout.write("  HETZER - GRIMOIRE MASTER KEY ISOLATION\n");
+            process.stdout.write("================================================================================\n");
+            process.stdout.write(`  [v] Master Key moved to : ${res.isolatedFile} (mode 0600)\n`);
+            process.stdout.write(`  [v] Workspace Stripped  : ${res.envFile}\n`);
+            process.stdout.write("--------------------------------------------------------------------------------\n");
+            process.stdout.write("  Result: The repository workspace now contains ZERO master keys.\n");
+            process.stdout.write("  Autonomous AI agents running in this workspace can no longer access the vault key.\n");
+            process.stdout.write("================================================================================\n");
+            return;
+        }
+        throw new Error(`Unknown creds subcommand: '${subCommand}'. Use 'list', 'reveal', 'set', or 'isolate-key'.`);
     }
     if (["sniffer", "sniff"].includes(command)) {
         const sub = args[0] || "scan";

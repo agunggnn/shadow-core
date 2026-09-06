@@ -4,6 +4,7 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
@@ -48,6 +49,88 @@ export function resolveVaultPath(root) {
     if (!override) return "";
     if (override === ":memory:") return ":memory:";
     return path.isAbsolute(override) ? override : path.join(root || process.cwd(), override);
+}
+
+export function getIsolatedKeyPath() {
+    try {
+        const home = os.homedir();
+        return path.join(home, ".hetzer", "grimoire.key");
+    } catch {
+        return "";
+    }
+}
+
+export function resolveMasterKey({ root = process.cwd(), envValues = {}, baseEnv = process.env } = {}) {
+    // 1. Explicit runtime environment variable (highest priority)
+    const envKey = baseEnv.HETZER_GRIMOIRE_KEY || baseEnv.SHADOW_GRIMOIRE_KEY;
+    if (envKey && !String(envKey).startsWith("secretRef:")) {
+        return String(envKey).trim();
+    }
+
+    // 2. User-level Home Isolated Store (~/.hetzer/grimoire.key)
+    // Isolated outside project workspace so workspace agents cannot read it!
+    const isolatedFile = getIsolatedKeyPath();
+    if (isolatedFile && fs.existsSync(isolatedFile)) {
+        try {
+            const val = fs.readFileSync(isolatedFile, "utf8").trim();
+            if (val && !val.startsWith("secretRef:")) {
+                return val;
+            }
+        } catch {
+            // Continue to fallback
+        }
+    }
+
+    // 3. Local .env file (Legacy workspace fallback)
+    const fileKey = envValues.HETZER_GRIMOIRE_KEY || envValues.SHADOW_GRIMOIRE_KEY;
+    if (fileKey && !String(fileKey).startsWith("secretRef:")) {
+        return String(fileKey).trim();
+    }
+
+    return "";
+}
+
+export function isolateMasterKey({ root = process.cwd(), envFile } = {}) {
+    const targetEnv = envFile || path.join(root, ".env");
+    let currentKey = "";
+    let envContent = "";
+    if (fs.existsSync(targetEnv)) {
+        envContent = fs.readFileSync(targetEnv, "utf8");
+        const match = envContent.match(/^HETZER_GRIMOIRE_KEY=(.+)$/m) || envContent.match(/^SHADOW_GRIMOIRE_KEY=(.+)$/m);
+        if (match) {
+            currentKey = match[1].trim();
+        }
+    }
+    if (!currentKey && process.env.HETZER_GRIMOIRE_KEY) {
+        currentKey = process.env.HETZER_GRIMOIRE_KEY.trim();
+    }
+    if (!currentKey) {
+        throw new Error("No HETZER_GRIMOIRE_KEY found to isolate. Run 'hetzer init' first.");
+    }
+
+    const isolatedFile = getIsolatedKeyPath();
+    if (!isolatedFile) {
+        throw new Error("Unable to determine user home directory for key isolation.");
+    }
+
+    fs.mkdirSync(path.dirname(isolatedFile), { recursive: true });
+    fs.writeFileSync(isolatedFile, currentKey + "\n", { encoding: "utf8", mode: 0o600 });
+    try { fs.chmodSync(isolatedFile, 0o600); } catch { /* Windows */ }
+
+    // Strip HETZER_GRIMOIRE_KEY from .env
+    if (fs.existsSync(targetEnv)) {
+        const cleanedEnv = envContent
+            .split(/\r?\n/)
+            .filter((line) => !line.startsWith("HETZER_GRIMOIRE_KEY=") && !line.startsWith("SHADOW_GRIMOIRE_KEY="))
+            .join("\n");
+        fs.writeFileSync(targetEnv, cleanedEnv, { encoding: "utf8", mode: 0o600 });
+        try { fs.chmodSync(targetEnv, 0o600); } catch { /* Windows */ }
+    }
+
+    return {
+        isolatedFile,
+        envFile: targetEnv,
+    };
 }
 
 function keyBuffer(masterKey) {
