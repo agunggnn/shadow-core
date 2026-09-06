@@ -160,7 +160,7 @@ export async function promptSecret(promptText = "Enter secret value: ", { input 
 
 function openVault(root, envFile) {
     const values = fs.existsSync(envFile) ? parseEnv(fs.readFileSync(envFile, "utf8")) : {};
-    const masterKey = process.env.HETZER_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || "";
+    const masterKey = process.env.HETZER_GRIMOIRE_KEY || process.env.SHADOW_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "";
     if (!masterKey || String(masterKey).startsWith("secretRef:")) {
         throw new Error("HETZER_GRIMOIRE_KEY is not set in .env or environment. Run 'hetzer init' first.");
     }
