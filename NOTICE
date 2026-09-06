@@ -9,3 +9,13 @@ source distribution:
 
 Their container images and bundled dependencies retain their respective notices
 and license terms. Hetzer does not relicense those artifacts.
+
+Acknowledgements & Architectural Inspirations:
+Hetzer was inspired by pioneering security, secret management, and agentic tools:
+- HashiCorp Vault (HashiCorp / Mitchell Hashimoto) - The gold standard in secret management and transit encryption.
+- 1Password CLI & Doppler - Pioneers of out-of-band ephemeral runtime secret injection.
+- TruffleHog (Truffle Security) & Gitleaks (Zachary Rice) - High-speed regex & entropy-based secret detection.
+- Anthropic Model Context Protocol (MCP) - Standardized protocol for AI agent tool integration.
+- LLM-Guard (Protect AI) - Pioneer in real-time LLM input/output token scanning.
+- Hermes Agent (NousResearch), Google Antigravity (AGY), Cursor, and Cline - Autonomous AI agent ecosystems that highlighted the necessity of Zero-Plaintext protection.
+
