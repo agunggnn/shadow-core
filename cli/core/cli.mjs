@@ -395,6 +395,7 @@ Commands:
   module create <id> [--source <repo>] Scaffold new module recipe (AI-assisted via 9Router)
   validate [module]         Validate module integrity, security, and compose recipe
   creds [list|reveal|set]   Manage encrypted secrets in Grimoire Vault (AES-256-GCM)
+  exec [--allow <k>] -- <c> Run command with ephemeral secret injection & real-time stream sanitization
   sniffer [scan|redact] <t> Intercept and secure credentials from input text in < 2ms
   skill [install|status]    Deploy Universal AI Skills to Hermes, AGY, OpenCode, Cursor, Claude
   hook [install|uninstall|check] Manage Git Pre-Commit Guard to prevent accidental token leaks
@@ -532,6 +533,12 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         if (subCommand === "reveal" || subCommand === "get") {
             const id = args[1];
             if (!id) throw new Error("Usage: hetzer creds reveal <id>");
+            if (!process.stdin.isTTY && !process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL) {
+                throw new Error(
+                    "Access Denied: 'hetzer creds reveal' requires a direct human interactive TTY terminal.\n" +
+                    "Autonomous agent / non-interactive programmatic secret revelation is blocked to prevent context window leakage."
+                );
+            }
             const cred = revealCredential({ root, envFile, id });
             process.stdout.write("================================================================================\n");
             process.stdout.write(`  CREDENTIAL DETAIL: ${cred.id}\n`);
@@ -910,6 +917,23 @@ export async function main(argv = process.argv.slice(2), options = {}) {
     if (command === "publish") {
         const publishScript = path.join(cliRoot, "..", "scripts", "publish.mjs");
         run(process.execPath, [publishScript], { cwd: root });
+        return;
+    }
+    if (command === "exec") {
+        const marker = args.indexOf("--");
+        if (marker === -1 || !args[marker + 1]) {
+            throw new Error("Usage: hetzer exec [--allow NAME,NAME] -- <command> [args]");
+        }
+        const execOptions = args.slice(0, marker);
+        const passArgs = [
+            path.join(cliRoot, "vault", "exec.mjs"),
+            "--root", root,
+            "--env-file", envFile,
+            ...execOptions,
+            "--",
+            ...args.slice(marker + 1),
+        ];
+        run(process.execPath, passArgs, { cwd: root });
         return;
     }
     if (command === "tui") {

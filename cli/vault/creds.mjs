@@ -347,6 +347,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         } else if (action === "reveal" || action === "get") {
             const id = args[1];
             if (!id) throw new Error("Usage: hetzer creds reveal <id>");
+            if (!process.stdin.isTTY && !process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL) {
+                throw new Error(
+                    "Access Denied: 'hetzer creds reveal' requires a direct human interactive TTY terminal.\n" +
+                    "Autonomous agent / non-interactive programmatic secret revelation is blocked to prevent context window leakage."
+                );
+            }
             const cred = revealCredential({ root, envFile, id });
             process.stdout.write("================================================================================\n");
             process.stdout.write(`  CREDENTIAL DETAIL: ${cred.id}\n`);

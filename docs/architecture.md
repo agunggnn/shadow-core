@@ -171,6 +171,19 @@ The following sequence occurs:
 
 During `hetzer up` or `hetzer exec`, Hetzer parses `.env`, identifies every key prefixed with `secretRef:`, fetches and decrypts the value in host RAM, and passes the resolved environment variables directly to the child process environment (`process.env`). **The plaintext secret is never written to disk, cache files, or logs.**
 
+### 3.4 Runtime Output Stream Sanitizer & Anti-Reflection Guard
+
+To eliminate the critical vulnerability where AI agents swallow tool outputs (`stdout` / `stderr`) directly into their context windows (e.g. via crash stack traces, verbose curl dumps, or unhandled exceptions):
+
+1. **Real-Time Stream Interception**: `hetzer exec` intercepts all output streams before writing to host stdout/stderr. Every chunk is filtered through the sub-2ms Sniffer, automatically redacting resolved secret values back to `secretRef:<id>` in real time.
+2. **Anti-Reflection Guard**: Programmatic commands designed to dump environment variables (`printenv`, `env`, `export`, `set`, `cat /proc/*/environ`, `docker inspect`, inline `process.env`) are strictly forbidden and blocked prior to execution with an `ERR_REFLECTION_BLOCKED` security violation.
+
+### 3.5 Anti-Agent Interactive TTY Challenge on Secret Revelation
+
+To prevent autonomous AI agents in unrestricted/YOLO mode from executing `hetzer creds reveal <id>` programmatically, the CLI enforces an **Interactive Human TTY Guard**:
+- The command checks `process.stdin.isTTY`. Programmatic execution from agent sub-processes or headless background tools is **denied with exit code 1**.
+- Plaintext revelation is restricted exclusively to authenticated, direct human interactive sessions.
+
 ---
 
 ## 4. Transparent Secret Sniffer (< 2ms Latency Engine)

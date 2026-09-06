@@ -1,0 +1,108 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+
+import { executeProcess, isReflectionCommand, sanitizeStreamOutput } from "./exec.mjs";
+import { setCredential } from "./creds.mjs";
+
+test("isReflectionCommand accurately detects and blocks environment reflection attempts", () => {
+    assert.equal(isReflectionCommand("printenv"), true);
+    assert.equal(isReflectionCommand("env"), true);
+    assert.equal(isReflectionCommand("export"), true);
+    assert.equal(isReflectionCommand("set"), true);
+    assert.equal(isReflectionCommand("sh", ["-c", "printenv"]), true);
+    assert.equal(isReflectionCommand("node", ["-e", "console.log(process.env)"]), true);
+    assert.equal(isReflectionCommand("python", ["-c", "import os; print(os.environ)"]), true);
+    assert.equal(isReflectionCommand("cat", ["/proc/self/environ"]), true);
+
+    // Legitimate build and runtime commands are permitted
+    assert.equal(isReflectionCommand("node", ["index.js"]), false);
+    assert.equal(isReflectionCommand("npm", ["test"]), false);
+    assert.equal(isReflectionCommand("docker", ["compose", "up"]), false);
+    assert.equal(isReflectionCommand("curl", ["https://api.github.com"]), false);
+});
+
+test("sanitizeStreamOutput redacts resolved secrets and raw tokens back to secretRef", () => {
+    const rawSecret = "super-secret-token-xyz-123456";
+    const secretsToRedact = [{ id: "db-password", secret: rawSecret }];
+
+    // Direct echo of secret
+    const output = `Database connection initiated with password: ${rawSecret}`;
+    const sanitized = sanitizeStreamOutput(output, secretsToRedact);
+    assert.equal(sanitized, "Database connection initiated with password: secretRef:db-password");
+    assert.doesNotMatch(sanitized, new RegExp(rawSecret));
+
+    // Detection rules redaction
+    const mockToken = ["npm", "_", "abcdef1234567890abcdef12345678901234"].join("");
+    const tokenOutput = `Crash log: token=${mockToken}`;
+    const sanitizedToken = sanitizeStreamOutput(tokenOutput, []);
+    assert.match(sanitizedToken, /secretRef:npm-token/);
+});
+
+test("executeProcess blocks reflection commands from running", async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-exec-test-"));
+    const envFile = path.join(tempDir, ".env");
+    fs.writeFileSync(envFile, "FOO=bar\n");
+
+    await assert.rejects(
+        () => executeProcess({
+            root: tempDir,
+            envFile,
+            command: "printenv",
+            commandArgs: [],
+        }),
+        (err) => {
+            assert.equal(err.code, "ERR_REFLECTION_BLOCKED");
+            assert.match(err.message, /Security violation/);
+            return true;
+        }
+    );
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+});
+
+test("executeProcess sanitizes stdout stream in real time", async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hetzer-exec-stream-"));
+    const dataDir = path.join(tempDir, "data");
+    fs.mkdirSync(dataDir, { recursive: true });
+    const envFile = path.join(tempDir, ".env");
+    const masterKey = "11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff";
+    fs.writeFileSync(envFile, `HETZER_GRIMOIRE_KEY=${masterKey}\n`);
+
+    const secretValue = "injected-secret-value-abc-987654";
+    setCredential({
+        root: tempDir,
+        envFile,
+        id: "npm-token",
+        secret: secretValue,
+    });
+
+    let capturedOutput = "";
+    const mockOutStream = {
+        write(chunk) {
+            capturedOutput += chunk;
+            return true;
+        },
+    };
+
+    // Run a node script that tries to print the secret directly
+    const script = `process.stdout.write("Resolved secret: " + process.env.NODE_AUTH_TOKEN + "\\n");`;
+    const scriptFile = path.join(tempDir, "test-script.js");
+    fs.writeFileSync(scriptFile, script);
+
+    const result = await executeProcess({
+        root: tempDir,
+        envFile,
+        command: process.execPath,
+        commandArgs: [scriptFile],
+    }, { outStream: mockOutStream });
+
+    assert.equal(result.status, 0);
+    // Verified: The raw secret is REDACTED into secretRef:npm-token!
+    assert.match(capturedOutput, /Resolved secret: secretRef:npm-token/);
+    assert.doesNotMatch(capturedOutput, new RegExp(secretValue));
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+});

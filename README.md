@@ -152,29 +152,32 @@ flowchart TB
 
 ---
 
-## 🔐 Zero-Plaintext Security: The Four Defense Layers
+## 🔐 Zero-Plaintext Security: The Five Defense Layers
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                      HETZER FOUR-LAYER DEFENSE MATRIX                       │
+│                      HETZER FIVE-LAYER DEFENSE MATRIX                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  Layer 1: Transparent Secret Sniffer (< 2 ms Latency)                       │
 │  ► Real-time scan of user prompts, agent tool arguments, and code diffs.    │
-│  ► Detects tokens (npm, OpenAI, Anthropic, Gemini, GitHub, AWS, Stripe).    │
 │  ► Automatically vaults raw credentials and outputs safe 'secretRef:<id>'.  │
 │  ► AI models (Claude, GPT, Gemini) NEVER see raw tokens in context windows! │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Layer 2: Just-in-Time (JIT) Native Interactive Masked Prompt               │
-│  ► When a tool or process requires a credential missing from the Vault,     │
-│    the system avoids crashes or context switching.                          │
-│  ► A masked interactive prompt appears, encrypts, and continues execution.  │
+│  Layer 2: Real-Time Stream Sanitizer & Anti-Reflection Guard (hetzer exec)  │
+│  ► Intercepts child process stdout/stderr in-flight during execution.       │
+│  ► Auto-redacts crash stack traces & debug logs back into 'secretRef:<id>'. │
+│  ► Blocks reflection commands ('printenv', 'env', 'export', inline dumps).  │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Layer 3: Silent Ingestion (.env Auto-Vaulting on Boot)                     │
-│  ► Eliminates manual setup burdens.                                         │
-│  ► If plaintext keys are pasted in .env, Hetzer on boot encrypts them       │
-│    into SQLite and rewrites .env to 'secretRef:<id>'.                        │
+│  Layer 3: Anti-Agent Interactive TTY Challenge on Secret Revelation         │
+│  ► Prevents autonomous AI agents in YOLO/Turbo mode from dumping vault      │
+│    secrets via programmatic sub-process calls ('hetzer creds reveal').      │
+│  ► Requires an authenticated, direct human interactive TTY session.         │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Layer 4: Git Pre-Commit Guard Hook (< 2 ms Latency)                        │
+│  Layer 4: Silent Ingestion & JIT Native Masked Prompt                       │
+│  ► Eliminates manual setup burdens by auto-vaulting plaintext keys in .env. │
+│  ► Interactive masked prompts (* characters) securely encrypt into SQLite.  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Layer 5: Git Pre-Commit Guard Hook (< 2 ms Latency)                        │
 │  ► Intercepts 'git commit' before code is recorded into Git history.        │
 │  ► Scans added lines in staged diffs and blocks commits containing raw keys │
 │    or plaintext .env files.                                                 │

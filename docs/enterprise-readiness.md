@@ -76,6 +76,17 @@ To maintain bank-grade rigor, security auditors must understand both the strengt
 4. **Dynamic Ephemeral Secret Generation (Leases)**:  
    Hetzer currently manages static encrypted secrets (API keys, passwords, certificates). It does not yet generate short-lived dynamic database credentials (e.g., generating temporary PostgreSQL user credentials with 15-minute TTLs).
 
+### 3.3 The Runtime Tool Output Threat: Tackling Agent Credential Reflection
+A major threat identified in recent security research (e.g., ArXiv June 2026 on credential leakage via autonomous agent tools) occurs when an agent running in autonomous/YOLO mode executes bash commands:
+1. **The Context Ingestion Vector**:
+   While static `.env` files and Git commits are protected, commands executed by agents (or crashing subprocesses) frequently dump credentials to `stdout` or `stderr` (e.g. unhandled exceptions, verbose curl headers, or debug stack traces). AI agents automatically ingest tool output directly into their context windows, transmitting credentials to LLM provider APIs.
+2. **The Self-Resolution / Privilege Escalation Attack**:
+   If an autonomous agent has access to run terminal commands, it can theoretically attempt to run `hetzer exec -- printenv` or `hetzer creds reveal <id>` to force the system to resolve and print secrets back to its tool output.
+3. **Hetzer's Runtime Countermeasures**:
+   - **Real-Time Stream Output Sanitizer**: `hetzer exec` intercepts child process `stdout` and `stderr` streams, automatically filtering every chunk and redacting resolved secrets back to `secretRef:<id>` in real time.
+   - **Anti-Reflection Guard**: Reflection commands (`printenv`, `env`, `export`, `set`, `/proc/*/environ`, `docker inspect`, inline `process.env`) are strictly blocked before execution.
+   - **Interactive TTY Challenge**: `hetzer creds reveal` strictly verifies `process.stdin.isTTY`. Programmatic execution by automated AI agents or headless scripts is rejected with access denied.
+
 ---
 
 ## 4. Recommended Enterprise Architecture: The "Sidecar / Guard" Pattern

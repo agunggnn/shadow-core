@@ -19,7 +19,7 @@ export function resolveSecretEnvironment({
     const resolved = { ...baseEnv, HETZER_ROOT: root };
     if (!bindings.length) return resolved;
 
-    const masterKey = baseEnv.HETZER_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || "";
+    const masterKey = baseEnv.HETZER_GRIMOIRE_KEY || baseEnv.SHADOW_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "";
     if (!masterKey || String(masterKey).startsWith("secretRef:")) {
         throw new Error("HETZER_GRIMOIRE_KEY must be supplied at runtime to resolve secretRef bindings.");
     }
