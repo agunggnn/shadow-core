@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { parseEnv } from "../core/env.mjs";
+import { isCanaryCredential, triggerCanaryAlert } from "./canary.mjs";
 import { Grimoire, resolveMasterKey, resolveVaultPath } from "./hetzer-vault.mjs";
 
 export function resolveSecretEnvironment({
@@ -45,6 +46,9 @@ export function resolveSecretEnvironment({
     try {
         for (const [name, reference] of bindings) {
             const id = String(reference).slice("secretRef:".length);
+            if (isCanaryCredential(id)) {
+                triggerCanaryAlert({ id, actor: "process.exec", action: "env.resolve", root });
+            }
             const credential = vault.find(id);
             if (!credential) throw new Error(`Credential '${id}' referenced by ${name} was not found.`);
             const value = vault.resolveRef(reference, { targetId: credential.projectId, action });

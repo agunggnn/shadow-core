@@ -17,6 +17,7 @@ import { formatValidationReport, validateAllModules, validateModuleRecipe } from
 import { KNOWN_CREDENTIALS, assertInteractiveHumanSession, promptNativeOsConfirmation, listCredentials, promptSecret, revealCredential, setCredential } from "../vault/creds.mjs";
 import { isolateMasterKey, resolveMasterKey } from "../vault/hetzer-vault.mjs";
 import { autoIngestPlaintextEnv, migrateEnvCredentials } from "../vault/migrate-env.mjs";
+import { setupCanaryTrap } from "../vault/canary.mjs";
 import { redactAndVault, scanText, restoreSecrets } from "../vault/sniffer.mjs";
 import { getHetzerAsciiBanner, printHetzerBanner } from "./banner.mjs";
 import { runDoctor } from "./doctor.mjs";
@@ -396,6 +397,7 @@ Commands:
   module create <id> [--source <repo>] Scaffold new module recipe (AI-assisted via 9Router)
   validate [module]         Validate module integrity, security, and compose recipe
   creds [list|reveal|set]   Manage encrypted secrets in Grimoire Vault (AES-256-GCM)
+  canary [setup]            Deploy decoy canary honey-token tripwire to catch prompt injections
   exec [--allow <ids>] [--strict] -- <c> Run command with scoped secret injection & real-time stream sanitization
   sniffer [scan|redact] <t> Intercept and secure credentials from input text in < 2ms
   skill [install|status]    Deploy Universal AI Skills to Hermes, AGY, OpenCode, Cursor, Claude
@@ -616,6 +618,23 @@ export async function main(argv = process.argv.slice(2), options = {}) {
             return;
         }
         throw new Error(`Unknown sniffer subcommand: '${sub}'. Use 'scan' or 'redact'.`);
+    }
+    if (command === "canary") {
+        const sub = args[0] || "setup";
+        if (sub === "setup" || sub === "enable") {
+            const trap = setupCanaryTrap({ root, envFile });
+            process.stdout.write("================================================================================\n");
+            process.stdout.write("  HETZER - CANARY HONEY-TOKEN TRAP DEPLOYED\n");
+            process.stdout.write("================================================================================\n");
+            process.stdout.write(`  [v] Honey-Token ID : ${trap.id}\n`);
+            process.stdout.write(`  [v] Decoy Binding  : HETZER_CANARY_TOKEN=${trap.ref}\n`);
+            process.stdout.write(`  [v] Protection     : If any AI agent or prompt injection attempts to access\n`);
+            process.stdout.write(`                       or dump this token, Hetzer immediately halts execution\n`);
+            process.stdout.write(`                       and triggers an emergency security alert.\n`);
+            process.stdout.write("================================================================================\n");
+            return;
+        }
+        throw new Error(`Unknown canary subcommand: '${sub}'. Use 'setup'.`);
     }
     if (command === "modules") {
         if (args[0] && !args[0].startsWith("-")) {

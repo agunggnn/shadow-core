@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseEnv } from "../core/env.mjs";
+import { isCanaryCredential, triggerCanaryAlert } from "./canary.mjs";
 import { Grimoire, resolveMasterKey, resolveVaultPath } from "./hetzer-vault.mjs";
 
 export const KNOWN_CREDENTIALS = Object.freeze({
@@ -303,6 +304,9 @@ export function listCredentials({ root, envFile }) {
 }
 
 export function revealCredential({ root, envFile, id }) {
+    if (isCanaryCredential(id)) {
+        triggerCanaryAlert({ id, actor: "caller", action: "creds.reveal", root });
+    }
     const { vault } = openVault(root, envFile);
     try {
         const entry = vault.find(id);
