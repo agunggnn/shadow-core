@@ -158,6 +158,37 @@ export async function promptSecret(promptText = "Enter secret value: ", { input 
 }
 
 
+export function assertInteractiveHumanSession() {
+    if (process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL === "1" || process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL === "true") {
+        return;
+    }
+    if (!process.stdin.isTTY) {
+        throw new Error(
+            "Access Denied: 'hetzer creds reveal' requires a direct human interactive TTY terminal.\n" +
+            "Autonomous agent / non-interactive programmatic secret revelation is blocked to prevent context window leakage."
+        );
+    }
+    const agentIndicators = [
+        ["ANTIGRAVITY_AGENT", "Antigravity Agent runtime detected"],
+        ["CURSOR_PROJECT_DIR", "Cursor IDE Agent runtime detected"],
+        ["CURSOR_TRACE_ID", "Cursor Agent session detected"],
+        ["CLAUDE_CODE", "Claude Code session detected"],
+        ["VSCODE_PID", "VS Code agent process runner detected"],
+        ["HERMES_AGENT", "Hermes Agent session detected"],
+        ["CI", "Continuous Integration / non-interactive pipeline detected"],
+    ];
+    for (const [envVar, desc] of agentIndicators) {
+        if (process.env[envVar]) {
+            throw new Error(
+                `Access Denied: 'hetzer creds reveal' blocked by Zero-Plaintext Agent Guard.\n` +
+                `Reason: ${desc} ($${envVar} is set).\n` +
+                `Autonomous agents running in YOLO/unrestricted mode cannot extract raw secrets into context.\n` +
+                `To execute commands with injected secrets safely, use 'hetzer exec -- <command>'.`
+            );
+        }
+    }
+}
+
 function openVault(root, envFile) {
     const values = fs.existsSync(envFile) ? parseEnv(fs.readFileSync(envFile, "utf8")) : {};
     const masterKey = process.env.HETZER_GRIMOIRE_KEY || process.env.SHADOW_GRIMOIRE_KEY || values.HETZER_GRIMOIRE_KEY || values.SHADOW_GRIMOIRE_KEY || "";
@@ -347,12 +378,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         } else if (action === "reveal" || action === "get") {
             const id = args[1];
             if (!id) throw new Error("Usage: hetzer creds reveal <id>");
-            if (!process.stdin.isTTY && !process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL) {
-                throw new Error(
-                    "Access Denied: 'hetzer creds reveal' requires a direct human interactive TTY terminal.\n" +
-                    "Autonomous agent / non-interactive programmatic secret revelation is blocked to prevent context window leakage."
-                );
-            }
+            assertInteractiveHumanSession();
             const cred = revealCredential({ root, envFile, id });
             process.stdout.write("================================================================================\n");
             process.stdout.write(`  CREDENTIAL DETAIL: ${cred.id}\n`);

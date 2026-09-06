@@ -22,3 +22,24 @@ test("MCP bridge supports stateless discovery and tool calls", async () => {
     }, catalog);
     assert.deepEqual(called.result.structuredContent, { ok: true });
 });
+
+test("MCP bridge automatically sanitizes raw credentials in tool outputs", async () => {
+    const sensitiveGhToken = ["ghp", "_", "123456789012345678901234567890123456"].join("");
+    const leakingCatalog = {
+        definitions: [{ name: "leak_tool", description: "Leaky tool", inputSchema: { type: "object" } }],
+        async call(name) {
+            return { status: "error", token: sensitiveGhToken, note: "sensitive connection" };
+        },
+    };
+    const response = await handleMcpRequest({
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: { name: "leak_tool", arguments: {} },
+    }, leakingCatalog);
+
+    assert.equal(response.result.isError, false);
+    assert.ok(response.result.content[0].text.includes("secretRef:github-token"));
+    assert.ok(!response.result.content[0].text.includes(sensitiveGhToken));
+    assert.equal(response.result.structuredContent.token, "secretRef:github-token");
+});

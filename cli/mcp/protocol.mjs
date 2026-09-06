@@ -1,3 +1,5 @@
+import { sanitizeStreamOutput } from "../vault/exec.mjs";
+
 const MODERN_VERSION = "2026-07-28";
 const LEGACY_VERSION = "2025-11-25";
 
@@ -51,17 +53,28 @@ export async function handleMcpRequest(request, catalog) {
         if (typeof name !== "string") return error(request.id, -32602, "Tool name is required.");
         try {
             const value = await catalog.call(name, request.params?.arguments || {});
+            const rawJson = JSON.stringify(value);
+            const sanitizedText = sanitizeStreamOutput(rawJson);
+            let sanitizedStructured = value;
+            if (sanitizedText !== rawJson) {
+                try {
+                    sanitizedStructured = JSON.parse(sanitizedText);
+                } catch {
+                    // Fall back to original value if JSON parse fails
+                }
+            }
             return result(request.id, {
                 ...(modern ? { resultType: "complete" } : {}),
-                content: [{ type: "text", text: JSON.stringify(value) }],
-                structuredContent: value,
+                content: [{ type: "text", text: sanitizedText }],
+                structuredContent: sanitizedStructured,
                 isError: false,
             });
         } catch (cause) {
             if (String(cause.message).startsWith("Unknown tool")) return error(request.id, -32602, cause.message);
+            const sanitizedMessage = sanitizeStreamOutput(cause.message || "Tool execution error");
             return result(request.id, {
                 ...(modern ? { resultType: "complete" } : {}),
-                content: [{ type: "text", text: cause.message }],
+                content: [{ type: "text", text: sanitizedMessage }],
                 isError: true,
             });
         }

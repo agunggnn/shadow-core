@@ -14,7 +14,7 @@ import { loadModuleRegistry } from "../modules/registry.mjs";
 import { resolveModuleProfiles } from "../modules/resolve.mjs";
 import { setModuleEnabled } from "../modules/toggle.mjs";
 import { formatValidationReport, validateAllModules, validateModuleRecipe } from "../modules/validate.mjs";
-import { KNOWN_CREDENTIALS, listCredentials, promptSecret, revealCredential, setCredential } from "../vault/creds.mjs";
+import { KNOWN_CREDENTIALS, assertInteractiveHumanSession, listCredentials, promptSecret, revealCredential, setCredential } from "../vault/creds.mjs";
 import { autoIngestPlaintextEnv, migrateEnvCredentials } from "../vault/migrate-env.mjs";
 import { redactAndVault, scanText, restoreSecrets } from "../vault/sniffer.mjs";
 import { getHetzerAsciiBanner, printHetzerBanner } from "./banner.mjs";
@@ -533,12 +533,7 @@ export async function main(argv = process.argv.slice(2), options = {}) {
         if (subCommand === "reveal" || subCommand === "get") {
             const id = args[1];
             if (!id) throw new Error("Usage: hetzer creds reveal <id>");
-            if (!process.stdin.isTTY && !process.env.HETZER_ALLOW_NON_INTERACTIVE_REVEAL) {
-                throw new Error(
-                    "Access Denied: 'hetzer creds reveal' requires a direct human interactive TTY terminal.\n" +
-                    "Autonomous agent / non-interactive programmatic secret revelation is blocked to prevent context window leakage."
-                );
-            }
+            assertInteractiveHumanSession();
             const cred = revealCredential({ root, envFile, id });
             process.stdout.write("================================================================================\n");
             process.stdout.write(`  CREDENTIAL DETAIL: ${cred.id}\n`);
