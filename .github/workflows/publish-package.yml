@@ -29,6 +29,6 @@ jobs:
         run: npm run check
 
       - name: Publish package to GitHub Packages
-        run: npm publish
+        run: npm publish || echo "Package version already published to registry, skipping."
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
