@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/hetzer"><img src="https://img.shields.io/npm/v/hetzer.svg?style=flat-square&color=blue" alt="npm version" /></a>
+  <a href="https://github.com/agunggnn/hetzer/packages"><img src="https://img.shields.io/badge/GitHub%20Packages-%40agunggnn%2Fhetzer-blue?style=flat-square&logo=github" alt="GitHub Packages" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D22.5.0-brightgreen.svg?style=flat-square" alt="Node.js version" /></a>
   <a href="package.json"><img src="https://img.shields.io/badge/dependencies-0%20(pure%20Node%20stdlib)-success.svg?style=flat-square" alt="Zero External Dependencies" /></a>
   <a href="SECURITY.md"><img src="https://img.shields.io/badge/security-AES--256--GCM%20Vault-orange.svg?style=flat-square" alt="AES-256-GCM Vault" /></a>
@@ -44,9 +44,13 @@ npx hetzer creds set openai-api-key
   ```powershell
   irm https://raw.githubusercontent.com/agunggnn/hetzer/main/install.ps1 | iex
   ```
-- **Via NPM (Multi-Platform - Recommended)**:
+- **Via GitHub Packages (Direct from this repo)**:
   ```bash
-  npm install -g hetzer
+  npm install -g @agunggnn/hetzer --registry=https://npm.pkg.github.com
+  ```
+- **Via NPM Registry**:
+  ```bash
+  npm install -g @agunggnn/hetzer
   ```
 
 ---

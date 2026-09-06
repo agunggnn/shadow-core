@@ -88,6 +88,16 @@ export const KNOWN_CREDENTIALS = Object.freeze({
         description: "NPM authentication token alias to publish hetzer package to npm registry.",
         usage: "Used when publishing to https://registry.npmjs.org/. Run 'npm run publish-pkg' or 'hetzer publish'.",
     }),
+    "github-token": Object.freeze({
+        envVar: "GITHUB_TOKEN",
+        moduleId: "core",
+        targetId: "github",
+        keyName: "auth_token",
+        authType: "api-key",
+        label: "GitHub Personal Access Token",
+        description: "GitHub Personal Access Token with write:packages, read:packages permission to publish to GitHub Packages.",
+        usage: "Used when publishing to https://npm.pkg.github.com. Run 'npm run publish:github'.",
+    }),
 });
 
 function replaceEnvValue(text, name, value) {

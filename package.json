@@ -1,5 +1,5 @@
 {
-  "name": "hetzer",
+  "name": "@agunggnn/hetzer",
   "version": "0.3.1",
   "description": "Zero-Plaintext Armor & Secret Interceptor for AI Agents. Sub-2ms Vault, MCP Proxy & Universal Skill for Hermes, AGY, OpenCode, CommandCode, Cursor, and Claude.",
   "bin": {
@@ -43,7 +43,8 @@
   ],
   "license": "Apache-2.0",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
   },
   "repository": {
     "type": "git",
@@ -60,7 +61,9 @@
     "check": "node scripts/check.mjs",
     "test": "node --test \"**/*.test.mjs\"",
     "lint": "node scripts/check.mjs",
-    "publish-pkg": "node scripts/publish.mjs"
+    "publish:github": "node scripts/publish-github.mjs",
+    "publish:npm": "node scripts/publish.mjs",
+    "publish-pkg": "node scripts/publish-github.mjs"
   },
   "preferGlobal": true
 }
