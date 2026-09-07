@@ -24,7 +24,11 @@
 Hetzer runs instantly on any machine with Node.js installed without requiring global installation:
 
 ```bash
-# 1. Install Zero-Plaintext Armor into your AI Agents (Hermes, AGY, OpenCode, Cursor, Claude, Cline)
+# 🔥 The 1-Command Speedrun for Vibe Coders: Arms skills, git hook, and vaults .env in 1.5s
+npx hetzer protect
+
+# Or perform individual actions:
+# 1. Install Zero-Plaintext Armor into your AI Agents (Cursor, Claude, AGY, Cline, OpenCode)
 npx hetzer skill install
 
 # 2. Install Git Pre-Commit Guard (blocks leaked tokens & .env from Git in < 2ms)
@@ -61,6 +65,7 @@ For structured navigation and deep architectural insights, explore the dedicated
 
 | Guide | Summary & Topics |
 |---|---|
+| ⚡ **[Vibe Coder's Guide (`docs/vibe-coders.md`)](docs/vibe-coders.md)** | Zero-overhead, 1-command armor for developers building fast with Cursor, Claude, and Antigravity. |
 | 🚀 **[Installation Guide (`docs/installation.md`)](docs/installation.md)** | Multi-OS setup (Ubuntu, Debian, CentOS, Windows WSL2, macOS, VPS), Docker requirements, and troubleshooting. |
 | 🏛️ **[System Architecture (`docs/architecture.md`)](docs/architecture.md)** | Grimoire Vault (AES-256-GCM), 7-layer defense shield, 9Router Gateway, Cognee Memory, and network boundaries. |
 | 🔬 **[System Logic & Progress Tracker (`docs/system-logic-and-progress.md`)](docs/system-logic-and-progress.md)** | Deep subsystem implementation specs, execution flows, test coverage status, and upcoming roadmap. |

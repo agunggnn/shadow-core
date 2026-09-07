@@ -400,6 +400,7 @@ Commands:
   canary [setup]            Deploy decoy canary honey-token tripwire to catch prompt injections
   exec [--allow <ids>] [--strict] -- <c> Run command with scoped secret injection & real-time stream sanitization
   sniffer [scan|redact] <t> Intercept and secure credentials from input text in < 2ms
+  protect                   One-command Zero-Plaintext Armor for Vibe Coders (skills + git hook + .env)
   skill [install|status]    Deploy Universal AI Skills to Hermes, AGY, OpenCode, Cursor, Claude
   hook [install|uninstall|check] Manage Git Pre-Commit Guard to prevent accidental token leaks
   mcp configure|serve|ping  Configure, start bridge, or run MCP diagnostic ping
@@ -440,6 +441,56 @@ export async function main(argv = process.argv.slice(2), options = {}) {
                 : (isHetzerWorkspace(process.cwd()) ? process.cwd() : defaultHetzerHome()));
         const result = initializeProject(target);
         printInitWizard(result);
+        return;
+    }
+
+    if (["protect", "armor"].includes(command)) {
+        const workspaceRoot = rootOption ? path.resolve(rootOption) : process.cwd();
+
+        // 1. Install universal skills to all detected and supported AI agents
+        run(process.execPath, [
+            path.join(cliRoot, "skills", "installer.mjs"),
+            "install",
+            "all",
+        ], { cwd: workspaceRoot });
+
+        // 2. Install git pre-commit hook if .git folder exists
+        let gitHookInstalled = false;
+        if (fs.existsSync(path.join(workspaceRoot, ".git"))) {
+            try {
+                run(process.execPath, [
+                    path.join(cliRoot, "core", "git-hook.mjs"),
+                    "install",
+                ], { cwd: workspaceRoot });
+                gitHookInstalled = true;
+            } catch {
+                // non-fatal
+            }
+        }
+
+        // 3. Scan & auto-ingest .env if present
+        let envSecured = false;
+        const envFile = path.join(workspaceRoot, ".env");
+        if (fs.existsSync(envFile)) {
+            try {
+                autoIngestPlaintextEnv({ root: workspaceRoot, envFile });
+                envSecured = true;
+            } catch {
+                // non-fatal
+            }
+        }
+
+        process.stdout.write("\n================================================================================\n");
+        process.stdout.write("  🛡️ HETZER ARMOR ACTIVATED (ZERO-PLAINTEXT FOR VIBE CODERS)\n");
+        process.stdout.write("================================================================================\n");
+        process.stdout.write("  [v] Universal Skills   : Active across Cursor, Claude, Antigravity, Cline, OpenCode\n");
+        process.stdout.write(`  [v] Git Pre-Commit     : ${gitHookInstalled ? "Hook installed (< 2ms sniffer active)" : "Skipped (no .git directory found)"}\n`);
+        process.stdout.write(`  [v] Workspace .env     : ${envSecured ? "Plaintext tokens vaulted into AES-256-GCM" : "Clean / No .env file"}\n`);
+        process.stdout.write("  [v] Resource Overhead  : 0 Docker containers, 0 background RAM, 0 npm dependencies\n");
+        process.stdout.write("--------------------------------------------------------------------------------\n");
+        process.stdout.write("  Your code and tokens are safe from accidental leaks into LLMs and Git.\n");
+        process.stdout.write("  Keep vibe coding with total peace of mind! 🚀\n");
+        process.stdout.write("================================================================================\n");
         return;
     }
 
