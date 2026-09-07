@@ -3,7 +3,7 @@
 > **Classification**: Enterprise Security Whitepaper & Comparative Value Analysis  
 > **Target Audience**: Chief Information Security Officers (CISO), Security Architects, DevSecOps Leads, Compliance Auditors  
 > **Regulatory Frameworks**: PCI-DSS v4.0.1, NIST SP 800-218 (SSDF), ISO/IEC 27001:2022, OWASP Top 10 for LLMs (2025/2026), OJK SEOJK 29/2022, Bank Indonesia PBI 23/2021  
-> **Version**: 0.3.1  
+> **Version**: 0.4.0  
 
 ---
 
@@ -13,7 +13,7 @@ While traditional enterprise platforms (**HashiCorp Vault, CyberArk, Doppler, 1P
 
 Hetzer was purpose-built as **The Last-Mile Endpoint Armor** for AI coding agents.
 
-| Metric / Evaluation Dimension | Enterprise Cloud Solutions (Vault / Doppler / CyberArk) | Hetzer Zero-Plaintext Armor (v0.3.1) |
+| Metric / Evaluation Dimension | Enterprise Cloud Solutions (Vault / Doppler / CyberArk) | Hetzer Zero-Plaintext Armor (v0.4.0) |
 |---|:---:|:---:|
 | **Secret Storage & Cryptography** | AES-256-GCM / HSM Cloud KMS | AES-256-GCM (Grimoire SQLite + WAL) |
 | **Agent Context Leakage Intercept** | ❌ ZERO (Unprotected stdout/stderr) | ✅ Real-time Stream Redactor (< 2ms) |

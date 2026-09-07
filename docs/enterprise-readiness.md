@@ -3,7 +3,7 @@
 > **Classification**: Enterprise Technical Whitepaper & Security Evaluation  
 > **Target Audience**: Chief Information Security Officers (CISO), Security Architects, DevSecOps Leads, Financial Compliance Auditors  
 > **Relevant Frameworks**: PCI-DSS 4.0, SOC 2 Type II, ISO/IEC 27001:2022, NIST SP 800-53, Bank Indonesia (PBI/PADG), OJK (SEOJK 29/2022)  
-> **Version**: 0.3.1  
+> **Version**: 0.4.0  
 > **Status**: Comprehensive Analysis  
 
 ---
@@ -176,4 +176,4 @@ To transition from an Enterprise Workstation Armor to a Tier-1 Core-Banking Secr
 
 ## Summary Statement for Bank Auditors
 
-> *"Hetzer 0.3.1 provides an exceptional client-side defense-in-depth security layer against credential leakage, prompt injection, and source code exposure for developers utilizing modern AI tools. Its zero-external-dependency architecture and sub-2ms AES-256-GCM cryptographic engine satisfy rigorous DevSecOps standards. When deployed as a developer workstation guard and paired with corporate key management policies, it directly fulfills PCI-DSS v4.0 (Req 3, 6, 10), ISO 27001 (A.8.24, A.8.28), and OJK cybersecurity guidelines."*
+> *"Hetzer 0.4.0 provides an exceptional client-side defense-in-depth security layer against credential leakage, prompt injection, and source code exposure for developers utilizing modern AI tools. Its zero-external-dependency architecture and sub-2ms AES-256-GCM cryptographic engine satisfy rigorous DevSecOps standards. When deployed as a developer workstation guard and paired with corporate key management policies, it directly fulfills PCI-DSS v4.0 (Req 3, 6, 10), ISO 27001 (A.8.24, A.8.28), and OJK cybersecurity guidelines."*

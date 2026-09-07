@@ -2,7 +2,7 @@
 
 > **Classification**: Core Engineering Architecture & System Logic Specification  
 > **Status**: Living Reference & Progress Tracker  
-> **Version**: 0.3.1  
+> **Version**: 0.4.0  
 > **Audience**: Core Contributors, Security Auditors, AI Engineers  
 
 ---

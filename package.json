@@ -1,6 +1,6 @@
 {
   "name": "@agunggnn/hetzer",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Zero-Plaintext Armor & Secret Interceptor for AI Agents. Sub-2ms Vault, MCP Proxy & Universal Skill for Hermes, AGY, OpenCode, CommandCode, Cursor, and Claude.",
   "bin": {
     "hetzer": "cli/bin/hetzer.js"
