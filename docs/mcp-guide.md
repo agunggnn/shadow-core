@@ -22,11 +22,12 @@
 
 ## 1. Overview
 
-The **Model Context Protocol (MCP)** standardizes how AI applications connect to external tools, databases, and context servers. Hetzer acts as an **autonomous MCP orchestrator**, providing:
-- Automated loopback networking and port bindings (`127.0.0.1:8001/mcp`).
-- Zero-plaintext API key injection for cognitive memory backends.
-- Real-time diagnostic ping and interactive CLI execution.
-- Operational tool nature classification: `[OFFLINE]`, `[HYBRID]`, and `[LLM REASONING]`.
+The **Model Context Protocol (MCP)** standardizes how AI applications connect to external tools, databases, and context servers. Hetzer acts as an **autonomous MCP orchestrator and security bridge**, providing:
+- **Embedded Stdio FastMCP Server** (`hetzer mcp serve`): Direct high-speed JSON-RPC bridge for Claude Desktop, Cursor, and Cline.
+- **Native Defense Tools**: Real-time prompt secret scanning (`hetzer_sniffer_scan`), auto-redaction (`hetzer_sniffer_redact`), and safe credential existence checks (`hetzer_vault_has`, `hetzer_vault_list`).
+- **Real-Time MCP Output Sanitization**: Automatically intercepts all tool return values and error messages via `sanitizeStreamOutput`, scrubbing accidental plaintext tokens into `secretRef:<id>` before context transmission.
+- **Automated Loopback Networking**: Zero-plaintext API key injection and port bindings (`127.0.0.1:8001/mcp`) for Cognee and active modules.
+- **Operational Tool Classification**: Automated labeling as `[OFFLINE]`, `[HYBRID]`, and `[LLM REASONING]`.
 
 ---
 
@@ -185,7 +186,43 @@ When the `cognee` module is active, the following cognitive tools are exposed:
 
 ---
 
-## 6. Troubleshooting & Diagnostics
+## 6. Hetzer Native Defense Tools Reference
+
+When connected to Hetzer's stdio FastMCP server (`hetzer mcp serve`), AI agents gain access to local defense utilities designed to inspect and secure credentials without exposing plaintext values:
+
+### `hetzer_sniffer_scan` `[OFFLINE]`
+- **Description**: Scans provided text or code snippets for candidate credentials (API keys, private keys, database connection strings) in < 2ms using V8 DFA regular expressions and Shannon entropy.
+- **Parameters**:
+  - `text` *(string, required)*: The text payload to scan.
+
+### `hetzer_sniffer_redact` `[OFFLINE]`
+- **Description**: Automatically vaults detected credentials into Grimoire Vault and returns sanitized text replacing raw keys with `secretRef:<id>`.
+- **Parameters**:
+  - `text` *(string, required)*: The text payload to sanitize.
+
+### `hetzer_vault_has` `[OFFLINE]`
+- **Description**: Safely probes whether a specific credential reference exists in Grimoire Vault without decrypting or exposing the underlying secret.
+- **Parameters**:
+  - `id` *(string, required)*: The credential identifier (e.g., `openai-api-key` or `secretRef:npm-token`).
+
+### `hetzer_vault_list` `[OFFLINE]`
+- **Description**: Lists all stored credential IDs, descriptions, and authentication types. Strictly omits secret values.
+
+### `hetzer_modules_list` `[OFFLINE]`
+- **Description**: Lists installed modules, lifecycle states, and active service configurations.
+
+---
+
+## 7. Real-Time Tool Output Sanitization
+
+To eliminate prompt-injection or tool-output credential exfiltration, Hetzer's MCP protocol handler (`cli/mcp/protocol.mjs`) automatically pipes all tool responses (`tools/call`) through `sanitizeStreamOutput`:
+- If an upstream tool or database query accidentally returns a known secret, Hetzer detects the plaintext string in memory and redacts it back into `secretRef:<id>`.
+- Structured JSON outputs and error messages are symmetrically sanitized.
+- **Result**: Third-party LLM providers never ingest plaintext credentials even if a backend tool dumps raw configurations.
+
+---
+
+## 8. Troubleshooting & Diagnostics
 
 ### Issue: `HTTP 406: Not Acceptable`
 - **Root Cause**: The client did not supply `Accept: text/event-stream` or `Accept: application/json` headers required by MCP SSE servers.
@@ -203,4 +240,4 @@ When the `cognee` module is active, the following cognitive tools are exposed:
 
 ---
 
-*For full architectural details, refer to [docs/architecture.md](architecture.md).*
+*For full architectural details, refer to [docs/architecture.md](architecture.md) and [docs/system-logic-and-progress.md](system-logic-and-progress.md).*

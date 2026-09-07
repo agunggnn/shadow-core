@@ -62,7 +62,9 @@ For structured navigation and deep architectural insights, explore the dedicated
 | Guide | Summary & Topics |
 |---|---|
 | 🚀 **[Installation Guide (`docs/installation.md`)](docs/installation.md)** | Multi-OS setup (Ubuntu, Debian, CentOS, Windows WSL2, macOS, VPS), Docker requirements, and troubleshooting. |
-| 🏛️ **[System Architecture (`docs/architecture.md`)](docs/architecture.md)** | Grimoire Vault (AES-256-GCM), 9Router Gateway, Cognee Tri-layer Memory, Mermaid diagrams, and network boundary. |
+| 🏛️ **[System Architecture (`docs/architecture.md`)](docs/architecture.md)** | Grimoire Vault (AES-256-GCM), 7-layer defense shield, 9Router Gateway, Cognee Memory, and network boundaries. |
+| 🔬 **[System Logic & Progress Tracker (`docs/system-logic-and-progress.md`)](docs/system-logic-and-progress.md)** | Deep subsystem implementation specs, execution flows, test coverage status, and upcoming roadmap. |
+| 📊 **[Enterprise Value Benchmark (`docs/value-benchmark.md`)](docs/value-benchmark.md)** | Comparative value analysis vs HashiCorp Vault/Doppler, PCI-DSS v4.0.1, NIST SP 800-218, and 92% TCO reduction. |
 | 🏦 **[Enterprise & Banking Readiness (`docs/enterprise-readiness.md`)](docs/enterprise-readiness.md)** | Regulatory compliance evaluation (PCI-DSS 4.0, SOC 2, ISO 27001, OJK, Bank Indonesia), threat models, and financial hardening guide. |
 | 🌐 **[Model Context Protocol Guide (`docs/mcp-guide.md`)](docs/mcp-guide.md)** | Connect Hetzer to Claude Desktop, Cursor, Cline, OpenCode, `[OFFLINE]`/`[HYBRID]`/`[LLM]` classification, and CLI testing. |
 | 🧠 **[Cognee Persistent Memory Module (`docs/modules/cognee.md`)](docs/modules/cognee.md)** | Graph and vector persistent memory, local Ollama integration, and memory tools. |
@@ -152,35 +154,43 @@ flowchart TB
 
 ---
 
-## 🔐 Zero-Plaintext Security: The Five Defense Layers
+## 🔐 Zero-Plaintext Security: The Seven Defense Layers
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                      HETZER FIVE-LAYER DEFENSE MATRIX                       │
+│                     HETZER SEVEN-LAYER DEFENSE MATRIX                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  Layer 1: Transparent Secret Sniffer (< 2 ms Latency)                       │
 │  ► Real-time scan of user prompts, agent tool arguments, and code diffs.    │
 │  ► Automatically vaults raw credentials and outputs safe 'secretRef:<id>'.  │
 │  ► AI models (Claude, GPT, Gemini) NEVER see raw tokens in context windows! │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Layer 2: Real-Time Stream Sanitizer & Anti-Reflection Guard (hetzer exec)  │
-│  ► Intercepts child process stdout/stderr in-flight during execution.       │
+│  Layer 2: Real-Time Stream Sanitizer & Ephemeral Scoping (hetzer exec)      │
+│  ► Intercepts child process stdout/stderr in memory before terminal emit.   │
 │  ► Auto-redacts crash stack traces & debug logs back into 'secretRef:<id>'. │
-│  ► Blocks reflection commands ('printenv', 'env', 'export', inline dumps).  │
+│  ► Scoped credential injection: only permits approved tokens (--allow).     │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Layer 3: Anti-Agent Interactive TTY Challenge on Secret Revelation         │
-│  ► Prevents autonomous AI agents in YOLO/Turbo mode from dumping vault      │
-│    secrets via programmatic sub-process calls ('hetzer creds reveal').      │
-│  ► Requires an authenticated, direct human interactive TTY session.         │
+│  Layer 3: Anti-Reflection Execution Guard                                   │
+│  ► Blocks reflection commands ('printenv', 'env', 'export', 'docker inspect'│
+│    and inline 'os.environ' scripts) before process spawning.                │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Layer 4: Silent Ingestion & JIT Native Masked Prompt                       │
-│  ► Eliminates manual setup burdens by auto-vaulting plaintext keys in .env. │
-│  ► Interactive masked prompts (* characters) securely encrypt into SQLite.  │
+│  Layer 4: Multi-Layer Anti-Agent TTY & Process Tree Ancestry Guard          │
+│  ► Validates process.stdin.isTTY and sniffs autonomous agent env flags.     │
+│  ► Traverses 5 generations of parent processes (PPID) to block autonomous   │
+│    AI agents running in YOLO/Turbo mode from calling 'hetzer creds reveal'. │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Layer 5: Git Pre-Commit Guard Hook (< 2 ms Latency)                        │
-│  ► Intercepts 'git commit' before code is recorded into Git history.        │
-│  ► Scans added lines in staged diffs and blocks commits containing raw keys │
-│    or plaintext .env files.                                                 │
+│  Layer 5: Out-of-Band (OOB) Human Presence Proof (--confirm-ui)              │
+│  ► Launches native OS modal dialogs (Windows Forms / AppleScript / Zenity). │
+│  ► Bypasses terminal stream; requires physical human click to reveal keys.  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Layer 6: Dynamic Canary Honey-Tokens (Intrusion Tripwires)                 │
+│  ► Deploys enticing decoy canary tokens ('HETZER_CANARY_TOKEN') into .env.  │
+│  ► Any access or extraction attempt triggers an emergency freeze (exit 43)  │
+│    and logs high-priority forensic intrusion alerts to SQLite & log file.   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Layer 7: Master Key Workspace Isolation (~/.hetzer/grimoire.key)           │
+│  ► 'hetzer creds isolate-key' relocates master key out of project directory │
+│    with 0600 POSIX permissions. Workspace contains ZERO decryption keys.    │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -298,8 +308,11 @@ All Hetzer commands are executed via the `hetzer` CLI:
 | `hetzer logs [service]` | Streams container logs in real time |
 | `hetzer tui` | Opens the interactive terminal operations dashboard |
 | `hetzer creds [list]` | Lists all stored credential references in Grimoire Vault |
-| `hetzer creds reveal <id>` | Decrypts and prints the plaintext secret (owner terminal only) |
+| `hetzer creds reveal <id> [--confirm-ui]` | Decrypts and prints plaintext secret (guarded by TTY, process tree, & OS modal) |
 | `hetzer creds set <id> [val]` | Encrypts and saves a credential via AES-256-GCM (masked prompt) |
+| `hetzer creds isolate-key` | Moves master key outside workspace to `~/.hetzer/grimoire.key` (mode 0600) |
+| `hetzer canary [setup]` | Deploys decoy canary honey-tokens to catch prompt injection & extraction |
+| `hetzer exec [--allow <ids>] [--strict] -- <c>` | Runs command with scoped secret injection & real-time stream sanitization |
 | `hetzer sniffer [scan\|redact]` | Scans or redacts credentials from input text in < 2ms |
 | `hetzer skill [install\|status]`| Deploys Universal AI Agent Skills to Hermes, AGY, OpenCode, Cursor, Claude |
 | `hetzer hook [install\|check]` | Installs or tests the Git pre-commit credential leak guard |

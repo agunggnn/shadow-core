@@ -178,11 +178,47 @@ To eliminate the critical vulnerability where AI agents swallow tool outputs (`s
 1. **Real-Time Stream Interception**: `hetzer exec` intercepts all output streams before writing to host stdout/stderr. Every chunk is filtered through the sub-2ms Sniffer, automatically redacting resolved secret values back to `secretRef:<id>` in real time.
 2. **Anti-Reflection Guard**: Programmatic commands designed to dump environment variables (`printenv`, `env`, `export`, `set`, `cat /proc/*/environ`, `docker inspect`, inline `process.env`) are strictly forbidden and blocked prior to execution with an `ERR_REFLECTION_BLOCKED` security violation.
 
-### 3.5 Anti-Agent Interactive TTY Challenge on Secret Revelation
+### 3.5 Multi-Layer Anti-Agent TTY & Process Tree Ancestry Guard
 
-To prevent autonomous AI agents in unrestricted/YOLO mode from executing `hetzer creds reveal <id>` programmatically, the CLI enforces an **Interactive Human TTY Guard**:
-- The command checks `process.stdin.isTTY`. Programmatic execution from agent sub-processes or headless background tools is **denied with exit code 1**.
-- Plaintext revelation is restricted exclusively to authenticated, direct human interactive sessions.
+To prevent autonomous AI agents running in YOLO/Turbo mode (which possess full terminal execution capabilities) from extracting plaintext secrets via `hetzer creds reveal <id>`, Hetzer implements a defense-in-depth verification barrier:
+
+1. **Terminal TTY Interactivity**: Verifies `process.stdin.isTTY === true` and `process.stdout.isTTY === true`.
+2. **Agent Environment Flag Sniffing**: Inspects active process environments for agent flags (`CLAUDE_CODE`, `CODEX_AGENT`, `CURSOR_AGENT`, `AGENT_RUNNER`, `AI_AGENT_MODE`, `CI`).
+3. **5-Generation Process Tree Inspection (`isProcessTreeAgentSpawned`)**:
+   - Programmatic subprocess invocations bypass simple TTY checks when run inside pseudo-terminals (PTYs).
+   - Hetzer traverses up to 5 parent process generations (PPID) using native OS process inspection (`ps -o ppid=` on Linux/macOS, `wmic`/PowerShell on Windows).
+   - If any ancestor matches known agent binaries or node runners spawned by AI environments, execution is blocked immediately.
+
+### 3.6 Out-of-Band (OOB) Human Presence Proof (`--confirm-ui`)
+
+When `--confirm-ui` is passed or `HETZER_REQUIRE_OOB_CONFIRM=1` is configured, Hetzer breaks completely out of the terminal stream before revealing any credential:
+- Spawns a native OS GUI modal dialog:
+  - **Windows**: PowerShell .NET `[System.Windows.Forms.MessageBox]`
+  - **macOS**: `osascript -e 'display dialog'`
+  - **Linux**: `zenity --question` (or Python Tkinter fallback)
+- The modal prompts the human operator to explicitly confirm secret access. Because AI agents only interact with standard input/output terminal streams, they cannot click or dismiss native desktop GUI dialogs.
+
+### 3.7 Dynamic Canary Honey-Tokens (Intrusion Tripwires)
+
+Located in `cli/vault/canary.mjs`, Hetzer provides automated honey-token tripwires:
+- `hetzer canary setup` deploys a decoy credential entry `canary-token` and records `HETZER_CANARY_TOKEN=secretRef:canary-token` in `.env`.
+- Any attempt by an autonomous agent, malicious script, or prompt injection to access or resolve this token:
+  1. Triggers an immediate emergency freeze: terminates the process with `process.exit(43)`.
+  2. Appends high-priority forensic alert data to `data/hetzer-incidents.log`.
+  3. Records a security event with status `CANARY_TRIPWIRE_TRIGGERED` in `vault_audit_events`.
+
+### 3.8 Master Key Workspace Isolation (`~/.hetzer/grimoire.key`)
+
+To prevent autonomous agents operating inside the project workspace from reading `HETZER_GRIMOIRE_KEY`:
+- `hetzer creds isolate-key` relocates the master key out of the workspace into `~/.hetzer/grimoire.key` with POSIX `0600` permissions.
+- The project `.env` is stripped of `HETZER_GRIMOIRE_KEY`.
+- The workspace now contains **zero decryption keys**, ensuring that even if an agent reads every file in the directory, it cannot decrypt `data/hetzer-vault.db`.
+
+### 3.9 Scoped Credential Injection (`--allow`, `--strict`)
+
+Under the principle of least privilege, `hetzer exec` supports granular credential scoping:
+- `hetzer exec --allow npm-token -- npm run publish-pkg` resolves only the `npm-token` in child process memory.
+- Adding `--strict` strips all other non-allowed `secretRef:` variables completely from the child process environment, preventing ambient secret leakage.
 
 ---
 

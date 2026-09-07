@@ -85,7 +85,13 @@ A major threat identified in recent security research (e.g., ArXiv June 2026 on 
 3. **Hetzer's Runtime Countermeasures**:
    - **Real-Time Stream Output Sanitizer**: `hetzer exec` intercepts child process `stdout` and `stderr` streams, automatically filtering every chunk and redacting resolved secrets back to `secretRef:<id>` in real time.
    - **Anti-Reflection Guard**: Reflection commands (`printenv`, `env`, `export`, `set`, `/proc/*/environ`, `docker inspect`, inline `process.env`) are strictly blocked before execution.
-   - **Interactive TTY Challenge**: `hetzer creds reveal` strictly verifies `process.stdin.isTTY`. Programmatic execution by automated AI agents or headless scripts is rejected with access denied.
+   - **Interactive TTY & Process Ancestry Guard**: `hetzer creds reveal` strictly verifies `process.stdin.isTTY`, checks agent environment flags, and traverses 5 generations of parent processes (PPID) to block autonomous agents in YOLO/Turbo mode.
+   - **Out-of-Band (OOB) Native OS Modal Confirmation**: Optional `--confirm-ui` or `HETZER_REQUIRE_OOB_CONFIRM=1` breaks out of the terminal stream to require physical human confirmation via native desktop GUI dialogs.
+   - **Dynamic Canary Honey-Tokens**: Deploys decoy canary tokens (`HETZER_CANARY_TOKEN=secretRef:canary-token`). Any attempted extraction immediately aborts execution (`process.exit(43)`) and logs forensic intrusion details.
+   - **Master Key Workspace Isolation**: `hetzer creds isolate-key` moves `HETZER_GRIMOIRE_KEY` completely outside the workspace to `~/.hetzer/grimoire.key`, preventing workspace agents from accessing the master key.
+   - **Granular Scoped Injection**: `hetzer exec --allow <id> [--strict]` injects only specifically permitted credentials into child process RAM.
+
+> 📊 **Comparative Benchmark**: For a detailed quantitative evaluation against HashiCorp Vault, Doppler, and Lakera Guard across PCI-DSS v4.0.1, NIST SP 800-218, and OJK guidelines, see **[Enterprise Value Benchmark (`docs/value-benchmark.md`)](value-benchmark.md)** and **[System Logic & Progress (`docs/system-logic-and-progress.md`)](system-logic-and-progress.md)**.
 
 ---
 
